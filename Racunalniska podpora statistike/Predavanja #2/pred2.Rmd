@@ -1,0 +1,176 @@
+---
+title: "Osnovno risanje"
+author: "Nataša Kejžar"
+date: ""
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+params:
+  printcode: yes
+  printresults: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE,fig.height=4)
+```
+
+# Delo z datotekami
+
+Branje in pisanje datotek
+
+```{r}
+# for .txt data
+studenti = read.table("data/studenti2012.txt",sep="\t")
+str(studenti)
+dimnames(studenti)
+studenti = read.table("data/studenti2012.txt",sep="\t",header=TRUE)
+str(studenti)
+dimnames(studenti)
+summary(studenti)
+
+saveRDS(studenti,file="studenti.Rda")
+```
+
+Neobvezni parameter `stringsAsFactors` vsak znakovni stolpec predstavi kot faktor. Rezultat branja je `data.frame`.
+
+#### Naloge
+  + Kaj pri podatkih študentov - v povzetkih - opazite? Opazovanja, ki očitno niso prava, si poglejte bolj natančno in se odločite, kaj boste z njimi naredili:
+    - izbrisali celo statistično enoto
+    - popravili (če je smiselno)
+    - izbrisali le vrednost pri spremenljivki (vrednost `NA`)
+  + Izberite pravi podatkovni tip za `mesec` in ga bolj natančno določite.
+  + Preglejte, kaj je s spremenljivko `majica`. Zakaj je vrstni red vrednosti tak, kot je? Popravite ga, da bo spremenljivka urejena.
+  + Izpišite opisne statistike za težo moških in težo žensk posebej.
+  + Naredite funkcijo za izpis povprečja in standardnega odklona za neko številsko spremenljivko. Kot neobvezni vhodni parameter naj bo podan še en vektor (faktor), ki določa skupine, za katere boste povprečja in standardni odklon izpisali. Preverite to na primeru višin za moške in ženske in na primeru višin za faktor `majica`.
+  + Preverite zgornjo funkcijo tudi za primere, ki ne bi smeli dati izpisov:
+    - skupina ni faktor
+    - skupina je drugačne dimenzije
+    - osnovna spremenljivka ni številska
+  + Preberite help za `write.table` in izpišite končno verzijo podatkov v datoteko `data/studenti2012_v2.txt`. Preverite novonastalo datoteko. To funkcijo uporabljamo npr., če želimo nekomu, ki ne pozna R pokazati podatke ...
+  + Naredite nov `vaja.Rmd` dokument v katerem bi radi iz datoteke `studenti` izpisali samo povzetek (`summary`). Na kaj je potrebno pri tem paziti (tj. da sploh lahko pretvorimo `.Rmd` dokument v npr. `html`)? (REŠITEV: da imamo v .Rmd vse na novo definirano, tj. vse knjižnice, vse uvoze podatkov ipd. Datoteka .Rmd se ob prevajanju (gumb `Knit`) obnaša kot nova R-jeva seja.)
+  + Shranite spremenjen `data.frame` studenti s pomočjo funkcije `save` (ali `saveRDS`) in ga naložite z `load` (ali `readRDS`) v `vaja.Rmd`. Funkcija `save` shrani objekt, ki smo ga kreirali v R v nek zunanji dokument (ponavadi mu damo končnico `.RData`) in ni enostavno berljiv zunaj R-ja.
+  + Shranite studente z `dump` in jih preberite s `source` v `vaja.Rmd`. S funkcijo `dump` kreiramo novo datoteko, ki jo lahko preberemo kot R Script. Torej bi lahko svoje funkcije shranili v svoj R dokument npr. `funkcije.R` in jih prebrali v novo R-jevo sejo z `source("pot-do/funkcije.R")`.
+  + Uporabite funkcijo `read.csv` da dobite novo podatkovje (podatki.xlsx) v Rjevo trenutno sejo. Naj bo v spremenljivki `podatki`.
+  
+# Risanje podatkov (opisna statistika)
+
+Podatke, ki smo jih začeli obdelovati, običajno tudi grafično pregledamo, preden začnemo z odgovarjanjem na raziskovalna vprašanja.
+
+## Številske spremenljivke
+
+Funkcije `hist` za histogram, `boxplot` za okvir z ročaji, `plot` za razsevni grafikon. Za dodatne izrise:
+
+- `points`
+- `lines`
+- `segments`
+- `text`
+- `legend`
+
+```{r}
+podatki = readRDS("data/podatki.Rda")
+hist(podatki$BMI)
+hist(podatki$BMI,xlab="indeks telesne teže",ylab="frekvenca",main="histogram")
+hist(podatki$BMI,freq=FALSE)
+povp=mean(podatki$BMI,na.rm=TRUE)
+abline(v=povp,col="red",lwd=2)
+text(x=25,y=0.12,pos=4,labels=paste("mean =",round(povp,1)),col="red")
+med=median(podatki$BMI,na.rm=TRUE)
+abline(v=med,col="blue",lwd=2)
+text(x=25,y=0.10,pos=4,labels=paste("median =",round(med,1)),col="blue")
+boxplot(podatki$BMI)
+boxplot(formula=BMI~terapija,data=podatki)
+boxplot(formula=BMI~terapija,data=podatki,horizontal = TRUE,col="lightblue")
+plot(podatki$BMI,podatki$razlika/365.24,xlab="ITT",ylab="razlika med okužbo in testiranjem (leta)",main="povezanost med ITT in časovno razliko")
+plot(podatki$BMI,podatki$razlika/365.24,pch=16,col=podatki$terapija)
+legend("topright",legend = c("terapija","brez"),col=c("red","black"),pch = c(16,16))
+```
+
+```{r, fig.width=10}
+# plot 2 plots on the same plot
+op = par(mfcol=c(1,2)) # two plots in a row
+boxplot(formula=BMI~terapija,data=podatki,col=c("gray","red"))
+plot(podatki$BMI,podatki$razlika/365.24,pch=16,col=podatki$terapija,cex=as.numeric(podatki$terapija),xlab="ITM",ylab="razlika (leta)")
+legend("topright",legend = c("terapija","brez"),col=c("red","black"),pch = c(16,16))
+par(op)
+```
+
+
+### Naloge
+  + Narišite histograme za 4 številske spremenljivke pri študentih (starost, visina, masa, roke) na en graf.
+  + Narišite histograma za višino študentk in študentov posebej (enega pod drugim, da ju lahko primerjate).
+  + Narišite porazdelitev višine študentk in študentov še z okvirjem z ročaji.
+  + Narišite povezanost med višino in težo. Označite spol.
+  + Narišite povezanost med višino otrok in staršev. Označite spol.
+  + Narišite porazdelitev višine glede na velikost majice. Na sliki označite tudi povprečje vsake skupine (uporabite funkcijo `points` ali `abline`).
+  + Poglejte, kaj vse lahko določate pri izrisu s pomočjo `?par`.
+  
+## Opisne spremenljivke
+
+Funkcije `barplot` za stolpični diagram, `pie` za okvir z ročaji, `mosaicplot`.
+
+```{r}
+tabela = table(podatki$skupina)
+barplot(tabela,main="skupina")
+barplot(tabela,horiz=TRUE,las=1)
+# ordered
+podatki$skupinaO = reorder(podatki$skupina,podatki$skupina,length)
+tabela = table(podatki$skupinaO)
+barplot(tabela,main="skupina")
+
+pie(tabela)
+
+tabela2 = table(podatki$skupina,podatki$terapija)
+tabela2
+mosaicplot(skupina~terapija,data=podatki)
+barplot(tabela2,beside=TRUE,legend.text = TRUE)
+# use better names of values
+podatki$skupinaN = factor(podatki$skupina,levels = 1:3,labels=paste(rep("group",3),1:3))
+podatki$terapijaN = factor(podatki$terapija,levels=0:1,labels=c("placebo","therapy"))
+tabela3 = table(podatki$skupinaN,podatki$terapijaN)
+pdf("pred2_slika.pdf",width=6,height=4)
+barplot(tabela3,beside=FALSE,legend.text = TRUE)
+dev.off()
+```
+
+### Naloge
+  + Prikažite kategorialne podatke pri študentih na najboljši možni grafični način.
+  + Z `mosaicplot` prikažite odvisnost spola od velikosti majice. Uporabite barve za intuicijo.
+  + Narišite stolpični diagram, spol/velikost majice, ki bo prikazoval deleže ljudi posameznega spola, ki nosijo določeno velikost majice. Poglejte npr. primer prodaja različnih tipov avtomobilov po kontinentih):
+  
+  ![Stacked bar, percentages](rmd/slike/stackedbar100.png)
+
+  + S pomočjo uporabe funkcije `rank()` dobite ranke višin študentov in jih prikažite na razsevnem grafikonu (x = rank, y= visina). Čez ta graf narišite še urejene višine (funkcija `sort()`). Kje je razlika?
+
+
+  
+## Delo z datumi
+
+V tabeli `podatki` imamo dve datumski spremenljivki.  Datum bi radi tudi v R zapisali pravilno.
+
+### Naloge
+  + Kakšni so trenutni tipi podatkov v datoteki?
+  + Spremenite jih tako, da bodo smiselni. Datumski spremenljivki pustite pri miru. 
+  + Preverite razred `Date` in funkcijo `strptime`.
+
+```{r}
+format(Sys.time(), "%a %b %d %X %Y %Z")
+x <- c("1jan1960", "2jan1960", "31mar1960", "30jul1960")
+z <- as.Date(x, "%d%b%Y")
+class(z)
+str(z)
+as.numeric(z)
+as.Date(0,origin="1970-01-01") # how much time from origin date
+```
+
+Z datumi lahko tudi računamo: npr. jih odštevamo.
+
+### Naloge
+  + Spremenite obe datumski spremenljivki v razred (tip) `Date`. V primeru, da zapis ni povsod enak, razmislite, kaj bi bilo to najbolj smiselno narediti in to izvedite, da se podatki ujemajo.
+  + Naredite novo spremenljivko `razlika`, kjer izračunate razliko med datumom testiranja in datumom okužbe. Preverite in izpišite vse enote, kjer pride do neskladja (tj. da je datum testiranja pred datumom okužbe). Kaj boste naredili s temi enotami?
+  + Naredite spremenljivko `razlikaLeta`, ki naj ima izraženo razliko v letih.
+  + Izračunajte povprečno razliko v letih za obe skupini (tiste na terapiji in tiste brez).

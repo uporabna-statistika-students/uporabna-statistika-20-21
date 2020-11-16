@@ -1,0 +1,350 @@
+---
+title: "1. Domača naloga"
+subtitle: "Uvod v statistiko"
+author: "Alen Kahteran"
+date: '9. 10. 2020'
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '1'
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 1
+params:
+  printcode: yes
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+
+```{r setup, include=FALSE}
+require(tidyverse) # tibble, dplyr in drugi paketi
+require(lubridate) # za operacijo z datumi
+
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE)
+```
+
+## Naloga #1
+
+- Naredili ste pet meritev in dobili povprečje $x$, mediano 20 in modus 10, kjer je $x$ vsota števk vaše vpisne številke. Izmislite si podatke, ki ustrezajo tem opisnim statistikam.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+vpis_st <- "64200421"
+
+vsota_stevk <- sapply(strsplit(vpis_st, ""), function(x) sum(as.numeric(x)))
+vsota_stevk
+```
+Torej potrebujemo 5 številk, ki imajo povprečje 19, mediano 20 in modus 10.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# izmisljene meritve
+mer5 <- c(10,10,20,25,30)
+
+# povprecje
+mean(mer5)
+# mediana
+median(mer5)
+
+# funkcija za izracun modusa
+get_modus <- function(vec) {
+   uniqvec <- unique(vec)
+   uniqvec[which.max(tabulate(match(vec, uniqvec)))]
+}
+
+# modus
+get_modus(mer5)
+```
+
+## Naloga #2
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# preberemo podatke
+data_full <- read.table("Ankete1011.txt", sep="\t", header=TRUE)
+# spremenimo v tibble (zato je potreben Tidyverse paket)
+data_full <- tibble(data_full)
+data_full
+```
+
+Kot vidimo so nekatere spremenljivke napačnega tipa. Potrebno jih je korektno spremeniti.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# pravilno spremenimo zapis datumov v datetime objekt
+data_full$Timestamp <- parse_date_time(data_full$Timestamp, c("dmY HM", "mdY HMS"))
+data_full$Spol[data_full$Spol == "zenski"] <- "F"
+data_full$Spol[data_full$Spol == "moski"] <- "M"
+data_full$Visina <- as.numeric(gsub(",", ".", data_full$Visina))
+data_full$Teza <- as.numeric(gsub(",", ".", data_full$Teza))
+data_full$Cevelj <- as.numeric(gsub(",", ".", data_full$Cevelj))
+data_full$Kajenje[data_full$Kajenje == "ne"] <- "N"
+data_full$Kajenje[data_full$Kajenje == "da"] <- "Y"
+data_full$Kajenje_koliko <- as.numeric(data_full$Kajenje_koliko)
+data_full$Igrice[data_full$Igrice == "ne"] <- "N"
+data_full$Igrice[data_full$Igrice == "da"] <- "Y"
+data_full$Televizija <- as.numeric(gsub(",", ".", data_full$Televizija))
+data_full$Knjige <- as.numeric(gsub(",", ".", data_full$Knjige))
+data_full$Sport <- as.numeric(gsub(",", ".", data_full$Sport))
+
+# preverjanje vseh unikatnih zapisov v spremenljivki Domace_zivali
+unique(unlist(strsplit(data_full$Domace_zivali, ", ")))
+
+# dodajanje novih stolpcev kjer bodo logicne vrednosti "Y" ali "N" glede na to
+# ali ima nekdo doloceno zival ali ne, poleg tega se spremenljivka Domace_zivali
+# spremeni v logicno vrednost "Y" ali "N", kjer ce ima vsaj eno zival ima "Y" drugace "N"
+data_full <- data_full %>%
+    mutate(Macka=NA,
+           Ptic=NA,
+           Pes=NA,
+           Glodalec=NA,
+           Riba=NA,
+           Drugo=NA) %>%
+    mutate(Domace_zivali_temp = Domace_zivali) %>%
+    mutate(Domace_zivali = if_else(Domace_zivali == "Ne", "N", "Y"))
+
+data_full <- data_full %>% 
+    mutate(., Macka    = if_else(str_detect(.$Domace_zivali_temp, "Macka"),   "Y", "N")) %>%
+    mutate(., Ptic     = if_else(str_detect(.$Domace_zivali_temp, "Ptic"),    "Y", "N")) %>%
+    mutate(., Pes      = if_else(str_detect(.$Domace_zivali_temp, "Pes"),     "Y", "N")) %>%
+    mutate(., Glodalec = if_else(str_detect(.$Domace_zivali_temp, "Godalec"), "Y", "N")) %>%
+    mutate(., Riba     = if_else(str_detect(.$Domace_zivali_temp, "Riba"),    "Y", "N")) %>%
+    mutate(., Drugo    = if_else(str_detect(.$Domace_zivali_temp, "Drugo"),   "Y", "N")) %>%
+    select(-Domace_zivali_temp)
+
+# Preverjanje vrstic ce kateri stolpec nima zapisa
+print(data_full[rowSums(is.na(data_full)) > 0, ], width=Inf)
+
+# nadomescanje manjkajocih vrednosti z mediano
+data_full$Knjige[is.na(data_full$Knjige)] <- median(data_full$Knjige, na.rm=TRUE)
+
+print(data_full, width=Inf)
+```
+
+Po obdelavi podatkov, izberemo 40 zapisov kot omenjeno v navodilih.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# nastavimo seme
+set.seed(19)
+
+data_40 <- sample_n(data_full, 40)
+```
+
+- Kakšen je delež moških na vašem vzorcu? Porazdelitev spremenljivke spol za vaš vzorec prikažite v ustreznem grafu, kjer naj bo razvidna absolutna frekvenca.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+male_num <- nrow(data_40[data_40$Spol == "M", ])
+total_num <- nrow(data_40)
+print(male_num / total_num)
+
+g <- ggplot(data_40, aes(Spol))
+
+g + geom_bar() + ylab("Število oseb")
+```
+
+- Porazdelitev spremenljivke fakulteta prikažite po spolu. V grafu naj bodo razvidne relativne frekvence znotraj vrednosti spremenljivke fakulteta. Komentirajte morebitne razlike, ki jih grafično opazite na vašem vzorcu.
+
+Naslednji graf prikazuje absolutno frekvenco oseb na različnih fakultetah razdeljeno na spol.
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+g <- ggplot(data_40, aes(Fakulteta))
+g + geom_bar(aes(fill = Spol)) + ylab("Število oseb")
+```
+
+Naslednji graf prikazuje delež spola v našem vzorcu na različnih fakultetah.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# dodatek 16.10.2020
+# če želimo primerjati spol po fakulteti
+g <- ggplot(data_40, aes(Fakulteta))
+g + geom_bar(aes(fill = Spol), position="fill") + ylab("Število oseb")
+```
+
+Naslednji graf pa prikazuje relativni delež vseh študentov po fakultetah in spolu.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# dodatek 16.10.2020
+df_temp <- data_40 %>%
+  group_by(Fakulteta, Spol) %>%
+  summarise(Total=n()) %>%
+  ungroup() %>%
+  mutate(freq=Total / sum(Total))
+g <- ggplot(df_temp, aes(x=Fakulteta, y=freq))
+g + geom_bar(aes(fill=Spol), 
+             position="dodge", 
+             stat = "identity") + 
+  ylab("Relativni delež oseb")
+```
+
+Večjih razlik v deležu moških (ali žensk) na fakultetah ne opazim. Na obeh fakultetah je približno 40% moških oz. 60% žensk. Opazno je le to, da je v mojem vzorcu skoraj trikrat toliko oseb vpisanih na Medicinsko fakulteto kot na Veterinarsko fakulteto.
+
+- Z okvirjem z ročaji prikažite razliko v uporabi interneta med moškimi in ženskami. Komentirajte morebitne razlike med spoloma. Ločeno izračunajte vse vrednosti, ki so navedene v grafu in jih interpretirajte.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+b <- ggplot(data_40, aes(x=Spol, y=Internet))
+b + geom_boxplot() + ylab("Uporaba interneta [h]")
+
+# 0 predstavlja minimum, 1 maximum. 0.25 spodnji kvartil, 0.5 je mediana, 0.75 zgornji kvartil
+# type+4 pri izracunu uporabi linearno interpolacijo, ce to potrebuje.
+quantile(data_40$Internet[data_40$Spol == "M"], probs=c(0, 0.25, 0.5, 0.75, 1), type=4)
+quantile(data_40$Internet[data_40$Spol == "F"], probs=c(0, 0.25, 0.5, 0.75, 1), type=4)
+
+# lahko preverimo
+min(data_40$Internet[data_40$Spol == "M"])
+max(data_40$Internet[data_40$Spol == "M"])
+median(data_40$Internet[data_40$Spol == "M"])
+min(data_40$Internet[data_40$Spol == "F"])
+max(data_40$Internet[data_40$Spol == "F"])
+median(data_40$Internet[data_40$Spol == "F"])
+
+```
+
+Iz samega grafa se težko kaj razbere, saj večjih razlik ni. Pri ženskah se opazi nekoliko daljši zgornji rep porazdelitve. Ter to, da je osamelec pri moški porazdelitvi veliko dlje od ostale populacije moških.
+
+Spodnja točka ročaja v obeh primerih predstavlja tudi minimum, saj ni nobene točke izven. Na zgornji strani pa točka predstavlja maximum, konec ročaja pa najbližjo manjšo vrednost od vrednosti tretjega kvartila + 1.5 interkvartilnega razmika (interkvartilni razmik: $IQR = zgornji - spodnji$, kjer $zgornji$ predstavlja vrednost zgornjega kvartila in $spodnji$ predstavlja vrednost spodnjega kvartila)
+
+da samostojno izračunamo mejo zgornjega ročaja je potrebno najprej izračunati IQR 
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+IQR(data_40$Internet[data_40$Spol == "M"])
+IQR(data_40$Internet[data_40$Spol == "F"])
+
+```
+
+Nato uporabimo zgornje podatke za zgornji kvartil, da izračunamo mejo za katero bomo gledali naslednjo manjšo vrednost.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+f_meja <- 22 + 15.5*1.5
+m_meja <- 22 + 17*1.5
+f_meja
+m_meja
+```
+
+Torej v moškem primeru nas zanima prvo število, ki je manjše od 47,5. V ženskem primeru pa nas zanima prvo število, ki je manjše od 45,5.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+max(data_40[(data_40$Internet <= m_meja) & (data_40$Spol == "M"), ]$Internet)
+max(data_40[(data_40$Internet <= m_meja) & (data_40$Spol == "F"), ]$Internet)
+
+```
+
+Iz slike je razvidno da se številki ujemata.
+
+### Izberite podatke zgolj za moške. V ustreznem grafu prikažite porazdelitev razlike med številom ur gledanja televizije in uporabo interneta. Izračunajte ustrezno mero srednje vrednosti in razpršenosti ter ju interpretirajte.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# izberimo podatke le za moške
+data_40 <- data_40 %>% mutate(diff_TV_Int = Televizija - Internet)
+data_40_m <- data_40[data_40$Spol == "M", ]
+
+# histogram
+h <- ggplot(data_40_m, aes(diff_TV_Int))
+h + geom_histogram(bins=15) + 
+    ylab("Število oseb") +
+    xlab("Razlika časa gledanja TVja in časa preživetega na internetu [h]")
+```
+
+Še prikaz gostote na drugačna načina. `geom_dotplot()` je v temu primeru mogoče še najbolj uporaben, saj je meritev zelo malo, in je lepo razvidno, kako je razporejenih 15 ljudi.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# dodatek 16. 10. 2020
+h + geom_density(col="black", fill="lightblue", alpha=0.7) +
+  ylab("Gostota") +
+  xlab("Razlika časa gledanja TVja in časa preživetega na internetu [h]")
+
+h + geom_dotplot() +
+  ylab("Gostota") +
+  xlab("Razlika časa gledanja TVja in časa preživetega na internetu [h]") +
+  scale_y_continuous(NULL, breaks = NULL)
+```
+
+
+
+Izračun mer srednjih vrednosti ter razpršenosti. 
+
+Vsaka nosi nekaj informacij, zato sem jih izračunal več. V primeru da bi bila porazdelitev idealno normalna, bi bilo nekaj vrednosti enakih. Ker je videti da je večina primerov negativnih, se da iz tega razbrati da večina moških študentov iz vzorca preživi več časa za internetom kot za televizijo.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# srednje vrednosti
+mean(data_40_m$diff_TV_Int)
+median(data_40_m$diff_TV_Int)
+get_modus(data_40_m$diff_TV_Int)
+
+# mere razprsenosti
+IQR(data_40_m$diff_TV_Int) # interkvartilni razmik
+sd(data_40_m$diff_TV_Int) # standardni odklon
+var(data_40_m$diff_TV_Int) # varianca
+mad(data_40_m$diff_TV_Int) # povprecni absolutni odklon
+
+```
+
+- Za skupino študentov Veterinarske fakultete in študentov dentalne medicine, ki imajo najbolj pogosto barvo oči na vašem začetnem vzorcu, izračunajte ustrezno mero srednje vrednosti in razpršenosti za število ur, ki ga študenti namenijo uporabi interneta.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# da preverimo katera je najbolj pogosta barva oci
+table(data_40$BarvaOci) # rjava
+
+# izbor studentov dentalne medicine in veterine ki imajo rjave oci
+data_vet_dent <- data_40 %>%
+  filter(BarvaOci == "rjava" & 
+           Studij %in% c("Dentalna medicina", "Veterina"))
+
+# srednje vrednosti
+mean(data_vet_dent$Internet)
+median(data_vet_dent$Internet)
+get_modus(data_vet_dent$Internet)
+
+# mere razprsenosti
+IQR(data_vet_dent$Internet) # interkvartilni razmik
+sd(data_vet_dent$Internet) # standardni odklon
+var(data_vet_dent$Internet) # varianca
+mad(data_vet_dent$Internet) # povprecni absolutni odklon
+
+```
+
+- Kakšen delež študentov ima na vašem vzorcu manj kot 71 kg? Kakšen delež ima težo med 80 in 90 kg?
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# delez tistih z manj kot 71 kg
+nrow(data_40 %>% filter(Teza < 71))/nrow(data_40)
+
+# delez tistih med 80 in 90 kg
+nrow(data_40 %>% filter(Teza > 80, Teza < 90))/nrow(data_40)
+
+```
+
+## Naloga #3
+
+- S svojimi besedami razložite neodvisnost dogodkov. Na primeru dveh konkretnih spremenljivk razložite neodvisnost spremenljivk na laičen, zanimiv način.
+
+neodvisnost dogodkov pomeni, da v primeru dveh dogodkov, ali se en dogodek zgodi oz. ne zgodi, ne vpliva na to ali se bo oz. ne bo zgodil tudi drugi dogodek.
+
+Kot primer lahko vzamemo tudi podatke študentov. Kakšno barvo oči ima nekdo ne vpliva na to ali bo oz. ne bo igral igrice, ali bo ali ne bo imel domačih živali, itd.
+
+Po drugi strani pa lahko vidimo tudi odvisnost spremenljivk na več načinov. To ali nekdo kadi definitivno vpliva na to koliko pokadi, saj če ne kadi (spremenljivka kajenje enaka "N") bo Kajenje_koliko spremenljivka zagotovo 0. Drug pogled je lahko tudi takšen, če nekdo več časa preživi na internetu bo preprosto imel manj časa možnost preživeti ob knjigah ali športu. Malce idealiziran primer, vendarle, če ima oseba maksimalno 100h prostega časa na teden, in zapravi 50h prostega časa da preživi na internetu, 20h ob športu, 10h za televizijo, mu ostane le še največ 20h časa ob knjigah.
+
+Če se še umaknemo iz danih podatkov se neodvisnost dogodkov vidi v še dokaj enostavnem primeru za razumeti. Met kocke in dobljeno št. pik na kocki ne vpliva na to kakšno karto bomo za tem izvlekli iz kupa 52-ih kart. V primeru da bi met kocke vplival na izvlečeno karto, bi lahko vedeli kakšno karto bomo izvlekli še preden to storimo. To bi povzročilo precej velik nemir v
+kazino industriji.
+
+
+## Naloga #4
+
+- S svojimi besedami razložite, kaj pomeni reprezentativen vzorec iz populacije. Navedite konkretna primera vzorcev, kjer je eden reprezentativen, drugi pa ne. Primera naj bosta realna, zanimiva.
+
+Reprezentativen vzorec pomeni, da ko vzamemo nek vzorec (del celotne populacije) iz celotne populacije, mora porazdelitev tega vzorca biti čim bolj podobna porazdelitvi celotne populacije (po vseh spremenljivkah). Pred kratkim je bila zelo aktualna COVID-19 raziskava, kjer so izbrali 3000 kandidatov (Okrog 1300 jih je pristalo na raziskavo), ki bi lahko sodelovali v raziskavi glede prekuženosti celotne populacije. Teh 3000 kandidatov so morali izbrati po več različnih lastnostih, tako da so sledili lastnostim iz celotne populacije. Kot primer lahko gledamo kakšno starostno porazdelitev mora imeti vzorec. Pač delež izbranih kandidatov v vzorcu v določeni starostni skupini (ne vem kakšne so bile skupine, ampak kot primer 0-10, 11-20, 21-30, ...) mora biti čimbolj enak deležu starostne skupine v celotni populaciji. Podobno velja glede gostote poselitve v Sloveniji. Več kandidatov bo iz Ljubljane, saj je tudi v Sloveniji tam največ prebivalcev. Itd.
+
+Nereprezentativen vzorec bi bil, če ta ne predstavlja celotne populacije. Primer je izmišljen in ne vem če drži, vendar se pretvarjajmo da drži. Celotna populacija v temu primeru so vsi avtomobili registrirani v Sloveniji. Če je naš vzorec avti lastnikov, ki živijo ob obali, ta ne predstavlja celotne populacije, saj lastniki avtomobilov, ki živijo ob obali, imajo ponavadi toplejše vreme kot drugod po Sloveniji. Posledično kupijo več avtov brez strehe. Torej je delež avtov brez strehe ob obali večji, kot delež v celotni populaciji. Zagotovo tudi ta vzorec ne predstavlja avtov lastnikov, ki živijo v bolj gorskem svetu, saj bodo ti lastniki imeli večji delež avtomobilov s štirikolesnim pogonom (saj to potrebujejo, zaradi več makadamskih in strmih cest ter večje verjetnosti da bo snežilo) in seveda manjši delež avtov brez strehe. Na podoben način kot zgoraj (COVID raziskava) bi bilo potrebno izbrati ustrezno količino avtov glede na regijo, kjer lastniki živijo, da bi se dobil reprezentativen vzorec.
+
+

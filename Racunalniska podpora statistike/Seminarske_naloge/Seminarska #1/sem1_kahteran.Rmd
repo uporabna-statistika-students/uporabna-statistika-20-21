@@ -1,0 +1,643 @@
+---
+title: "Seminarska naloga 1"
+author: "Alen Kahteran"
+date: '2. 11. 2020'
+output:
+  html_document:
+    toc: yes
+    toc_depth: '3'
+params:
+  printcode: yes
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE)
+# importing required library
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+```
+
+## Uvod
+
+V nalogi bomo prek dveh različnih simulacij poskusili čim bolj natančno izračunati konstanto $e = 2.7182818284590452353602874713527...$. 
+
+$e$ se lahko zapiše kot vsota neskončne vrste
+
+$$e=\sum_{n=0}^\infty\frac{1}{n!}=\frac{1}{1}+\frac{1}{1}+\frac{1}{1\cdot2}+\frac{1}{1\cdot2\cdot3}\cdots\,,$$
+
+ali kot limita,
+
+$$\lim_{n\to\infty}\left(1+\frac{1}{n}\right)^n = e\,.$$
+Podobno prejšnji enačbi velja tudi slednji zapis, ki je za nas bolj zanimiv
+
+$$\lim_{n\to\infty}\left(1-\frac{1}{n}\right)^n = \frac{1}{e}\,.$$
+Nižje je grafični prikaz zgornje enačbe kjer je $n \in [1, 100]$, črna črta predstavlja naše podatke, črtkana rdeča črta pa $\frac{1}{e}$.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+
+# drawing the limit
+data <- data.frame(n=seq(1, 100, 0.1))
+data$y <- (1 - 1/data$n) ^ data$n
+ggplot(data, aes(n, y)) +
+  geom_line() +
+  geom_hline(yintercept=1/exp(1), linetype="dashed", color="red")
+
+```
+
+
+Prvi način ($a$) računanja konstante $e$ bomo opravili prek simuliranja Bernoullijevega procesa, medtem ko bomo drugega (način $b$) opravili prek simuliranja dveh normalno porazdeljenih spremenljivk. Načina bomo med seboj primerjali na več različnih načinov, da ugotovimo razlike med njima.
+
+## Način $a$
+
+Bernoullijev proces predstavlja zaporedno izvajanje enakih neodvisnih Bernoullijevih poskusov, kjer sta možna samo dva izzida. V našem primeru bo to _0_ in _1_. Ker lahko izzid zasede samo dve vrednosti, lahko rečemo da se podreja Bernoullijevi porazdelitvi. Funkcijo verjetnosti lahko zapišemo kot
+
+$$f(k;p) = \left\{\begin{matrix} p & \mbox {če je }k=1, \\
+1-p & \mbox {če je } k=0, \\
+0 & \mbox {v ostalih primerih}\end{matrix}\right.\,.$$
+
+To lahko zapišemo tudi kot
+
+$$\Pr(X = k) = f(k;p) = p^k (1-p)^{1-k}\, .$$
+
+Lahko vidimo da je Bernoullijeva porazdelitev poseben primer binomske porazdelitve, kadar je $n=1$.
+
+$$\Pr(X = k) = f(k;n,p) = {n\choose k}p^k(1-p)^{n-k}\,.$$
+
+Torej, verjetnost da izberemo vrednost $k$ iz populacije velikosti $n$ je 
+
+$$\Pr(X=k) = \frac{1}{n}\,.$$
+Če to ustavimo v funkcijo verjetnosti za Bernoullijevo porazdelitev dobimo
+
+$$\Pr(X = k) = f(k;p) = \left(\frac{1}{n}\right)^k \left(1-\frac{1}{n}\right)^{1-k} \!\, .$$
+
+Iz tega lahko razberemo da je verjetnost da iz populacije velikosti $n$ ne izvlečemo točno določene vrednosti $a$ enaka
+
+$$\Pr(X \neq a) = \left(1-\frac{1}{n}\right) \,.$$
+
+Verjetnost da $n$ zaporednih izvlečkov ne dobimo $a$ lahko zapišemo kot (v primeru ko gre za neodvisne dogodke, kar v našem primeru drži)
+
+$$\Pr(X_1 \neq a\ in\ X_2 \neq a\ in\ \dots\ in\ X_n \neq a) = \Pr(X_1 \neq a)\cdot\Pr(X_2 \neq a)\cdot\ \dots\ \cdot\Pr(X_n \neq a)=\left(1-\frac{1}{n}\right)^n\,.$$
+To lahko prikažemo še na grafu verjetnosti da ne izvlečemo $a$ v $n$ zaporednih poskusih (rdeča črtkana črta predstavlja $\frac{1}{e}$).
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+
+# drawing the probability for integer n values
+data <- data.frame(n=1:50)
+data$y <- (1 - 1/data$n) ^ data$n
+ggplot(data, aes(n, y)) +
+    geom_bar(stat="identity") +
+    geom_hline(yintercept=1/exp(1), 
+               linetype="dashed", 
+               color="red") +
+    ylab(expression(Pr(X != a)))
+
+```
+
+Kot vidimo je to zelo podobno enačbi omenjeni v uvodu.
+
+$$\lim_{n\to\infty}\left(1-\frac{1}{n}\right)^n = \frac{1}{e}\,.$$
+
+Se pravi, če nam uspe odsimulirati verjetnost da $n$ zaporednih izvlečkov ne dobimo $a$, vemo da bo ta približno $\frac{1}{e}$ (približno zaradi naključnosti - večji kot bo $n$ bolj bomo blizu vrednosti $\frac{1}{e}$).
+
+Torej najprej simuliramo vlečenje vrednosti na naslednji način. Imamo vzorec velikosti $n$ ki je za potrebe testiranja določen na 1000. Imamo dve vrednosti _0_ in _1_, ki imata verjetnost $(1-\frac{1}{n})$ in $\frac{1}{n}$ (enako kot da bi imeli $n-1$ _0_ in eno _1_, ki imajo vse enako verjetnost za izvlečenje). Vlečemo $n$-krat, s ponavljanjem, da odsimuliramo naših $n$ zaporednih izvlečkov.
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+set.seed(8)
+
+n <- 1000
+# example of sampling
+temp <- sample(c(1, 0),
+               size=n,
+               replace=TRUE,
+               prob=c((1 / n), (1 - (1 / n)))
+               )
+
+```
+
+Za lažji prikaz, preverimo če je vsaj ena izmed vrednosti enaka _1_ (kar predstavlja našo vrednost $a$).
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+any(as.logical(temp))
+```
+
+Vidimo, da se nam je v temu primeru zgodilo da nismo v nobenem od $n$ zaporednih izvlečkov izvlekli _1_ oziroma $a$.
+
+Zaradi pospešitve izvajanja programa, izvlečemo $n^2$ vzorcev, ki jih nato pretvorimo v matriko velikosti $n\times n$. To lahko storimo zato ker je vsako vlečenje vzorca neodvisno. Tu vsak stolpec (ali vrstica, zaradi neodvisnosti) predstavlja da smo $n$-krat zapored vlekli iz vzorca z $n$ velikostjo z zgoraj omenjenimi verjetnostmi. Če so v stolpcu povsod _0_ vrednosti, pomeni da nismo izvlekli naše vrednosti $a$ oz. če je vsaj ena vrednost _1_ pomeni da smo izvlekli $a$.
+
+```{r, echo=TRUE, eval=FALSE, results="markup"}
+
+# example of replication
+matrix(
+    sample(
+        c(1, 0),
+        size=n^2,
+        replace=TRUE,
+        prob=c((1 / n), (1 - (1 / n)))
+        ),
+    nrow=n,
+    ncol=n
+    )
+
+```
+
+Kakšne so vrednosti v stolpcih preverimo tako, da jih seštejemo, ker če seštejemo vrednosti po stolpcih, dobimo število pojavov _1_ oz. $a$, v $n$ zaporednih vlečenjih.
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+temp <- colSums(
+            matrix(
+                sample(
+                    c(1, 0),
+                    size=n^2,
+                    replace=TRUE,
+                    prob=c((1 / n), (1 - (1 / n)))
+                    ),
+                nrow=n,
+                ncol=n
+                )
+            )
+
+```
+
+Nato preverimo, koliko je takšnih primerov ko nismo vsaj enkrat izvlekli _1_ oz. $a$.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+temp2 <- ifelse(temp >= 1, 0, 1)
+
+```
+
+Sedaj če želimo na podlagi teh vrednosti izračunati $e$ moramo le deliti število vseh primerov ($n$) s številom primerov ko nismo izvlekli $a$.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+length(temp2) / length(temp2[temp2 == 1])
+
+```
+
+To lahko tudi malce lepše zapišemo kot
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+1/mean(temp2)
+
+```
+
+Če vse skupaj zapakiramo v funkcijo `ocenaA()` (z nekaj optimizacije), izgleda tako
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# defining ocenaA() function
+ocenaA <- function(n){
+    ### returns an approximate of number e - method a
+    ### Input:
+    ###     n - integer, number of samples
+
+    # sample units with replacement (a simulation of drawing numbers from units)
+    # from a vector of 1 and 0, where probability is 1/n for 1 and 1-1/n for 0.
+    # replicate the drawing process n number of times for simulation purposes.
+    # So we draw n^2 number of times, rearrange to n*n matrix as every draw is 
+    # independent.
+    # this is due to optimization for faster code execution.
+    # and sum column wise matrix to check number of times the sum was equal to 0
+    # (rowSums would work too)
+    # calculate mean of FALSE and TRUE values 
+    # (TRUE equals we didn't draw a, FALSE means we did)
+    # n > 20000 becomes a RAM issue (8gb).
+    sampled_units <- mean(
+        colSums(
+            matrix(
+                sample(
+                    c(1, 0),
+                    size=n^2,
+                    replace=TRUE,
+                    prob=c((1 / n), (1 - (1 / n)))
+                    ),
+                nrow=n,
+                ncol=n
+                )
+            )==0)
+    # returning the inverse of mean of does_not_contain_1 which is an approximate of e.
+    return(1/sampled_units)
+}
+```
+
+## Način $b$
+
+Vsota kvadratov $n$ neodvisnih standardno normalno porazdeljenih spremenljivk ($\mu=0$ in $\sigma=1$) je porazdeljena po $\chi^2$ porazdelitvi z $n$ stopinjami prostosti. Poseben primer je pri $n=2$, saj takrat je to tudi primer eksponentne porazdelitve s parametrom $\lambda = \frac{1}{2}$.
+
+$$X_1, X_2 \overset{iid}{\sim}N(0,1)$$
+Kot omenjeno velja naslednje
+
+$$(X_1^2 + X_2^2)\sim\chi^2$$
+
+in
+
+$$\chi^2(n=2) = Exp\left(\lambda=\frac{1}{2}\right)\,.$$
+Za eksponentno porazdeljeno spremenljivko s parametrom $\lambda = \frac{1}{2}$ velja
+
+$$\Pr(X_1^2 + X_2^2 \ge y) = 1-\left(1-e^{-(y/2)}\right)\,.$$
+Načeloma lahko izmerimo verjetnost za poljuben $y$ vendar je nam najbolj zanimiv primer ko je $y=2$, saj takrat velja
+$$\Pr(X_1^2 + X_2^2 \ge 2) = \frac{1}{e}\,.$$
+
+Poglejmo si graf $Exp\left(\lambda=\frac{1}{2}\right)$. Temnejši označen del predstavlja graf nad vrednostjo $y=2$.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+
+# drawing the above distribution
+ggplot(NULL, aes(x=c(0, 8))) +
+    stat_function(fun=dexp,
+                  geom="area",
+                  fill="steelblue",
+                  alpha=0.3,
+                  args=list(rate=0.5)) +
+    stat_function(fun=dexp,
+                  geom="area",
+                  fill="steelblue",
+                  xlim=c(2, 8),
+                  args=list(rate=0.5)) +
+    geom_vline(xintercept=2, 
+               linetype="dashed", 
+               color="red")
+```
+
+Iz $\Pr(X_1^2 + X_2^2 \ge 2) = \frac{1}{e}$ vemo da je površina temnejšega dela grafa $\frac{1}{e}$. To lahko preverimo tako da integriramo od $2$ do $\infty$.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+integrate(dexp, 2, Inf, rate=0.5)
+```
+
+Vidimo da je rezultat $\frac{1}{e}$.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+1/integrate(dexp, 2, Inf, rate=0.5)$value
+```
+
+Torej če nam uspe generirati pare naključnih standardno normalno porazdeljenih spremenljivk, lahko aproksimiramo št. $e$. To lahko storimo z naslednjo funkcijo, ki nam vrne dve vrednosti ki sta standardno normalno porazdeljeni z $\mu=0$ in $\sigma=1$
+
+```{r, echo=TRUE, eval=FALSE, results="markup"}
+# example of generating 2 normally distributed numbers with mean=0, sd=1
+rnorm(2, mean=0, sd=1)
+```
+
+Nato ju najprej kvadriramo nato pa še seštejemo.
+
+```{r, echo=TRUE, eval=FALSE, results="markup"}
+# example of squaring and then summing
+sum(rnorm(2, mean=0, sd=1)^2)
+```
+
+To ponovimo $n$-krat. Za potrebe testa je ta nastavljen na $n=1000$.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# example of replication
+n <- 1000
+temp <- replicate(n, sum(rnorm(2, mean=0, sd=1)^2))
+```
+
+Nato le preverimo koliko je takšnih, ki so večji kot _2_.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# example of cheking
+temp2 <- ifelse(temp >= 2, 1, 0)
+```
+
+Enako kot pri načinu $a$, lahko $e$ aproksimiramo na naslednji način.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# example of generating e
+1/mean(temp2)
+```
+
+Vse skupaj zavijemo v funkcijo `ocenaB()`.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+ocenaB <- function(n){
+    ### returns an approximate of number e - method b
+    ### Input:
+    ###     n - integer, number of samples
+
+    # generate 2 numbers (x_1 and x_2) with mean=0 and sd=1.
+    # square them and them sum them.
+    # replicate n number of times
+    # check if it's larger or equal to 2, set value to TRUE, otherwise set to FALSE
+    sampled_units <- mean(
+      replicate(n, 
+                sum(
+                    rnorm(
+                        2, 
+                        mean=0, 
+                        sd=1)^2
+                    )
+                ) >= 2
+      )
+    # returning the inverse of mean of larger_equal_2 as this is an approximate of e.
+    return(1/sampled_units)
+}
+```
+
+Še test obeh funkcij.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# test n
+n <- 1000
+
+# this is a test for ocenaA()
+ocenaA(n)
+
+# this is a test for ocenaB()
+ocenaB(n)
+```
+
+## Rezultati
+
+$n$ vrednosti sem izbral kot potence števila $2$ (od $2^{10}$ do $2^{14}$), zato da se jih lahko lepo prikaže na logaritemski osi. Moje vrednosti so torej
+
+$$n\in \{1024, 2048, 4096, 8192, 16384\}\,.$$
+
+```{r, echo=TRUE, eval=TRUE, include=FALSE, results="markup"}
+# defining different n
+n_sizes <- c(1024, 2048, 4096, 8192, 16384)
+
+# create a results list of length = length(n_sizes)
+resultsA <- vector("list", length = length(n_sizes))
+resultsB <- vector("list", length = length(n_sizes))
+
+# change names of lists for easier handling and not creating more than needed lists within
+# resultsA and resultsB
+names(resultsA) <- as.character(n_sizes)
+names(resultsB) <- as.character(n_sizes)
+
+# defining m for number of simulation of number e.
+m_reps <- 1000
+
+# setting seed for reproducibility.
+set.seed(9)
+
+# loop over n_sizes
+for (n in n_sizes) {
+    # just for viewing the current stage
+    # print(n)
+    # repeating ocenaA() function with units and n size m_reps number of times
+    # converting to list as to properly save to resultsA list.
+    resultsA[as.character(n)] <- list(replicate(m_reps, ocenaA(n)))
+    resultsB[as.character(n)] <- list(replicate(m_reps, ocenaB(n)))
+}
+
+```
+
+Ustvaril sem dva seznama `resultsA` in `resultsB` kjer vsak seznam v seznamu vsebuje $m$ ocen št. $e$ za različne $n$-je. $m$ je nastavljen na `r m_reps`.
+
+```{r, echo=FALSE, eval=TRUE, include=FALSE, results="markup"}
+
+summary_helper <- function(data, conf.level=0.95) {
+    ### helper function that returns descriptive statistics
+    ### input:
+    ###     data - a named list of lists of simulated number e values.
+    ###     conf.level - confidence level as 1 - \alpha. Default 0.95 (\alpha = 0.05)
+
+    # creating a tibble from data.frame (as data.frame correctly changes a list of lists)
+    tb_data <- tibble(data.frame(data))
+    # changing to long data format to work with other functions
+    tb_data <- pivot_longer(tb_data,
+                            cols=colnames(tb_data),
+                            names_to="n",
+                            values_to="simulated_e")
+
+    conf_int_up <- (conf.level/2 + 0.5)
+    conf_int_down <- 1 - conf_int_up
+    
+    conf_int_up_str <- paste0((conf_int_up*100),"_pct")
+    conf_int_down_str <- paste0((conf_int_down*100),"_pct")
+    
+    tb_data <- tb_data %>%
+        # removing infinite values to not return inf when creating a summary, therefore
+        filter(!is.infinite(simulated_e)) %>%
+        # grouping by n
+        group_by(n) %>%
+        # creating new summary columns
+        summarise(m = n(), # count
+                  Min.                 = min(simulated_e), # minimum
+                  !!conf_int_down_str   := quantile(simulated_e, probs=c(conf_int_down)),
+                  `1st Qu.`            = quantile(simulated_e, probs=c(0.25)), # lower quartile
+                  Median               = median(simulated_e), # median
+                  Mean                 = mean(simulated_e), # mean
+                  `3rd Qu.`            = quantile(simulated_e, probs=c(0.75)), # upper quartile
+                  !!conf_int_up_str := quantile(simulated_e, probs=c(conf_int_up)),
+                  Max.                 = max(simulated_e), # maximum
+                  `Sample st. dev.`    = sd(simulated_e),  # standard deviation
+                  `Sample st. err.`    = sd(simulated_e)/sqrt(m), # standard error
+                  IQR                  = IQR(simulated_e)) %>% 
+        ungroup()
+    
+    tb_data$n_temp <- str_remove_all(tb_data$n, "X") # temp column
+    # change n_temp to double type
+    tb_data <- tb_data %>%
+        mutate_at("n_temp", as.double) %>%
+        # copy to n column
+        mutate(n = n_temp) %>%
+        # remove n_temp
+        select(-n_temp)
+
+
+    # calculate CI multiplier
+    tb_data <- tb_data %>% mutate(conf_int = conf.level/2 + 0.5,
+                                  df = m - 1) %>%
+        mutate(ci_mult = qt(conf_int, df)) %>%
+        select(-conf_int, -df)
+    # calculate CI
+    tb_data <- tb_data %>%
+        mutate(ci = `Sample st. err.` * ci_mult) %>%
+        mutate(Lower_t=Mean-ci,
+               Upper_t=Mean+ci) %>%
+        select(-ci_mult, -ci) %>%
+        arrange(n)
+
+    # return the summary tibble
+    return(tb_data)
+}
+```
+
+Poglejmo si opisne statistike ocen št. $e$ za obe metodi v naslednjih tabelah.
+
+```{r, echo=FALSE, eval=TRUE, results="markup"}
+# summary_helper() output
+
+summA <- summary_helper(resultsA)
+summB <- summary_helper(resultsB)
+
+
+# kable output
+
+kable(summA %>% select(n,
+                       Min.,
+                       `1st Qu.`,
+                       Median,
+                       Mean,
+                       `3rd Qu.`,
+                       Max.,
+                       `Sample st. dev.`,
+                       `Sample st. err.`,
+                       IQR),
+        digits=c(0, 2, 2, 4, 4, 2, 2, 2, 3, 2),
+        caption = "Rezultati za ocenaA()") %>%
+    kable_styling(full_width = FALSE)
+kable(summB %>% select(n, 
+                       Min., 
+                       `1st Qu.`, 
+                       Median, 
+                       Mean, 
+                       `3rd Qu.`, 
+                       Max., 
+                       `Sample st. dev.`, 
+                       `Sample st. err.`,
+                       IQR), 
+        digits=c(0, 2, 2, 4, 4, 2, 2, 2, 3, 2), 
+        caption = "Rezultati za ocenaB()") %>% 
+    kable_styling(full_width = FALSE)
+```
+
+Poglejmo še porazdelitve naših ocen za različne $n$ za obe metodi. Rdeča črtkana črta predstavlja $e$.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+
+resultsA_df <- tibble(data.frame(resultsA))
+resultsB_df <- tibble(data.frame(resultsB))
+
+resultsB_df <- pivot_longer(resultsB_df,
+             cols=colnames(resultsB_df),
+             names_to="n",
+             values_to="simulated_e")
+resultsB_df$n_temp <- str_remove_all(resultsB_df$n, "X")
+
+resultsB_df <- resultsB_df %>%
+    mutate_at("n_temp", as.double) %>%
+    # copy to n column
+    mutate(n = n_temp) %>%
+    # remove n_temp
+    select(-n_temp)
+
+resultsA_df <- pivot_longer(resultsA_df,
+             cols=colnames(resultsA_df),
+             names_to="n",
+             values_to="simulated_e")
+resultsA_df$n_temp <- str_remove_all(resultsA_df$n, "X")
+
+resultsA_df <- resultsA_df %>%
+    mutate_at("n_temp", as.double) %>%
+    # copy to n column
+    mutate(n = n_temp) %>%
+    # remove n_temp
+    select(-n_temp)
+
+resultsA_df$grp <- "ocena A"
+resultsB_df$grp <- "ocena B"
+
+results_df <- rbind(resultsB_df, resultsA_df)
+
+ggplot(results_df, aes(x=simulated_e, y=..density..)) +
+    geom_density() +
+    facet_grid(cols=vars(n),
+               rows=vars(grp)) +
+    geom_vline(xintercept=exp(1), 
+               linetype="dashed", 
+               color="red") +
+    labs(x="Ocena e",
+         y="Gostota",
+         title="Porazdelitve za obe metodi ocenjevanja, po velikosti vzorca")
+
+ggplot(results_df, aes(y=simulated_e)) +
+    geom_boxplot() +
+    facet_grid(cols=vars(n),
+               rows=vars(grp)) +
+    geom_hline(yintercept=exp(1), 
+               linetype="dashed", 
+               color="red") +
+    labs(y="Ocena e",
+         title="Škatle z brki za obe metodi ocenjevanja, po velikosti vzorca") +
+    theme(axis.ticks.x=element_blank(),
+          axis.title.x=element_blank(),
+          axis.text.x=element_blank())
+  
+
+```
+
+Iz tabel je razvidno da smo z večjo vrednostjo $n$ bližje št. $e$. Poleg tega je iz grafov razvidno, da so porazdelitve precej simetrične (v tabelah tudi vidimo da je tudi povprečje približno enako mediani). Posledično lahko za mero središčnosti uporabimo povprečje. O normalnosti porazdelitev težko kaj povemo, zato je naša ocena za interval zaupanja da odstranimo $\frac{\alpha}{2}$ meritev na zgornjem in spodnjem delu porazdelitve. Poglejmo si še prikaz povprečij z omenjenim intervalom zaupanja pri $\alpha=0.05$. Rdeča črtkana črta predstavlja $e$.
+
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+
+summA$grp <- "A"
+summB$grp <- "B"
+
+plot_data <- rbind(summA, summB)
+
+# za t porazdelitev
+# ggplot(plot_data, aes(x=n, y=Mean, col=grp)) + 
+#     geom_errorbar(aes(ymin=Lower_t, ymax=Upper_t), 
+#                   width=.1, 
+#                   position=position_dodge(0.1)) +
+#     geom_point(position=position_dodge(0.1)) +
+#     scale_x_continuous(trans = 'log2') +
+#     geom_hline(yintercept=exp(1), 
+#                linetype="dashed", 
+#                color="red") +
+#     labs(y="Ocena št. e", 
+#          color="Način ocene", 
+#          title="Prikaz povprečij z intervalom zaupanja za t porazdelitev") +
+#     ylim(c(exp(1) - (exp(1) - min(plot_data$Lower_t)),
+#            (exp(1) + max(plot_data$Upper_t)) - exp(1)))
+
+ggplot(plot_data, aes(x=n, y=Mean, col=grp)) + 
+    geom_errorbar(aes(ymin=`2.5_pct`, ymax=`97.5_pct`), 
+                  width=.1, 
+                  position=position_dodge(0.1)) +
+    geom_point(position=position_dodge(0.1)) +
+    scale_x_continuous(trans = 'log2') +
+    geom_hline(yintercept=exp(1), 
+               linetype="dashed", 
+               color="red") +
+    labs(y="Ocena št. e", 
+         color="Način ocene", 
+         title="Prikaz povprečij z intervalom zaupanja",
+         subtitle="Pri stopnji zaupanja 5%") +
+    ylim(c(exp(1) - (exp(1) - min(plot_data[[4]]) + 0.1), 
+           exp(1) + (max(plot_data[[9]]) - exp(1) + 0.1)))
+```
+
+Kljub temu, da nismo uporabili intervala zaupanja za $t$ porazdelitev na prikazih, ker ta zahteva normalnost porazdelitve, kar ne moremo trditi za obe porazdelitvi, bo iz enačb razvidno kaj upliva na širino intervala zaupanja. Torej če se pretvarjamo, da normalnost porazdelitve drži (glede na simetričnost, bi skoraj lahko držalo), si poglejmo katere podatke imamo
+
+$$n\textrm{ - velikost vzorca}\,,\\
+  \alpha\textrm{ - stopnja tveganja}\,,\\
+  s \textrm{ - standardni odklon vzorca}\,,\\
+  df\textrm{ - stopinje prostosti (n - 1)}\,.$$
+  
+V našem primeru je
+
+$$
+n=1000\,,\\
+\alpha=0.05\,,\\
+df=999\,.
+$$
+ter $s$ izračunan na naslednji način
+$$
+s=\sqrt{\frac{1}{n-1}\sum_{i=1}^{n}(x_i-\bar{x})^2}\,,
+$$
+kjer $x_i$ predstavlja vsako meritev in $\bar{x}$ predstavlja povprečje meritev.
+Če pogledamo še enačbo za določitev zgornje in spodnje meje za interval zaupanja pri $t$ porazdelitvi
+
+$$
+\bar{x} \pm t_k\cdot \widehat{SE(\bar{x})} \,,
+$$
+Kjer velja
+
+$$
+\widehat{SE(\bar{x})} = \frac{s}{\sqrt{n}} \ \ \ \ \mathrm{in}\ \ \ \ t_k= t_{df, 1-\frac{\alpha}{2}} \,.
+$$
+
+vidimo, da je širina intervala odvisna od stopnje zaupanja ($\alpha$), s katero določimo $t_k$, velikosti vzorca ($n$) vzorčnega povprečja ($\bar{x}$) in vzorčnega standardnega odklona ($s$). Ker sta $\alpha$ in $n$ v vseh primerih enaka, je posledično tudi $t_k$ enak, saj je odvisen od njiju. Torej spreminjal se je lahko le $s$. Ta je odvisen le od vrednosti ki smo jih izmerili, njihovega povprečja ter velikosti vzorca. Potrebno se je zavedati, da $n$ v teh enačbah ni enak kot $n$ v funkcijah `ocenaA()` in `ocenaB()`. $n$ v teh enačbah je enak $m$ ponovitvam v omenjenih funkcijah, saj je ta določal št. dobljenih ocen. Ker se velikost vzorca ni menjala, pomeni da smo z večanjam $n$ vrednosti v funkcijah `ocenaA()` in `ocenaB()` bolj natančno določili ocene št. $e$. Na tak način smo ožali vzorčni standardni odklon. 
+
+Če bi si to interpretirali še na način, kot pri razlagi metod. Pri `ocenaA()` ocena $e$ izhaja iz limite, kjer večji kot je $n$, bolj blizu smo točni vrednosti, in bolj natančna je ocena. Pri `ocenaB()` pa z večjim $n$ bolj natančno izračunamo ploščino funkcije v intervalu $[2, \infty)$.

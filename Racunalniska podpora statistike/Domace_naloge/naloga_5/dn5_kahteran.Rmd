@@ -1,0 +1,105 @@
+---
+title: "Domača naloga 5"
+author: "Alen Kahteran"
+date: '16. 10. 2020'
+output:
+  pdf_document:
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: yes
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE)
+```
+
+## Zagon potrebnih knjižnic
+
+```{r, message=FALSE}
+library(tidyverse)
+library(cowplot)
+```
+
+## generiranje potrebnih podatkov in uporaba sapply() funkcije
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# we generate the phi values (r=1 in all cases)
+phi <- seq(0, 2*pi, 0.001)
+
+# creating functions to use with sapply()
+convert_to_x1 <- function(phi) {
+  r <- 1
+  return(r*cos(phi)*sin(3*phi))
+}
+convert_to_y1 <- function(phi) {
+  r <- 1
+  return(r*sin(phi)*sin(3*phi))
+}
+convert_to_x2 <- function(phi) {
+  r <- 0.5
+  return(r*cos(phi)*sin(3*phi)^2)
+}
+convert_to_y2 <- function(phi) {
+  r <- 0.5
+  return(r*sin(phi)*sin(3*phi)^2)
+}
+
+# usage of sapply function to convert list of phi values to x and y coordinates
+x1 <- sapply(phi, convert_to_x1)
+y1 <- sapply(phi, convert_to_y1)
+
+x2 <- sapply(phi, convert_to_x2)
+y2 <- sapply(phi, convert_to_y2)
+
+# creating tibbles of the generated data
+flower3 <- tibble(x=x1, y=y1)
+flower6 <- tibble(x=x2, y=y2)
+```
+
+## Risanje slik.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.width=4, fig.height=4, fig.align="center"}
+
+# creating ggplot objects with correct x and y values
+g3 <- ggplot(flower3, aes(x=x, y=y))
+g6 <- ggplot(flower6, aes(x=x, y=y)) 
+
+# adding geometry, theme, title, limits
+c3 <- g3 + geom_point(col="#ee82ee") +
+  theme_bw() +
+  xlim(c(-1, 1)) +
+  ylim(c(-1, 1))  +
+  ggtitle("Trilistni cvet\n") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.grid = element_blank())
+c3
+
+c6 <- g6 + geom_polygon(fill="red", 
+                  colour="black", 
+                  size=1.5) +
+  theme_bw() +
+  xlim(c(-1, 1)) +
+  ylim(c(-1, 1))  +
+  ggtitle("Šestlistni cvet\n") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.grid = element_blank())
+c6
+
+```
+
+## Združevanje slik v eno sliko.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.width=6, fig.height=3, fig.align="center"}
+
+# only using cowplot for combining plots generated in ggplot
+plot_grid(c3,
+          c6,
+          nrow = 1)
+
+```

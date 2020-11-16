@@ -1,0 +1,60 @@
+---
+title: "Domaca naloga 9"
+author: "Nikolina Rizanovska"
+date: "11/9/2020"
+output: pdf_document
+---
+
+
+
+```{r setup, include=FALSE}
+
+
+#Simuliramo igro 1 (vsaj 1 krat da pade 6 v 4 metih)
+
+
+igra1=function (n){
+n=4
+vrednosti=1:6
+kocka1sample = sample(vrednosti, n, replace = TRUE)
+kocka1=sum(kocka1sample == 6)
+return(kocka1)
+}
+N=100000
+kocka1=sapply(1:N, igra1)
+Success1 <- (N-sum(kocka1== 0))/N
+
+#Simuliramo igro 2 (24 metih 2 kocke vsaj enkrat 12)
+
+igra2=function(n){
+n=24
+vrednosti=1:6
+kocka2sample = replicate(2, sample(vrednosti, n, replace = TRUE))
+kocka2 = sum(kocka2sample[,1] == 6 & kocka2sample[,2] == 6)
+return(kocka2)
+}   
+N=100000
+kocka2<-sapply(1:N, igra2)
+Success2 <- (N-sum(kocka2== 0))/N
+```
+Verjetnost, da vsaj enkrat pade 6 v štirih metih 'r Success1' je večja od verjetnosti, da v 24 metih dveh kock vsaj
+enkrat padeta dve šestici 'r Success2 '.
+
+```{r}
+igra=function(n){
+ vrednosti=1:6
+kocka1sample = sample(vrednosti, 4*n, replace = TRUE)
+kocka1DAN=sum(kocka1sample == 6)
+kocka2sample = replicate(2, sample(vrednosti, 24*n, replace = TRUE))
+kocka2DAN= sum(kocka2sample[,1] == 6 & kocka2sample[,2] == 6)
+x=kocka1DAN>kocka2DAN 
+dan=return(x)
+}
+v=sapply(1:50, igra)
+
+```
+
+```{r}
+
+```
+

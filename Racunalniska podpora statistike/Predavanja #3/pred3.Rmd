@@ -1,0 +1,207 @@
+---
+title: "Risanje z ggplot"
+author: "Nataša Kejžar"
+date: ""
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+params:
+  printcode: yes
+  printresults: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE,fig.height = 4)
+library(ggplot2)
+```
+
+# Sestavljanje grafa v ggplot
+
+* podatki (`data.frame`)
+* kateri podatki bodo prikazani in kako: `aes()` 
+    + spremenljivke na grafu `mapping=aes(x=Sex, y=Height, ...)`
+    + dodatni parametri: `color` (zunanje barve), `fill` (notranje barve), `position`, `shape` (oblika točk), `size`, `linetype`, ...
+    + `group`: če želimo podatke prikazati po skupinah na istem grafu
+    +  vrednosti, ki so odvisne od kakšne spremenljivke podatkov, so določene znotraj `aes()`, fiksne vrednosti izven `aes()`!
+Na primer `aes(x=Height, color=Sex)` je pravilno, `aes(x=Height, color="black")` ni pravilno, saj je barva konstanta, neodvisna od podatkov.
+    + `aes` določimo v osnovni funkciji `ggplot()`, lahko pa ga določamo tudi kasneje (s tem lahko na graf dorisujemo dodatne podatke)
+* geometrijski elementi: `geom_*` (določamo lahko tudi: barve, velikosti, položaje); vsak graf mora imeti vsaj en `geom`. Znotraj `geom` je lahko tudi `aes()`
+Primeri `geom_*`
+    + `geom_histogram()`: histogram
+    + `geom_bar()`: stolpični diagram
+    + `geom_boxplot()`: okvir z ročaji
+    + `geom_points()`: točke, razsevni diagram
+    + `geom_line()`: premica
+    + `geom_text()`: tekstovne oznake
+    + ...
+    + položaj (`position`): kako urediti geometrijske elemente, ki bi se nahajali na istem mestu, ponavadi določimo znotraj `geom`
+     -  `geom_point(position = "jitter")`: točke slučajno malo premakni
+     -  `geom_bar(position = "stack")`: stolpec naloži
+     -  `geom_bar(position = "dodge")`: stolpec položi poleg
+     -  `geom_bar(position = "fill")`: stolpec naloži in standardiziraj
+     -  `geom_point(position="identity")`: ohrani, kot je (tudi, če se elementi prekrivajo)
+* skale/lestvice (scales)
+     + `scale_x_continuous()`, `scale_y_continuous()`: zvezne osi
+     + `scale_*_discrete()`: diskretne osi
+     + `scale_*_log10()`: logaritemska transformacija
+     + `scale_color_*`
+     + `scale_size_*`
+     + `scale_shape`
+* `coord_*` koordinatni sistem 
+     + `coor_cartesian()`:  kartezični koordinatni sistem
+     + `coor_flip()`: obrne x in y osi v kartezičnem koordinatnem sistemu
+* faceting: risanje po podskupinah (delih osnovnega podatkovja)
+    + `facet_grid(.~.)`
+    + `facet_wrap(.~.)`
+* tema: oblika grafikona
+    + `theme_classic()`
+    + `theme_bw()`
+    + spreminjanje teme samo za del kode v R: `previous_theme <- theme_set(theme_bw())`
+    in na koncu `theme_set(previous_theme)`
+
+Dodatne uporabne možnosti
+
+* statistične transformacije `stat()` za prikaz povzetkov na grafu 
+* imenovanje `labs(x="oznaka na x osi", y="oznaka na y osi", title="naslov")`  
+* legende: znotraj dela `guides()` ali kot argument `legend.*` znotraj ostalih elementov - npr. `scale_*_*`, `theme` 
+* risanje čez prejšnjo sliko (overplotting) `color=alpha("black",0.2)`: uporaba transparentne barve
+* `ggsave` za shranjevanje grafa kot slike (.pdf, .png, .jpg itn.)
+
+# Vaje
+
+Poskušajmo grafe iz vaje osnovnega risanja narisati še v notaciji `ggplot`a.
+
+## Histogram, okvir z ročaji
+
+```{r}
+# get "podatki"
+source("data/podatki.R")
+p1 = ggplot(data=podatki,mapping=aes(x=BMI)) + geom_histogram(fill="lightblue")
+p1
+summary(p1)
+```
+
+Histogram BMI glede na terapijo
+
+```{r}
+p1 + facet_grid(.~terapijaN)
+# switch to density instead of frequency
+ggplot(data=podatki,mapping=aes(x=BMI,y=..density..)) + geom_histogram(fill="lightblue",bins=10)
+```
+
+V objemu `..` se zapisuje povzetek, ki se prek ggplota generira iz spremenljivk in ga želimo imeti izrisanega. To so lahko npr. tudi:
+* `..identity..`
+* `..count..`
+* `..sum..`
+* ...
+
+Spreminjanje oznak
+```{r}
+p2 = ggplot(data=podatki,mapping=aes(x=BMI,y=..density..)) + geom_histogram(fill="lightblue",bins=20)
+p2 + facet_grid(.~terapijaN) + labs(x="indeks telesne teže",y="gostota",title="Histogram")
+povp = mean(podatki$BMI,na.rm=TRUE)
+p2 + geom_vline(xintercept = povp,col="red") + annotate(geom="text",x=(povp+1),y=0.2,label=paste("mean =",round(povp,1)),color="red")
+# annotate adds additional - small portions of text into graph
+```
+
+#### Naloge
+
++ Dodajte zadnjemu grafu še mediano in dopišite vrednosti povprečja in mediane na graf (element `annotate`).
++ Spremenite graf tako, da bo porazdelitev BMI prikazana kot okvir z ročaji (namig: na kateri osi so vrednosti spremenljivke?)
++ Graf razdelite tako, da boste imeli porazdelitev razdeljeno glede na skupino. Uporabite:
+  - `facet_grid`
+  - definirajte dodatni `aes` element
++ Prikažite porazdelitev glede na skupino in na terapijo.
+
+Prekrivanje grafov
+```{r}
+ggplot(podatki, aes(x=BMI, fill=terapijaN, color=terapijaN))+geom_histogram()
+# density
+p3 = ggplot(podatki, aes(x=BMI, fill=terapijaN, color=terapijaN))+geom_density(alpha=0.2) + theme(legend.title=element_blank())
+p3
+```
+
+Isti graf na podmnožici podatkov (le skupina 2)
+```{r}
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+podatki2 = podatki[podatki$skupina==2,]
+p3 %+% podatki2 + labs(title="Subsample: group2") + scale_color_manual(values=cbPalette) + scale_fill_manual(values=cbPalette)
+```
+
+## Razsevni diagram
+
+```{r}
+pp1 = ggplot(podatki,aes(x=razlika/365.24,y=BMI,col=terapijaN)) + geom_point() + labs(x="difference (years)")
+pp1
+pp1 + theme_bw() + stat_smooth()
+pp1 + stat_smooth(span=2,se=FALSE) + scale_color_grey()# less overfit
+pp1 + stat_smooth(method="lm")+ scale_color_grey() + theme_minimal() # linear regression fit
+pp2 = ggplot(podatki,aes(x=razlika/365.24,y=BMI,col=terapijaN)) + geom_point() + stat_smooth(aes(group=1)) # one fit for both groups
+pp2
+```
+
+#### Naloge
+
+```{r}
+studenti = read.table("data/studenti2012.txt",sep="\t",header=TRUE)
+# popravimo napacne vnose in dolocimo faktorje
+studenti[studenti$masa == 700,"masa"] = 70
+studenti = studenti[-which(studenti$starost == 59),]
+studenti$mesec[studenti$mesec==0] = NA
+studenti$mesec = factor(studenti$mesec,levels=1:12,labels=c("jan","feb","mar","apr","maj","jun","jul","avg","sep","okt","nov","dec"))
+studenti$majica = factor(studenti$majica,levels=c("XS","S","M","L","XL"),ordered=TRUE)
+```
+
++ Narišite histograma za višino študentk in študentov posebej (enega pod drugim, da ju lahko primerjate).
++ Čez dva grafa iz prve točke dodajte še gostoto (pazite, da boste imeli y na enaki skali)!
++ Narišite porazdelitev višine študentk in študentov z okvirjem z ročaji.
++ Na prejšnji graf dodajte še točke, ki jih ločite z `geom_jitter`.
++ Narišite povezanost med višino in težo. Označite spol.
++ Dodajte krivuljo, ki se najbolj prilega podatkom (`loess`), nato pa še premico, ki se najbolje prilega podatkom.
+  - najprej naj bo to ena krivulja za VSE podatke
+  - nato dve krivulji po spolu
++ Narišite porazdelitev razpona rok glede na velikost majice. Na sliki označite tudi povprečje vsake skupine
+  - s histogrami
+  - z okvirji z ročaji
+
+## Stolpični diagram
+
+```{r,fig.width=10}
+library(gridExtra)
+pb = ggplot(podatki,aes(x=skupinaN))
+pb + geom_bar(aes(fill=skupinaN))
+pb1 = pb + geom_bar(aes(fill=terapijaN),position="dodge")
+pb2 = pb + geom_bar(aes(fill=terapijaN),position="stack")
+pb3 = pb + geom_bar(aes(fill=terapijaN),position="fill") + labs(y="share")
+grid.arrange(pb1, pb2, pb3, nrow=1)
+```
+
+## Povzetki spremenljivk po skupinah
+
+```{r}
+ggplot(podatki)+stat_summary(mapping = aes(x = terapijaN, y = BMI),  fun.ymin = min, fun.ymax = max, fun.y = median)+ facet_wrap(skupinaN~.)
+```
+
+
+#### Naloge
+
+  + Prikažite kategorialne podatke pri študentih na najboljši možni grafični način.
+  + Narišite stolpični diagram, spol/velikost majice, ki bo prikazoval deleže ljudi posameznega spola, ki nosijo določeno velikost majice.
+  + Prikažite povzetek višine glede na spol (tj. minimum, maksimum in mediano).
+  + Prikažite referenčna intervala razpona rok za vsak spol posebej. Na koncu jih ločite še glede na barvo las. Ali pričakujete, da se bosta referenčna intervala razlikovala? Zakaj?
+  + Poglejte tabelo naslednjih podatkov (izraženo v milijonih oseb):
+
+: Uporaba elektronskih naprav  
+
+| računalnik | TV | telefon | radio | Ipod | spletna kamera |
+|------|-----|---------|------|---------|------|
+| 4.3 | 6 | 8 | 3.5 | 1 | 1.4 |
+
+  * Podatke shranite v `data.frame`.
+  * Narišite stolpični diagram (bodite pozorni, kaj boste uporabili za `stat` (statistiko), saj je v tabeli že frekvenca)
+  * Obrnite osi (naj bodo stolpci vodoravni).

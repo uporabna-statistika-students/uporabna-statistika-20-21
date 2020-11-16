@@ -1,0 +1,115 @@
+---
+title: "Domača naloga 7"
+author: "Alen Kahteran"
+date: '2. 11. 2020'
+output:
+  pdf_document:
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: yes
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE)
+```
+
+## Določanje spremenljivk
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# size of repetitions
+reps_size <- 10^5
+# vpisna st.
+vpis_st <- "64200421"
+# degrees of freedom from vpisna st.
+dof <- as.integer(substr(vpis_st, nchar(vpis_st)-1, nchar(vpis_st)))
+```
+
+## Definicija funkcije moj_hi_kvadrat()
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+moj_hi_kvadrat <- function(reps, n) {
+    ### returns a vector of randomly distributed chi^2 values of size reps and DoF = n
+    ### Input:
+    ###     reps - size of chi^2 samples
+    ###     n    - degrees of freedom
+    
+    # creating empty vector of size reps for saving values
+    u <- rep(NA, reps)
+    
+    # loop over reps
+    for (i in 1:reps){
+        
+        # create n random normally distributed values with mean=0 and standard deviation=0
+        z <- rnorm(n, mean=0, sd=1)
+        # square and then sum 
+        u[i] <-sum(z^2)
+    }
+    
+    # return vector of values
+    return(u)
+}
+```
+
+## Definicija funkcije empiricni_CDF()
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+empiricni_CDF <- function(vzorec, n) {
+    ### not sure yet what it should return
+    ### Input:
+    ###     vzorec - vector of randomly distributed chi^2 values 
+    ###     n    - degrees of freedom
+    
+    # get total length of vzorec
+    total_len <- length(vzorec)
+    
+    # define percentiles
+    pcts <- seq(0, 0.95, 0.05)
+    
+    # create empty vector of length length(pcts)
+    vectr <- rep(NA, length(pcts))
+  
+    # get theoretical values of 5pct values with n degrees of freedom
+    qcs <- qchisq(pcts, n)
+    
+    # loop over theoretical values to get empirical CDF values
+    for (pct in qcs) {
+        vectr[which(qcs == pct)[[1]]] <- length(vzorec[vzorec <= pct])/total_len
+    }
+  
+    # return vector of empirical cdf values
+    return(vectr)
+}
+```
+
+## Primerjava moj_hi_kvadrat() in rchisq() z empiricni_CDF()
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# setting seed for reproducability
+set.seed(8)
+
+# getting randomly generated values from moj_hi_kvadrat() and rchisq()
+f_custom <- empiricni_CDF(moj_hi_kvadrat(reps_size, dof), dof)
+f_builtin <- empiricni_CDF(rchisq(reps_size, dof), dof)
+
+# defining percentiles
+pcts <- seq(0, 0.95, 0.05)
+
+# getting theoretical values of chi^2
+theo_values <- qchisq(pcts, dof)
+```
+\newpage
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# displaying table
+knitr::kable(data.frame(Percentil=pcts,
+                        Teoreticno=theo_values,
+                        moj.F=f_custom,
+                        F.rchisq=f_builtin))
+
+```

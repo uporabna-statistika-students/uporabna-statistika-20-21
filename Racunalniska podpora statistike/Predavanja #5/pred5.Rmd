@@ -1,0 +1,62 @@
+---
+title: "Projekt - nabiranje biserov"
+author: "Nataša Kejžar"
+date: ""
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+params:
+  printcode: yes
+  printresults: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE,fig.height=4)
+```
+
+Japonska nabiralka biserov *ama* se v sezoni potaplja vsak dan. Verjetnost, da na en potop dobi biser, je 20% (in zanemarimo možnost, da ama v enem potopu dobi več kot en biser). 
+
+1. Izračunajte verjetnost, da bo *ama* v največ 350 potopih našla 80 biserov.
+  
+    - Uporabite negativno binomsko porazdelitev v R $NegBinom(n,p)$, ki meri število *neuspehov* na $n$ *uspehov*. Za to porazdelitev velja naslednje. Parametra sta $n$ - število *uspehov* in $p$ verjetnost za *uspeh*. Računamo torej verjetnost, da se vmes (med $n$ *uspehi*) zgodi $x$ *neuspehov*
+    \[ P(X = x) = {{n+x-1}\choose{n-1}} p^{n} (1-p)^{x}.\]
+V zadnjem poskusu se bo *uspeh* nujno zgodil.
+
+    - Kaj bo v našem primeru *uspeh* in kaj *neuspeh*?
+    - Narišite teoretično verjetnostno porazdelitev **števila potopov** za *amo*, ki nabere 80 biserov.
+    - Označite grafično, kako velika bo verjetnost za $P(st.potopov \leq 350)$.
+    - Ugotovite, kakšna je pričakovana vrednost in kakšna varianca negativne binomske porazdelitve za 80 nabranih biserov (`help(dnbinom)`)? 
+    - Kaj nam ta pričakovana vrednost govori? Kakšna je pričakovano število potopov za 80 biserov?
+    - Na podlagi zgornje alineje - izračunajte z normalno aproksimacijo, kakšna je verjetnost za največ 350 potopov pri 80 nabranih biserih.
+    - Izračunajte še verjetnost na podlagi negativne binomske porazdelitve.
+
+2. Predstavite porazdelitev števila biserov v 350 potopih.
+  
+    - Z binomsko porazdelitvijo grafično predstavite porazdelitev števila biserov v 350 potopih. Omejite se na tisti del grafa, kjer so verjetnosti relativno velike.
+    - Označite grafično, kako verjetno je, da v 350 potopih ama nabere najmanj 80 biserov.
+    - Izračunajte teoretično verjetnost, da je v 350 potopih nabrano najmanj 80 biserov.
+    - Simulirajte porazdelitev števila biserov brez eksplicitne uporabe zank:
+        * število vzorcev naj bo 1000
+        * narišite histogram in pravilno označite osi
+        * čez histogram narišite teoretični frekvenčni poligon
+        * čez narišite še aproksimativno zvezno normalno porazdelitev
+
+
+3. Predstavite porazdelitev števila potopov za 80 biserov.
+
+    - Z geometrijsko porazdelitvijo lahko simuliramo število potopov do prvega bisera. Geometrijska porazdelitev ima en parameter, in sicer je to verjetnost za uspešen dogodek:
+\[P(X=x) = p\cdot(1-p)^x.\]    
+        * S pomočjo R naredite eno opazovanje za število potopov do (vključno) 1.bisera.
+        * Simulirajte število potopov za 80 biserov.
+    - Simulacijo iz zgornje alineje ponovite 1000 x:
+        * narišite histogram števila potopov in pravilno označite osi
+        * čez histogram narišite teoretični frekvenčni poligon (uporabite negativno binomsko porazdelitev)
+        * iz simulacije izračunajte opazovano verjetnost za največ 350 potopov.
+        
+
+

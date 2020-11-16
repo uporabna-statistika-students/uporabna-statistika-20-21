@@ -1,0 +1,98 @@
+---
+title: "Statistični testi, poročilo analize podatkov"
+author: "Nataša Kejžar"
+date: ""
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+params:
+  printcode: yes
+  printresults: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE,fig.height=4)
+```
+
+Podatki, ki jih bomo uporabljali pri tej vaji, so podatki `studenti2012.txt`, ki smo jih srečali pri `pred2.Rmd`.
+
+```{r}
+studenti = read.table("data/studenti2012.txt",sep="\t",header=TRUE)
+# popravimo napacne vnose in dolocimo faktorje
+studenti[studenti$masa == 700,"masa"] = 70
+studenti = studenti[-which(studenti$starost == 59),]
+studenti$mesec[studenti$mesec==0] = NA
+studenti$mesec = factor(studenti$mesec,levels=1:12,labels=c("jan","feb","mar","apr","maj","jun","jul","avg","sep","okt","nov","dec"))
+studenti$majica = factor(studenti$majica,levels=c("XS","S","M","L","XL"),ordered=TRUE)
+```
+
+# Sintaksa pri statističnih testih
+
+V R obstaja ogromno funkcij za izračun statističnih testov. Osnovni:
+
+  - `t.test`
+  - `wilcoxon.test`
+  - `chisq.test`
+  - `fisher.test`
+  - `binom.test`
+  - `aov` (ANOVA)
+  - `kruskal.test`
+  - `lm` (linearna regresija)
+  - `glm` (posplošena linearna regresija - logistična regresija)
+
+#### Naloge
+
+* Preverite delovno hipotezo, da so v povprečju fantje višji od deklet. Zapišite ukaz 
+    - s pomočjo formule
+    - brez formule
+    - naredite enostranski test, saj veste v katero smer pričakujete odmik, pri stopnji značilnosti $\alpha = 0.01$
+* Je delež svetlolasih deklet večji od deleža svetlolasih fantov? (se dekleta raje barvajo na svetlo barvo)
+    - Izpišite opazovane in pričakovane frekvence.
+    - Uporabite test, ki ima izpolnjene predpostavke.
+        + Za katero mero je izpisan interval zaupanja?
+        + Izračunajte to mero še sami (brez intervala zaupanja).
+* Odgovorite na raziskovalno vprašanje: *Ali velja, da se največ ljudi rodi januarja?* Uporabite primeren statistični test.
+ (naj velja, da so predpostavke izpolnjene)
+* Preverite, ali je mo"zno, da je na fakulteti, od koder je vzorec, dvakrat ve"c deklet kot fantov. Interpretirajte rezultat.
+* Raziskovalno vprašanje: *Ali se teža študentov glede na njihovo starost kaj razlikuje?* pretvorite v dva smiselna statistična testa in odgovorite na vprašanje.
+    - Pred izvedbo statističnega testa v tabeli izpišite še povprečno težo glede na starost.
+    - Izvedite testa.
+    - Ker vemo, da je teža povezana z višino posameznika, dodajte v model kot prediktor (neodvisno spremenljivko) tudi višino študentov in ponovno vsebinsko interpretirajte rezultat.
+* Preverite, ali sta višini matere in očeta povezani:
+    - Prikažite podatke, izberite in izračunajte pravi statistični test.
+    - Preverite, ali so predpostavke testa izpolnjene.
+    - Prikažite končni model na sliki.
+    - Interpretirajte rezultat.   
+    
+# Regresija k povprečju
+
+![Sir Francis Galton (1822 - 1911)](rmd/slike/Francis_Galton_1850s.jpg)
+
+Galton je ugotavljal korelacijo med velikostjo staršev in potomcev. Uvedel je pojem regresija, ki izvira iz njegove ugotovitve, da sta višina starša in potomca v posebnem razmerju, ki zagotavlja ’regresijo’ k povprečju. Sam je to imenoval tudi *reversion to mediocrity*.
+
+Velja, da je višina delno gensko pogojena, torej bodo potomci višjih oseb tudi sami višji. Regresija k povprečju pa v tem primeru pomeni, da bomo vseeno vedno opazili, da so potomci zelo visokih staršev v povprečju nižji od njih, in podobno potomci zelo nizkih staršev v povprečju višji.
+
+Njegova biološka razlaga te ugotovitve, je sicer napačna, matematični konstrukti linearne regresije pa so temelj nadaljnjemu razvoju regresijskih modelov.
+
+#### Naloga -- poročilo analize podatkov
+
+Naj bo naša raziskovalna naloga poskusiti dokazati, da gre pri višini staršev in potomcev res za neke vrste regresijo k povprečju. Za ta namen uporabimo podatke `studenti`. Spremenljivke, ki jih imamo na voljo, naj bodo podmnožica vseh spremenljivk iz podatkovja, in sicer:
+
+```{r}
+galton = studenti[c("spol","visina","mati","oce")]
+```
+
+Naredite poročilo analize podatkov (datoteko `html` ali `pdf`) za to raziskovalno nalogo. Upoštevajte pravila za izdelavo poročila. Vsako poročilo naj bi vsebovalo:
+
+1. Kratek opis ozadja podatkov in raziskovalno vprašanje.
+2. Poročilo o čiščenju podatkov in opis ostalih težav, na katere ste pri tem naleteli.
+3. Predstavitev vzorca s pomočjo opisnih statistik (v tabeli in grafično).
+3. Izbira primernega statističnega testa za odgovor na raziskovalno vprašanje. Predstavitev rezultatov in interpretacija končnih rezultatov, ki je primerna tudi za nestatistike.
+
+Pri poročilu je potrebno vedno premisliti, komu je namenjeno in kako tehnično je lahko poročilo. Vedno se izogibajte direktnim izpisom iz programskega paketa, ki ga uporabljate, poročajte le tiste rezultate, ki so za primer smiselni!
+

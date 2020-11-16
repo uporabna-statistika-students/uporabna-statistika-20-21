@@ -1,0 +1,162 @@
+---
+title: "Porazdelitve, generiranje vzorcev"
+author: "Nataša Kejžar"
+date: ""
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 2
+params:
+  printcode: yes
+  printresults: hide
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE,fig.height=4)
+```
+
+# Porazdelitve
+
+## Kategorialne porazdelitve 
+
+Funkcija `sample`. Glede na spodnjo tabelo bi želeli simulirati vzorec naslednjih 30 kupcev sladoledov.
+
+Flavor | 	Number of Customers
+--- | --- 
+Chocolate |	16
+Strawberry |	5
+Vanilla |	9 
+
+```{r}
+set.seed(2019) # set random seed to enable exact repetition
+vzorec1 = sample(x = c("Chocolate","Strawberry","Vanilla"),size =30,replace=TRUE,prob=c(16,5,9))
+vzorec1
+table(vzorec1)
+# replace = TRUE for permutations
+vzorec2 = sample(x = 1:20,size =20,replace=TRUE)
+vzorec2
+# or for sampling without replacement
+vzorec3 = sample(x = 1:20,size =10,replace=TRUE)
+vzorec3
+```
+
+#### Naloge
+  + S pomočjo `sample` pridobite rezultate 1000 metov kocke. 
+    - Prikažite vzorec grafično.
+    - Kako je porazdeljena spremenljivka, katere 1000 realizacij ste naredili?
+    - Izračunajte delež padlih šestic.
+    - Zanima nas samo, ali je v enem metu padla šestica. Spremenite vaš vzorec, da boste dobili ta podatek. Novi vzorec spet narišite. Kako je porazdeljena spremenljivka?
+  + S pomočjo `sample` pridobite 1000 opazovanj, kjer nas zanima število padlih šestic v desetih metih kocke. 
+    - Prikažite vzorec grafično.
+    - Kako je porazdeljena spremenljivka, katere realizacija je *število šestic v 10 metih*?
+
+## `Distributions`
+
+Poglejte si pomoč za `Distributions`. V osnovnem R je veliko funkcij za generiranje/pridobivanje vrednosti, povezanih s porazdelitvami. Pomembno:
+
+**The functions for the density/mass function, cumulative distribution function, quantile function and random variate generation are named in the form dxxx, pxxx, qxxx and rxxx respectively.**
+
+```{r}
+set.seed(2019) # set random seed to enable exact repetition
+povp=5
+stdo = 2
+# random sample
+vzorecN = rnorm(100,mean=povp,sd=stdo)
+hist(vzorecN,xlab="vrednosti spremenljivke",main=paste0("Vzorec iz N(",povp,",",stdo,")"))
+curve(dnorm(x,mean=povp,sd=stdo),add=TRUE)
+# density plot
+hist(vzorecN,xlab="vrednosti spremenljivke",main=paste0("Vzorec iz N(",povp,",",stdo,")"),freq=FALSE)
+curve(dnorm(x,mean=povp,sd=stdo),add=TRUE)
+# with ggplot
+library(ggplot2)
+df = data.frame(vzorec=vzorecN)
+p1 = ggplot(df,aes(x=vzorec)) + geom_histogram(aes(y=..density..),bins = 10) + stat_function(fun=dnorm,args=list(mean=povp,sd=stdo))
+p1
+# quantile values
+limit025 = qnorm(0.025,mean=povp,sd=stdo)
+limit975 = qnorm(0.975,mean=povp,sd=stdo)
+abline(v = limit025,col="red")
+abline(v = limit975,col="blue")
+# probabilities
+probabIn = pnorm(limit975,mean=povp,sd=stdo) - pnorm(limit025,mean=povp,sd=stdo)
+text(5,0.1,labels = probabIn,col="green")
+```
+
+ 
+# Funkcije `apply`, `sapply`, `replicate`
+
+R je programski jezik, kjer je računanje z vektorji zelo zaželjeno. Zato obstajajo funkcije, ki omogočijo, da neko (netrivialno) funkcijo izvedemo na celem vektorju naenkrat (brez pisanja zank).
+
+```{r}
+?apply
+n = 10
+# apply
+matrika = matrix(runif(n),nrow=10)
+matrika = cbind(matrika,runif(n,min=-1,max=1),rnorm(n))
+apply(matrika,2,mean) # calculate mean column-wise
+apply(matrika,2,sd)
+
+# replicate (instead of for loop)
+perms = replicate(10,sample(1:20,size=20,replace=FALSE)) # get 10 permutations
+dim(perms)
+
+# sapply
+data(iris)
+irisL = list(dolzina = iris$Petal.Length,sirina = iris$Petal.Width)
+sapply(irisL,FUN=quantile)
+tabela = sapply(irisL,FUN=quantile)
+```
+
+# Tabele v .Rmd
+
+Uporaba funkcije `kable` iz knjižnice `knitr`. Za lepše tabele lahko uporabljate tudi knjižnico `kableExtra` (npr. [spletna stran](https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html))
+
+```{r, results=TRUE}
+library(knitr)
+kable(tabela)
+kable(tabela,caption="Naslov tabele.")
+
+tabela2 = apply(iris[1:4],2,quantile)
+colnames(tabela2) = rep(c("dolžina","širina"),2)
+library(kableExtra)
+kable(tabela2) %>%
+  kable_styling("striped",full_width = F) %>%
+  add_header_above(c("","venčni listi" = 2, "čašni listi" = 2))
+```
+
+#### Naloge
+  + Pridobite 1000 opazovanj števila padlih petic v desetih metih kocke. Uporabite eno izmed porazdelitvenih funkcij.
+    - Predstavite vzorec z grafičnim prikazom.
+    - Izračunajte teoretične verjetnosti za vsako padlo število petic v 10 metih. S pomočjo verjetnosti izračunajte še pričakovano število opazovanj z določenim številom petic.
+    - Prikažite teoretične in opazovane deleže v tabeli.
+    - Čez grafični prikaz iz prejšnje točke dodajte frekvenčni poligon teoretične porazdelitve (gl. prejšnjo točko - dodajte pričakovano število opazovanj za vsako dobljeno število petic).
+  + Generirajte velik vzorec n = 10000 iz standardne normalne porazdelitve.
+    - Predstavite grafično kvadrirane vrednosti.
+    - Po kateri porazdelitvi je porazdeljena kvadrirana standardno normalna spremenljivka?
+    - Grafično se prepričajte, da je to res (narišite krivuljo čez grafični prikaz).
+    - Grafično pokažite, da velja, da je vsota kvadriranih $k$ neodvisnih standardno normalno porazdeljenih spremenljivk porazdeljena po porazdelitvi $\chi^2_k$.
+        + Rezultate izračunajte s pomočjo zanke.
+        + Za izračune uporabite `replicate` in `apply`.
+    - Vsota dveh neodvisnih porazdelitev $\chi^2$ je spet porazdeljena po $\chi^2$ porazdelitvi s stopinjami prostosti, ki so seštevek stopinj prostosti osnovnih dveh porazdelitev $\chi^2$. Preverite s tem, da napišete funkcijo in lahko poizkusite za različne stopinje prostosti. 
+    - Kaj pa razlika? Je razlika spet porazdeljena po porazdelitvi $\chi^2$? Zakaj da/ne?
+    
+  + Simulirajte 1000 vzorčnih povprečij velikosti n = 30 iz N(10,2) (temperatura vode iz pipe). 
+    - Narišite dobljen vzorec vzorčnih povprečij.
+        + Rezultate izračunajte s pomočjo zanke.
+        + Za izračune uporabite `replicate` in `apply`.
+    - Čezenj narišite porazdelitev, ki bi po centralnem limitnem izreku morala teoretično veljati za to spremenljivko.
+  + S simulacijami iz normalne porazdelitve pokažite, da je izračun variance vzorca na način
+  \[ \hat{\sigma }^2 = \frac{1}{n} \sum_{i=1}^n (x_i - \bar{x})^2\] 
+  slabši približek prave (teoretične) variance kot vzorčna varianca  $s^2$, ki jo v R dobimo s funkcijo `var`.
+    - naredite funkcijo za zgoraj izraženo varianco
+    - simulirajte velik vzorec obeh varianc
+    - narišite vzorca varianc (uporabite `plot(density(x))`)
+    - izračunajte povprečji, mediani varianc
+    - izračunajte delež varianc pod teoretično vrednostjo
+    - rezutate predstavite s tabelo (funkcija `kable`, `format = "markdown"`)
+    
+

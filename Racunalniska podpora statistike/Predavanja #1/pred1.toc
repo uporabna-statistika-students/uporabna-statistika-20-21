@@ -1,0 +1,20 @@
+\contentsline {section}{Programska orodja za statistiko}{1}{section*.2}%
+\contentsline {subsection}{R}{1}{section*.3}%
+\contentsline {subsection}{RStudio, Rmarkdown}{1}{section*.4}%
+\contentsline {paragraph}{Naloge}{2}{section*.5}%
+\contentsline {section}{Osnovni gradniki v R}{2}{section*.6}%
+\contentsline {subsection}{Vrste stavkov}{2}{section*.7}%
+\contentsline {subsubsection}{Izrazi}{2}{section*.8}%
+\contentsline {subsubsection}{Prirejanja}{2}{section*.9}%
+\contentsline {subsection}{(Osnovne) vrste objektov}{2}{section*.10}%
+\contentsline {subsubsection}{Skalar}{2}{section*.11}%
+\contentsline {paragraph}{Naloge}{2}{section*.12}%
+\contentsline {subsubsection}{Vektor}{3}{section*.13}%
+\contentsline {paragraph}{Naloge}{3}{section*.14}%
+\contentsline {subsubsection}{Matrika}{5}{section*.15}%
+\contentsline {paragraph}{Naloge}{5}{section*.16}%
+\contentsline {paragraph}{Naloge}{7}{section*.17}%
+\contentsline {subsubsection}{Seznam}{9}{section*.18}%
+\contentsline {subsubsection}{Podatkovni okvir (osnovna statistična tabela)}{9}{section*.19}%
+\contentsline {paragraph}{Naloge}{10}{section*.20}%
+\contentsline {subsubsection}{Array (večdimenzionalna tabela)}{13}{section*.21}%

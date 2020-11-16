@@ -1,0 +1,5 @@
+https://bookdown.org/yihui/rmarkdown/
+
+https://r4ds.had.co.nz/
+
+http://www.cookbook-r.com/

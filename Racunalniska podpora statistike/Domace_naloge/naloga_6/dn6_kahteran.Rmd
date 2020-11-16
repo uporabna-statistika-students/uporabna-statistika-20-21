@@ -1,0 +1,106 @@
+---
+title: "Domača naloga 6"
+author: "Alen Kahteran"
+date: '3. 11. 2020'
+output:
+  pdf_document:
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: yes
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE)
+```
+
+## Zagon potrebnih knjižnic ter pridobivanje podatkov
+
+```{r, message=FALSE}
+library(tidyverse)
+data("iris")
+iris = cbind(row_num=rownames(iris), iris)
+df=tibble(iris)
+```
+
+## Uporaba sample_n() funkcije iz dplyr paketa. 
+
+Princip je podoben kot za funkcijo sample(), le da dobimo rezultat v obliki `tbl_df`. `sample_n(df, 6, replace=TRUE)` izbere 6 zapisov izmed vseh možnih z enako verjetnostjo. S funkcijo `sample()` bi to lahko naredili na tak način da najprej naredimo to na vektorju indeksov in nato te indekse izberemo iz prvotnega `data.frame`.
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# set the seed for reproducability
+set.seed(8)
+
+# an example of selecting 6 sample with function sample(), which is equivalent to below
+# df_6 <- df[sample(x=1:nrow(df), size=6, replace=FALSE), ] %>%
+#     # create unique identifier which is also a title
+#     mutate(facet_name=paste0(Species, ", (", row_num, ")")) %>%
+#     # remove unnecessary columns
+#     select(-Sepal.Length, -Sepal.Width, -Petal.Width, -Species, -row_num)
+
+# select 6 random iris flowers
+df_6 <- sample_n(df, 6, replace=FALSE) %>%
+    # create unique identifier which is also a title
+    mutate(facet_name=paste0(Species, ", (", row_num, ")")) %>%
+    # remove unnecessary columns
+    select(-Sepal.Length, -Sepal.Width, -Petal.Width, -Species, -row_num)
+```
+
+## Definicija funkcije za generiranje `x` in `y` vrednosti za pravilen izris
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# generate x and y valus based on species
+convert_to_xy <- function(row) {
+    
+    # create correct sequence of phi values.
+    phi <- seq(0, 
+               ifelse(strsplit(row[2][1], " ")$facet_name[1] == "versicolor,", 2 * pi, pi), 
+               0.001)
+    
+    if (strsplit(row[2][1], " ")$facet_name[1] == "versicolor,") {
+        x <- as.numeric(row[1]) * cos(phi) * sin(3 * phi) ^2
+        y <- as.numeric(row[1]) * sin(phi) * sin(3 * phi) ^2
+    } else {
+        x <- as.numeric(row[1]) * cos(phi) * sin(3 * phi)
+        y <- as.numeric(row[1]) * sin(phi) * sin(3 * phi)
+    }
+    
+    # output a list of lists
+    return(list(facet_name=rep(as.character(row[2]), length(phi)),
+                x=x, 
+                y=y))
+}
+
+```
+
+## Preoblikovanje seznama seznamov ki ga vrne apply funkcija
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# correctly reshape the data to long format
+df_6_gg <- transpose(apply(df_6, 1, convert_to_xy)) %>%
+    as_tibble() %>%
+    unnest(cols=c(facet_name, x, y))
+```
+
+## Risanje grafov
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+fw <- ggplot(df_6_gg, aes(x=x, y=y)) +
+    geom_polygon(fill="#9400d3") +
+    # setting ylim value so (0,0) is in the middle, x is taken care of by facet_wrap
+    ylim(c(min(df_6_gg$y), abs(min(df_6_gg$y))))
+
+fw + facet_wrap(vars(facet_name),
+                nrow=2,
+                scales="fixed") +
+    theme_minimal() +
+    theme(panel.grid = element_blank(), # remove the grid
+          panel.background = element_rect(colour = "black"), # add black panel outline
+          axis.ticks = element_line()) # add axis ticks
+```
+

@@ -1,0 +1,141 @@
+Timestamp	Starost	Spol	Visina	Teza	Cevelj	BarvaOci	Kajenje	Kajenje_koliko	Igrice	Televizija	Internet	Knjige	Sport	Domace_zivali	Studij	Fakulteta
+10.07.2010 10:01	20	zenski	170	62	41	rjava	ne	0	ne	5	9	15	10	Macka, Ptic, Da, drugo	Veterina	VF
+10.07.2010 11:02	19	moski	188	75	46	plava	ne	0	da	10	25	1	7	Pes	Veterina	VF
+10.07.2010 13:18	20	zenski	156	54	38	zelena	ne	0	ne	0	10	10	1	Macka, Pes, Da, drugo	Veterina	VF
+10.07.2010 14:53	20	zenski	165	77	39	rjava	ne	0	ne	15	10	20	10	Macka, Ptic, Godalec, Da, drugo	Veterina	VF
+10.07.2010 15:27	18	zenski	170	52	38	plava	ne	0	ne	7	16	10	2	Macka, Pes	Veterina	VF
+10.08.2010 17:31	18	zenski	167	53	38	crna	ne	0	da	4	10	15	9	Pes	Veterina	VF
+10.08.2010 18:18	19	moski	180	69	43	plava	ne	0	ne	2,5	11	1,5	10	Macka, Pes, Da, drugo	Veterina	VF
+10.09.2010 13:00	19	zenski	173	63	40	zelena	da	1	ne	2	5	10	2	Macka, Pes, Riba, Ptic, Da, drugo	Veterina	VF
+10.10.2010 10:38	19	moski	182	80	45	rjava	ne	0	ne	5	7	4	3	Godalec	Veterina	VF
+10.10.2010 14:13	19	zenski	165	92	44	crna	ne	0	ne	0	1	24,5	0	Da, drugo	Veterina	VF
+10.10.2010 17:30	20	zenski	167	59	39	rjava	ne	0	ne	2	5	3	6	Macka, Riba, Ptic, Godalec	Veterina	VF
+10.10.2010 17:54	18	zenski	156	45	36	rjava	ne	0	ne	1	3	3	4	Macka, Pes, Riba, Godalec, Da, drugo	Veterina	VF
+10.10.2010 21:32	19	moski	188	75	45	plava	ne	0	da	8	10	10	12	Pes	Veterina	VF
+10.11.2010 18:58	19	zenski	173	64	40	plava	ne	0	ne	0	5	10	3	Macka, Pes, Da, drugo	Veterina	VF
+10.11.2010 21:01	19	moski	180	85	43	drugo	ne	0	da	1	5	25	7	Macka, Pes	Veterina	VF
+10.11.2010 21:14	26	zenski	165	58	38	zelena	da	5	ne	0	14	10	20	Macka, Pes	Veterina	VF
+10/13/2010 7:36:22	19	moski	180	64	42	rjava	ne	0	ne	4	4	5	1	Macka, Pes, Da, drugo	Veterina	VF
+10/13/2010 18:24:04	19	zenski	169	50	38	rjava	ne	0	ne	5	15	30	5	Pes	Veterina	VF
+10/13/2010 19:23:20	20	moski	182	77	43	zelena	ne	0	ne	4	12	1	12	Macka, Da, drugo	Veterina	VF
+10/13/2010 23:21:20	19	moski	175	65	40	rjava	ne	0	da	4	4	25	6	Macka, Ptic	Veterina	VF
+10/14/2010 8:36:38	19	moski	193	93	46	plava	ne	0	da	2	20	10	9	Pes	Veterina	VF
+10/15/2010 12:26:41	19	zenski	167	51	38	zelena	ne	0	ne	4	9	10	6	Ne	Veterina	VF
+10/19/2010 20:13:01	19	zenski	171	56	40	plava	ne	0	ne	2	3	10	2	Macka, Pes	Veterina	VF
+10/20/2010 16:13:33	19	zenski	162	53	37	rjava	ne	0	ne	1	8	20	4	Pes	Veterina	VF
+10/20/2010 19:05:30	18	zenski	177	68	40	rjava	ne	0	ne	10	8	12	7	Pes, Ptic	Veterina	VF
+10/20/2010 21:08:39	19	moski	181	70	42	rjava	ne	0	ne	4	10	5	15	Macka, Pes, Da, drugo	Veterina	VF
+10/20/2010 22:19:03	19	moski	174	72	41	rjava	ne	0	ne	2,5	11	4,5	10	Da, drugo	Veterina	VF
+10/21/2010 10:30:57	18	moski	179	78	43	zelena	ne	0	da	2	9	0	4	Riba, Ptic	Veterina	VF
+10/21/2010 12:00:03	19	zenski	170	65	38	plava	ne	0	ne	2	10	5	5	Macka, Pes	Veterina	VF
+10/21/2010 12:45:59	18	moski	181	76	44	rjava	ne	0	da	5	20	5	5	Macka	Veterina	VF
+10/21/2010 12:58:13	19	zenski	168,5	66	39	rjava	ne	0	ne	10	15	12	0	Godalec	Veterina	VF
+10/21/2010 15:07:43	19	zenski	173	53	38	rjava	ne	0	ne	7	9	5	3	Macka, Pes	Veterina	VF
+10/21/2010 17:15:41	19	zenski	160	50	37	rjava	ne	0	ne	2	10	4	2	Macka, Pes	Veterina	VF
+10/22/2010 6:21:40	21	zenski	165	67	39	rjava	ne	0	ne	10	8	2	7	Macka, Pes, Riba, Da, drugo	Veterina	VF
+10/23/2010 12:17:56	19	moski	185	74	45	zelena	ne	0	ne	5	5	4	10	Macka, Pes	Veterina	VF
+10/23/2010 16:43:52	18	moski	170	59	41	plava	ne	0	ne	13	12	0	3	Macka	Veterina	VF
+10/25/2010 20:28:36	19	zenski	172	54	39	plava	da	10	ne	15	15	5	4	Macka, Pes	Veterina	VF
+10/27/2010 20:10:48	19	moski	169	54	38	zelena	ne	0	ne	3	14	5	2	Macka	Veterina	VF
+10/28/2010 9:43:06	19	zenski	164	54	39	zelena	ne	0	ne	1	14	5	2	Pes	Veterina	VF
+10/28/2010 19:14:21	19	moski	169	61	42	rjava	ne	0	da	2	21	1	4	Macka, Pes, Ptic, Da, drugo	Veterina	VF
+10/28/2010 21:05:39	18	zenski	164	58	37	rjava	ne	0	ne	8	7	5	3	Macka, Pes	Veterina	VF
+10/30/2010 11:20:40	19	zenski	168	68	39	rjava	ne	0	ne	5	20	5	10	Pes	Veterina	VF
+10/30/2010 18:10:34	19	moski	169	68	42	rjava	ne	0	ne	1	20		3	Ne	Veterina	VF
+11.01.2010 16:07	19	zenski	170	53	38	rjava	ne	0	ne	2	16	5	4	Macka, Pes	Veterina	VF
+2/24/2011 14:05:03	20	moski	186	76	42	plava	ne	0	ne	20	5	10	7	Macka	Splosna medicina	MF
+2/24/2011 14:56:19	22	zenski	163	63	38	zelena	ne	0	da	3	5	10	12	Macka, Godalec, Da, drugo	Splosna medicina	MF
+2/24/2011 15:06:33	20	zenski	171	75	40	rjava	ne	0	da	2	10	9	3	Pes	Dentalna medicina	MF
+2/24/2011 15:11:00	20	zenski	168	60	39	rjava	ne	0	ne	5	10	3	3	Pes	Splosna medicina	MF
+2/24/2011 15:52:22	20	moski	193	78	46	rjava	ne	0	da	10	14	25	10	Ne	Splosna medicina	MF
+2/24/2011 16:29:44	20	zenski	158	47	36	plava	ne	0	ne	10	14	5	2	Pes	Splosna medicina	MF
+2/24/2011 16:32:50	20	zenski	170	53,5	40	plava	ne	0	ne	0	7	30	2	Godalec, Da, drugo	Splosna medicina	MF
+2/24/2011 17:02:47	20	zenski	169	56	38	rjava	ne	0	ne	10	3	5	2	Macka, Riba	Dentalna medicina	MF
+2/24/2011 17:13:11	20	zenski	180	75	42	zelena	ne	0	ne	3	15	5	3	Ne	Splosna medicina	MF
+2/24/2011 17:13:20	20	zenski	180	75	42	zelena	ne	0	ne	3	15	5	3	Ne	Splosna medicina	MF
+2/24/2011 17:18:50	20	moski	179	67	43	rjava	ne	0	ne	4	7	10	5	Pes	Dentalna medicina	MF
+2/24/2011 17:24:44	20	zenski	178	56	40	zelena	ne	0	ne	3	20	15	4	Macka	Splosna medicina	MF
+2/24/2011 17:25:10	20	moski	185	80	43	plava	ne	0	da	24	24	10	10	Macka, Pes	Splosna medicina	MF
+2/24/2011 17:45:21	20	zenski	164	60	38	plava	ne	0	da	17	20	20	3	Macka	Splosna medicina	MF
+2/24/2011 17:49:17	20	zenski	161	63	39	rjava	ne	0	ne	3	5	5	2	Riba	Dentalna medicina	MF
+2/24/2011 18:02:48	20	zenski	173	59	39	zelena	ne	0	ne	10	5	15	3	Pes	Splosna medicina	MF
+2/24/2011 18:12:03	20	zenski	168	63	39	zelena	ne	0	ne	5	35	30	15	Macka, Pes, Ptic, Godalec, Da, drugo	Dentalna medicina	MF
+2/24/2011 18:39:11	20	zenski	175	56	39	drugo	da	4	da	10	56	10	2	Pes	Dentalna medicina	MF
+2/24/2011 18:59:01	20	zenski	170	53	38	plava	ne	0	ne	10	20	1	3	Ne	Dentalna medicina	MF
+2/24/2011 19:00:00	20	zenski	171	53	39	plava	ne	0	ne	12	7	5	4	Pes	Splosna medicina	MF
+2/24/2011 19:29:13	20	zenski	178	68	40	rjava	ne	0	ne	1	14	20	5	Ne	Splosna medicina	MF
+2/24/2011 19:39:54	20	zenski	170	56	39	rjava	ne	0	ne	5	14	10	10	Pes	Splosna medicina	MF
+2/24/2011 21:44:09	20	zenski	170	55	39	plava	ne	0	ne	7	5	5	5	Pes	Splosna medicina	MF
+2/24/2011 23:27:51	20	zenski	167	63	37	drugo	ne	0	ne	0	15	5	3	Ne	Dentalna medicina	MF
+2/25/2011 0:19:47	20	moski	176	88	43	zelena	ne	0	ne	4	15	10	3	Pes	Splosna medicina	MF
+2/25/2011 10:01:54	20	zenski	178	65	40	rjava	ne	0	ne	4	14	25	7	Godalec	Splosna medicina	MF
+2/25/2011 10:31:14	20	zenski	175	65	40	zelena	ne	0	ne	7	20	10	5	Ne	Splosna medicina	MF
+2/25/2011 10:44:07	20	zenski	165	80	40	rjava	ne	0	ne	8	30	20	4	Da, drugo	Splosna medicina	MF
+2/25/2011 11:44:03	20	moski	187	78	46	drugo	ne	0	da	12	30	2	4	Macka, Pes, Da, drugo	Splosna medicina	MF
+2/25/2011 14:13:19	20	zenski	170	46	38	zelena	ne	0	ne	15	7	2	4	Ne	Splosna medicina	MF
+2/25/2011 14:16:12	20	zenski	173	54	39	rjava	ne	0	ne	1	10	5	4	Ne	Splosna medicina	MF
+2/25/2011 14:17:56	20	zenski	168	60	40	zelena	ne	0	ne	12	10	5	5	Macka	Dentalna medicina	MF
+2/25/2011 14:25:39	20	moski	185	85	43	rjava	ne	0	ne	6	17	2	8	Pes	Dentalna medicina	MF
+2/25/2011 15:00:08	20	zenski	176	55	38	rjava	ne	0	ne	7	12	0	5	Da, drugo	Dentalna medicina	MF
+2/25/2011 16:02:36	20	zenski	168	64	37	rjava	ne	0	ne	7	30	5	4	Pes, Riba	Splosna medicina	MF
+2/25/2011 16:06:31	20	zenski	163	58	39	plava	ne	0	ne	10	12	8	10	Ne	Dentalna medicina	MF
+2/25/2011 16:06:41	20	zenski	163	58	39	plava	ne	0	ne	10	12	8	10	Ne	Dentalna medicina	MF
+2/25/2011 18:04:42	20	moski	178	65	42	rjava	ne	0	da	0	70	20	10	Macka	Splosna medicina	MF
+2/25/2011 18:15:31	20	zenski	160	55	37	rjava	ne	0	ne	20	5	5	10	Ne	Splosna medicina	MF
+2/25/2011 18:21:55	20	zenski	172	65	39	plava	ne	0	da	30	30	20	3	Pes	Splosna medicina	MF
+2/25/2011 19:34:38	21	zenski	166	70	39	rjava	ne	0	ne	8	25	50	1	Ne	Splosna medicina	MF
+2/25/2011 20:18:21	20	zenski	163	56	41	rjava	ne	0	ne	0	2	10	10	Macka, Pes	Splosna medicina	MF
+2/25/2011 20:19:13	20	zenski	163	56	41	rjava	ne	0	ne	0	2	10	10	Macka, Pes	Splosna medicina	MF
+2/25/2011 22:41:56	20	zenski	163,5	68	40	plava	ne	0	ne	2	8	15	3	Ne	Dentalna medicina	MF
+2/25/2011 22:52:09	22	zenski	169	58	38	drugo	ne	0	da	0	35	5	3	Ne	Splosna medicina	MF
+2/26/2011 11:31:18	20	zenski	170	51	39	plava	ne	0	ne	2,5	20	30	1	Riba	Dentalna medicina	MF
+2/26/2011 12:42:05	21	zenski	167	60	37	zelena	ne	0	ne	5	5	20	2	Ne	Splosna medicina	MF
+2/26/2011 13:25:44	20	zenski	178	56	39	zelena	ne	0	ne	2	7	12	3	Pes	Splosna medicina	MF
+2/26/2011 14:10:34	20	zenski	165	31	38	rjava	ne	0	da	10	10	5	3	Pes	Splosna medicina	MF
+2/26/2011 19:34:05	21	zenski	174	65	40	zelena	ne	0	ne	10	10	30	7	Ne	Dentalna medicina	MF
+2/27/2011 0:26:37	20	moski	185	85	44	plava	ne	0	da	10	30	0	8	Ne	Splosna medicina	MF
+2/27/2011 14:18:56	20	zenski	171	56	40	rjava	ne	0	ne	1	7	5	1	Macka	Splosna medicina	MF
+2/27/2011 16:03:00	19	zenski	165	48	39	rjava	ne	0	ne	2	50	60	3	Macka	Dentalna medicina	MF
+2/27/2011 17:58:35	20	zenski	175	57	39	plava	ne	0	ne	0	20	5	2	Pes	Dentalna medicina	MF
+2/27/2011 19:19:50	20	zenski	169	60	40	zelena	ne	0	ne	5	9	10	4	Macka	Dentalna medicina	MF
+2/27/2011 19:27:41	20	zenski	160	50	36	rjava	ne	0	da	7	7	20	3	Macka	Splosna medicina	MF
+2/27/2011 19:31:30	20	moski	177	61	43	zelena	ne	0	ne	5	10	10	2	Riba	Dentalna medicina	MF
+2/27/2011 19:31:43	20	moski	177	61	43	zelena	ne	0	ne	5	10	10	2	Riba	Dentalna medicina	MF
+2/27/2011 20:31:27	20	zenski	166	60	38	drugo	ne	0	ne	0	24	20	7	Pes	Splosna medicina	MF
+2/28/2011 9:39:22	20	zenski	170,5	54	39	plava	ne	0	ne	2	56	5	10	Ne	Splosna medicina	MF
+2/28/2011 14:34:43	20	zenski	161	50	37	rjava	ne	0	ne	10	8	5	3	Pes	Splosna medicina	MF
+2/28/2011 19:24:16	20	moski	202	97	49	plava	ne	0	da	25	28	10	10	Pes	Splosna medicina	MF
+2/28/2011 20:33:06	21	zenski	164	56	38	plava	ne	0	ne	20	10	30	6	Ne	Splosna medicina	MF
+03.01.2011 07:09	20	zenski	171	53	37	rjava	ne	0	ne	10	7	15	1	Macka, Pes	Dentalna medicina	MF
+03.01.2011 07:55	20	zenski	180	79	41	plava	ne	0	ne	15	30	40	7	Macka	Splosna medicina	MF
+03.01.2011 09:51	21	moski	170	60	42	rjava	ne	0	ne	6	15	10	4	Ne	Splosna medicina	MF
+03.01.2011 14:09	20	moski	185	70	45	zelena	ne	0	ne	8	70	10	15	Ne	Splosna medicina	MF
+03.01.2011 16:57	20	zenski	165	56	38	zelena	ne	0	ne	5	30	25	6	Macka	Splosna medicina	MF
+03.01.2011 21:59	20	zenski	165	59	38	rjava	ne	0	ne	5	10	8	3	Pes	Dentalna medicina	MF
+03.02.2011 12:40	20	zenski	172	60	39	zelena	ne	0	ne	5	10	100	3	Ne	Splosna medicina	MF
+03.02.2011 14:26	20	zenski	170,5	54	39	drugo	ne	0	ne	5	56	10	10	Ne	Splosna medicina	MF
+03.02.2011 17:42	20	moski	190	82	44	rjava	ne	0	ne	4	14	1	6	Macka, Pes	Dentalna medicina	MF
+03.02.2011 17:46	20	moski	189	75	44	plava	ne	0	da	3	10	25	4	Da, drugo	Splosna medicina	MF
+03.02.2011 18:26	20	zenski	176	100	41	rjava	ne	0	ne	3	11	8	3	Pes	Splosna medicina	MF
+03.02.2011 20:44	20	zenski	165	65	38	rjava	ne	0	ne	3	7	2	1	Ne	Splosna medicina	MF
+03.02.2011 22:45	20	zenski	173	53	39	rjava	ne	0	da	2	5	6	15	Pes	Splosna medicina	MF
+03.03.2011 12:37	20	moski	198	85	47	rjava	ne	0	da	2	14	15	2	Ptic	Splosna medicina	MF
+03.03.2011 15:08	20	moski	180	65	45	rjava	da	12	ne	4	10	4	2	Ne	Dentalna medicina	MF
+03.03.2011 15:31	21	zenski	167	65	39	rjava	ne	0	da	21	14	1	7	Pes	Splosna medicina	MF
+03.03.2011 15:32	20	moski	196	103	44	zelena	ne	0	da	0,2	3	10	4	Ne	Splosna medicina	MF
+03.03.2011 15:55	26	zenski	170	61	38	rjava	ne	0	ne	1	10	15	5	Ne	Splosna medicina	MF
+03.03.2011 16:50	20	zenski	170	65	39	rjava	ne	0	ne	1	3	0	2	Ne	Splosna medicina	MF
+03.03.2011 17:11	20	zenski	162	50	37	rjava	ne	0	ne	2,5	10	1,5	2,5	Ne	Dentalna medicina	MF
+03.03.2011 19:57	21	moski	184	64	43	rjava	ne	0	da	10	20	15	4	Macka	Splosna medicina	MF
+03.03.2011 20:47	20	zenski	186	75	39	zelena	ne	0	ne	14	25	5	7	Ne	Splosna medicina	MF
+03.03.2011 21:06	20	zenski	163	75	39	rjava	ne	0	ne	3	6	10	10	Pes	Splosna medicina	MF
+03.03.2011 22:56	20	zenski	161	72	39	plava	ne	0	ne	4	42	7	5	Macka	Splosna medicina	MF
+03.04.2011 13:39	20	moski	184	91	46	drugo	ne	0	da	10	10	4	3	Riba, Da, drugo	Splosna medicina	MF
+03.04.2011 14:57	20	moski	186	88	43	plava	ne	0	da	3	10	6	6	Macka	Splosna medicina	MF
+03.04.2011 16:47	19	zenski	171	68	38	zelena	ne	0	ne	6	15		5	Riba	Splosna medicina	MF
+03.05.2011 14:25	20	zenski	163	50	38	rjava	ne	0	ne	0,5	5	6	4	Riba	Splosna medicina	MF
+03.05.2011 18:45	20	moski	186	77	45	rjava	ne	0	ne	8	15	3	8	Macka, Pes, Ptic	Splosna medicina	MF
+03.06.2011 20:44	20	zenski	168	47	38	zelena	ne	0	ne	8	14	2	1	Ne	Splosna medicina	MF
+03.07.2011 09:15	20	moski	171	59	40	rjava	ne	0	da	2	15	10	10	Ne	Splosna medicina	MF
+03.07.2011 14:32	20	moski	178	65	41	plava	ne	0	ne	2	7	2	5	Macka	Splosna medicina	MF
+03.07.2011 14:44	20	zenski	168	54	38	rjava	ne	0	da	20	25	7	4	Da, drugo	Splosna medicina	MF
