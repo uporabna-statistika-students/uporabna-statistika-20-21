@@ -1,0 +1,71 @@
+---
+title: "Domača naloga 4"
+date: "16.10.2020"
+output: pdf_document
+header-includes:
+   - \usepackage[slovene]{babel}
+
+---
+
+
+
+    
+```{r setup, include=FALSE, fig.cap = "Željen rezultat."}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Domačo nalogo shranite v `.Rmd` datoteki z imenom **dn4_priimek.Rmd** (kjer namesto besede *priimek* uporabite vaš priimek).
+
+S pomočjo spodnjega ukaza (kot pri prejšnji domači nalogi) pridobite podatke s COVID-19 sledilnika (zgled tabele lahko vidite na [tej povezavi](https://github.com/sledilnik/data/blob/master/csv/stats.csv))
+```{r}
+library(curl)
+df = read.csv(curl("https://raw.githubusercontent.com/sledilnik/data/master/csv/stats.csv"))
+```
+Gre torej za podatke o bolezni COVID. Ponovno se osredotočimo na podatke o dnevnem številu okuženih in o dnevnem številu izvedenih testov. Te podatke dobite v stolpcih `cases.confirmed` in `tests.performed`.
+
+V nalogi boste narisali dve sliki **s pomočjo ukazov v paketu `ggplot2`**. Najprej boste narisali sliko, kjer skozi čas prikazujete _delež okuženih izmed testiranih_, in sicer za vsak dan v tednu posebej. Glejte Sliko 1.
+
+```{r, echo = F, fig.height=3.5, fig.width=8, fig.cap="Primer slike", fig.align="center", fig.pos="h!", warning=FALSE,message=FALSE}
+library(curl)
+library(ggplot2)
+df = read.csv(curl("https://raw.githubusercontent.com/sledilnik/data/master/csv/stats.csv"))
+
+dan = function(datum){
+  danEng = weekdays(as.Date(datum))
+  dneviEng = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
+  dneviSlo = c("Ponedeljek","Torek","Sreda","Cetrtek","Petek","Sobota","Nedelja")
+  danSlo = dneviSlo[which(dneviEng==danEng)]
+  return(danSlo)
+}
+
+df = df[-(which(as.Date(df$date)<as.Date("2020-03-04"))),]
+
+delez = df$cases.confirmed/df$tests.performed
+danVTednu = sapply(df$date,FUN = dan)
+danVTednu = factor(danVTednu,levels= c("Ponedeljek","Torek","Sreda","Cetrtek","Petek","Sobota","Nedelja"))
+
+vsi = nrow(df)
+tmp = rep(1:(vsi%/%7+1),each=7)
+tmp = tmp[1:vsi]
+
+df1 = data.frame(delez=delez,dan=danVTednu,teden=tmp,datum=df$date,cc=df$cases.confirmed)
+
+ggplot(df1,aes(teden,delez)) + geom_point() + geom_smooth() + facet_wrap(dan~.) + labs(x="teden",y="delez okuzenih izmed testiranih")
+
+#ggplot(df1,aes(teden,delez,color=dan)) + geom_point() + geom_smooth(alpha=0.05) 
+
+```
+
+Bolj podrobno.
+
+* Podatke vzemite od 4.3.2020 naprej. 
+* Točke predstavljajo posamezne dneve v tednu (na osi $x$ prikažite teden od 4.3.2020 naprej).
+* Črta predstavlja glajeno povprečje čez točke, sivo ozadnje predstavlja interval zaupanja za glajeno povprečje.
+
+Ko imate sliko, ki je ločena po dnevih tedna narisano, spremenite ukaz za izris slike na način, da bodo vse točke in krivulje narisane na enem samem grafu. Iz tega grafa se bo bolje dalo razbrati, ali se trend deleža okuženih glede na dan v tednu kaj spreminja.
+
+
+### Dodatne naloge (le za znanje - ne za točke!)
+
+* Naredite domačo nalogo 3 s pomočjo paketa `ggplot2`. 
+* Za vsak teden v podatkih izračunajte povprečni, minimalni in maksimalni delež okuženih izmed testiranih in namesto glajenega povprečja z intervalom zaupanja na prvi graf (Slika 1) narišite tedensko povprečje (črta, `geom_line`) in tedenski razpon med minimumom in maksimumom (siv trak, `geom_ribbon`). 

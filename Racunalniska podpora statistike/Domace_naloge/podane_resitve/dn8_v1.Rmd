@@ -1,0 +1,103 @@
+---
+title: "Domača naloga 8"
+date: "6.11.2020"
+output: pdf_document
+header-includes:
+   - \usepackage[slovene]{babel}
+
+---
+
+
+
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Domačo nalogo shranite v `.Rmd` datoteki z imenom **dn8_priimek.Rmd** (kjer namesto besede *priimek* uporabite vaš priimek).
+
+Enosmerna (One-way) ANOVA je statistični test, kjer velja, da imamo $n$ skupin znotraj katerih so
+podatki za $i = 1, \ldots, n$ porazdeljeni kot
+\[
+y_{i, j} = \mu_i + \epsilon_{i,j}, 
+\]
+$\epsilon_{i,j}$ so i.i.d. (neodvisne enako porazdeljene) slučajne spremenljivke porazdeljene kot $\epsilon_{i, j} \sim N(0, \sigma^2)$.
+Ničelna domneva ($H_0$) tega testa je, da obstaja $\mu$, da je za vsak $i = 1, \ldots, n$
+\[
+\mu_i = \mu .
+\]
+
+
+
+Naredite naslednje:
+
+* Napišite funkcijo `generiraj_podatke(n1, n2, n3, m1, m2, m3)`, ki generira podatke/vzorec (podatkovni okvir), ki ustrezajo
+predpostavkam enosmerne ANOVA-e. Generirajo naj se tri skupine. V $i$-ti naj bo $n_i$ enot
+s povprečjem $\mu_i = m_i$.
+
+* Pod $H_0$ približno $10^3$-krat generirajte podatke - vzorec približno velikosti $100$. Na vsakem vzorcu uporabite enosmerno ANOVA-o (funkcija `aov`) in shranite dobljeno vrednost $p$. 
+Narišite histogram dobljenih vrednosti $p$ Kaj opazite?
+
+* Prejšnjo točko ponovite tako, da podatkov ne generirate pod $H_0$, ampak pod alternativno
+domnevo. Kaj opazite?
+
+Dobljeni rezultat naj izgleda približno tako, kot je prikazano na sliki 1. Histogram vrednosti
+$p$ pod alternativno domnevo je odvisen od vaše izbire vrednosti $m_1, m_2$ in $m_3$ in lahko izgleda nekoliko drugače od spodaj prikazanega.
+
+
+
+
+
+
+
+
+
+
+```{r, echo = F, fig.cap="Rezultat.", fig.pos="H", fig.height=3, fig.width=6}
+
+
+generiraj_podatke = function(n1, n2, n3, m1, m2, m3) {
+  N = n1 + n2 + n3
+  df = data.frame("x" = rep(0.0, N), id = rep(1, N))
+  df$x[1:n1] = m1 + rnorm(n1, 0, 1)
+  df$x[(n1 + 1):(n1 + n2)] = m2 + rnorm(n2, 0, 1)
+  df$id[(n1 + 1):(n1 + n2)] = 2
+  df$x[(n1 + n2 + 1):N] = m3 + rnorm(n3, 0, 1)
+  df$id[(n1 + n2 + 1):N] = 3
+  df
+}
+
+
+simuliraj = function(reps, n1, n2, n3, m1, m2, m3) {
+    pvals = rep(0, reps)
+  
+  for(i in 1:reps) {
+    df = generiraj_podatke(n1, n2, n3, m1, m2, m3)
+    t = summary(aov(x ~id, df))
+    p = t[[1]]$'Pr(>F)'[1]
+    pvals[i] = p
+  }
+  
+  pvals
+}
+
+
+simuliraj_H0 = function(reps, n1, n2, n3, m) {
+  simuliraj(reps, n1, n2, n3, m, m, m)
+}
+
+par(mfrow = c(1, 2))
+hist(simuliraj_H0(2 * 10^3, 42, 42, 42, 1), xlab = "Pod H0", main = NULL)
+hist(simuliraj(2 * 10^3, 42, 42, 42, 0.9, 1, 1.1), xlab = "Pod HA", main = NULL)
+
+```
+
+
+
+
+
+
+## Dodatno (za znanje, ne za točke)
+
+* Preberite si nekaj o enosmerni ANOVA-i [(npr. tukaj (link))](https://en.wikipedia.org/wiki/One-way_analysis_of_variance).
+

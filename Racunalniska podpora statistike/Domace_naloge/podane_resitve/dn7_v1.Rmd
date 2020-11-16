@@ -1,0 +1,96 @@
+---
+title: "Domača naloga 7"
+date: "3.11.2020"
+output: pdf_document
+header-includes:
+   - \usepackage[slovene]{babel}
+
+---
+
+
+
+    
+```{r setup, include=FALSE, fig.cap = "Željen rezultat."}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Domačo nalogo shranite v `.Rmd` datoteki z imenom **dn7_priimek.Rmd** (kjer namesto besede *priimek* uporabite vaš priimek).
+
+Naj bo $n$ poljubno naravno število in $Z_1, \ldots, Z_n \sim N(0, 1)$ i.i.d.
+(neodvisne in enako porazdeljene slučajne spremenljivke, ki so porazdeljene normalno
+s pričakovano vrednostjo $0$ in varianco $1$). Velja, da je slučajna spremenljivka $U$, ki je
+definirana kot 
+\[ U = \sum_{i = 1}^n Z_i^2 , \]
+porazdeljena kot $\chi^2(n)$ (hi kvadrat z $n$ stopinjami prostosti).
+
+S pomočjo zgornjega naredite naslednje:
+
+* Samo z uporabo klica funkcije `rnorm`, `for` zanke, ` sapply` in osnovnih matematičnih
+operacij napišite funkcijo `moj_hi_kvadrat(reps, n)`, kjer $n$ označuje stopinje prostosti
+in `reps` število ponovitev.
+
+* Implementirajte funkcijo `empiricni_CDF(vzorec, n)`, ki sprejme `vzorec` - vektor realizacij slučajne
+spremenljivke, ki je porazdeljena kot $\chi^2(n)$ in `n` - stopinje prostosti ter vrne podatkovni
+okvir (ali pa vektor) deležev vrednosti v vzorcu, ki so manjše ali enake kot $0$., $5$., $10$. ... $95$. percentil slučajne spremenljivke $\chi^2(n)$. Funkcijo implementirajte brez uporabe R-jevih funkcij, ki že obstajajo (npr. `ecdf`). Nekaj osnovnega o empiričnih porazdelitvah si lahko preberete [na naslednji povezavi (link)](https://en.wikipedia.org/wiki/Empirical_distribution_function).
+
+* Primerjajte funkcijo `moj_hi_kvadrat` z vgrajeno funkcijo `rchisq` na vzorcu velikosti
+vsaj $10^5$. Za stopinje prostosti izberite zadnji dve številki vaše vpisne številke. 
+Primerjavo naredite s pomočjo funkcije `empiricni_CDF`. Rezultat mora izgledati približno tako
+kot tisti prikazan v spodnji tabeli.
+
+
+
+
+```{r, echo = F,results='asis'}
+
+library(knitr)
+
+moj_chi2 = function(n) {
+  sum(rnorm(n, 0, 1)^2)
+}
+
+moj_hi_kvadrat = function(reps, n) {
+  sapply(1:reps, function(x) moj_chi2(n))
+}
+
+
+
+
+empiricni_CDF = function(vzorec, n) {
+  prs = seq(0, 0.95, by = 0.05)
+  xs = sapply(prs, function(x) qchisq(x, n))
+  ys = sapply(1:20, function(i) sum(vzorec <= xs[i])) / length(vzorec)          
+  data.frame("Pr" = prs, "t" = xs, "F" = ys)
+}
+
+
+reps = 10^5
+n = 14
+
+vzorec1 = moj_hi_kvadrat(reps, n)
+vzorec2 = rchisq(reps, n)
+
+df1 = empiricni_CDF(vzorec1, n)
+df2 = empiricni_CDF(vzorec2, n)
+
+df = data.frame("Percentil" = df1$Pr, "Teoreticno" = df1$t, "moj F" = df1$F, "F rchisq" = df2$F)
+
+kable(df,digits=c(2,1,4,4))
+```
+
+
+
+## Dodatno (za znanje, ne za točke)
+
+* S pomočjo funkcij `stepfun`, `plot` in `lines` narišite še grafično primerjavo funkcij `moj_hi_kvadrat`  in `rchisq`.
+
+
+
+
+
+
+
+
+
+
+

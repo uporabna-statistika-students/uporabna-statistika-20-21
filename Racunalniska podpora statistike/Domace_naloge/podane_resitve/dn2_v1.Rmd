@@ -1,0 +1,113 @@
+---
+title: "Domača naloga 2"
+date: "9.10.2020"
+output: pdf_document
+header-includes:
+   - \usepackage[slovene]{babel}
+
+---
+
+
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Domačo nalogo shranite v R script z imenom **dn2_priimek.R** (kjer namesto besede *priimek* uporabite vaš priimek).
+
+# Funkcije
+
+Radi bi izpisali naključno kreirane rezultate izpitov na naslednji način:
+```{r, echo = F}
+nakljucenRezultatIzpita = function() {
+  round(runif(1, 0, 100))
+}
+
+izpisOdstotkov = function(x) {
+  paste(x, "%")
+}
+
+ocenaIzpita = function(x,d) {
+  x = x+d
+  o = floor(x/10) + 1
+  ifelse(o < 5, 5, min(o, 10))
+}
+
+izpisIzpita = function(x,d) {
+  p = izpisOdstotkov(x)
+  pd = izpisOdstotkov(d)
+  o = ocenaIzpita(x,d)
+  paste("Rezultat izpita:", p, "dodatno", pd, "ocena:", o)
+}
+
+izpisIzpitov = function(n) {
+  for(i in 1:n) {
+    x = nakljucenRezultatIzpita()
+    d = round(runif(1,0,10))
+    print(izpisIzpita(x,d))
+  }
+  #return(NULL)
+}
+
+set.seed(101)
+
+izpisIzpitov(5)
+```
+
+Navodilo: 
+
+Funkcija `runif(n, a, b)` generira $n$ (psevdo)naključnih števil z intervala $[a, b]$.
+Funkcija `round(x)` zaokroži število $x$, `paste(str1, str2)` pa združi niza `str1` in `str2`.
+S pomočjo teh treh funkcij napišite naslednje funkcije:
+```{r, eval = F}
+nakljucenRezultatIzpita()
+```
+Funkcija vrne naključno celo število med $0$ in $100$.
+
+```{r, eval = F}
+izpisOdstotkov(x)
+```
+Funkcija vrne znakovni niz oblike "x %".
+
+```{r, eval = F}
+ocenaIzpita(x,d)
+```
+Funkcija vrne oceno izpita za rezultat izpita $x$, ki mu dodamo $d$ dodatnih točk (med 0 in 20). To naredi glede na pravilo $x < 50\% = 5, x \geq 50\% = 6, x \geq 60 \% = 7, \ldots, x \geq 90 \% = 10$.    
+
+```{r, eval = F}
+izpisIzpita(x,d)
+```
+Funkcija sprejme rezultat izpita (z dodatnimi točkami) in ga zapiše na način: "Rezultat izpita: x %, dodatno: d %, ocena: y." Ocena izpita je seveda izračunana na način, kot je opisan zgoraj.
+      
+```{r, eval = F}
+izpisIzpitov(n)
+```
+Funkcija izpiše rezultate $n$ izpitov, vendar ne vrne ničesar. Bodite pozorni, da je število dodatnih točk lahko pri vsakem rezultatu izpita drugačno.
+
+
+Vsako izmed funkcij uporabite vsaj enkrat. Vaša datoteka z rešitvijo se mora zagnati v celoti ("Run All") brez napak!
+
+
+   
+## Dodatne naloge (le za znanje - ne za točke!)
+
+* Poiskusite spremeniti funkcijo `izpisOdstotkov(x)` tako, da bo vrnjen rezultat enak
+"x%" in ne "x %" (*Namig*: poglejte dokumentacijo za funkcijo `paste`). 
+* Izračunajte $100$ naključnih ocen. Koliko izmed njih je enakih $10$? Ali ste to pričakovali?
+    
+    
+
+
+
+
+
+
+
+
+
+    
+    
+    
+    
+    
+    

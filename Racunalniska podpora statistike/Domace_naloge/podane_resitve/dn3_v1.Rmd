@@ -1,0 +1,106 @@
+---
+title: "Domača naloga 3"
+date: "13.10.2020"
+output: pdf_document
+header-includes:
+   - \usepackage[slovene]{babel}
+
+---
+
+
+
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Domačo nalogo shranite v `.Rmd` datoteki z imenom **dn3_priimek.Rmd** (kjer namesto besede *priimek* uporabite vaš priimek).
+
+Na svoj sistem naložite knjižnico `curl`.
+Nato s pomočjo spodnjega ukaza pridobite podatke s COVID-19 sledilnika (zgled tabele lahko vidite na [tej povezavi](https://github.com/sledilnik/data/blob/master/csv/stats.csv))
+```{r}
+library(curl)
+df = read.csv(curl("https://raw.githubusercontent.com/sledilnik/data/master/csv/stats.csv"))
+```
+Gre torej za podatke o bolezni COVID. Na grafu želimo prikazati zadnje podatke o dnevnem številu okuženih (ali pa o dnevnem številu izvedenih testov). Te podatke dobite v stolpcih `cases.confirmed` in `tests.performed`.
+
+Implementirajte funkcijo `narisi(n)`, ki za $n=20$ nariše podobno sliko Sliki 1. Implementirana funkcija mora izpolnjevati naslednje pogoje:
+
+
+```{r, echo = F, fig.height=3.5, fig.width=8, fig.cap="Primer slike", fig.align="center", fig.pos="h!"}
+
+library(curl)
+df = read.csv(curl("https://raw.githubusercontent.com/sledilnik/data/master/csv/stats.csv"))
+
+dan = function(datum){
+  danEng = weekdays(as.Date(datum))
+  dneviEng = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
+  dneviSlo = c("Po","T","S","C","P","S","N")
+  danSlo = dneviSlo[which(dneviEng==danEng)]
+  return(danSlo)
+}
+
+#dan(df$date[10])
+
+narisi = function(n){
+  # doloci indekse, ki nas zanimajo
+  allInx = which(!is.na(df$cases.confirmed))
+  all = length(allInx)
+  inx = allInx[(all-n+1):all]
+  podatki = df$cases.confirmed[inx]
+  imena = sapply(df$date[inx],FUN = dan) # pridobi slovenska imena dni
+  
+  barve = rep("gray",length(inx)) # vsi sivi stolpci
+  # doloci vse nedelje
+  ned = which(imena == "N")
+  barve[ned] = "lightgreen"
+  # doloci max. element v podatkih
+  m =  which(podatki==max(podatki)) 
+  barve[m] = "red"
+  barplot(podatki,names.arg = imena,col=barve,ylab="potrjeni primeri")
+}
+
+narisi(20)
+
+
+```
+
+* Iz podatkovnega okvira `df` funkcija izbere zadnjih $n$ dni, za katere so podatki o potrjenih primerih na voljo (bodite pozorni, obstajajo celice z manjkajočimi vrednostmi, ki jih ustrezno izločite). Pomoč: funkcija `is.na(x)`.
+
+* Dnevi v tednu naj bodo označeni s črkami (gl. zgornjo sliko). Pri tem si pomagajte s stolpcema `date` in/ali `day`. Izračun lahko naredite na več načinov, npr. s pretvarjanjem v strukturo `Date`, s kreiranjem dolge sekvence, z izračunom s pomočjo deljenja po modulu ipd.
+
+* Najvišji stolpec v grafu pobarvajte rdeče.
+
+* Vsak stolpec, ki predstavlja nedeljo, naj bo posebne barve (npr. `"lightgreen"`). 
+
+Funkcija naj se na vse spremembe prilagaja AVTOMATSKO (tj. ker se tabela vsakodnevno posodablja, bo zadnjih 10 dni zmeraj drugih, prav tako bo maksimum drugje)!
+
+## Dodatne naloge (le za znanje - ne za točke!)
+
+* Spremenite funkcijo `narisi` tako, da bo glede na vhodni argument risala bodisi dnevno število okuženih, ali pa dnevno število izvedenih testov.
+
+
+```{r,include=FALSE}
+narisi2 = function(n,sprem){ # SPREMENJENO
+  # doloci indekse, ki nas zanimajo
+  allInx = which(!is.na(df[,sprem])) # SPREMENJENO
+  all = length(allInx)
+  inx = allInx[(all-n+1):all]
+  podatki = df[inx,sprem] # SPREMENJENO
+  imena = sapply(df$date[inx],FUN = dan) # pridobi slovenska imena dni
+  
+  barve = rep("gray",length(inx)) # vsi sivi stolpci
+  # doloci vse nedelje
+  ned = which(imena == "N")
+  barve[ned] = "lightgreen"
+  # doloci max. element v podatkih
+  m =  which(podatki==max(podatki)) 
+  barve[m] = "red"
+  barplot(podatki,names.arg = imena,col=barve,ylab=sprem) #SPREMEMBA
+}
+
+narisi2(10,"cases.confirmed")
+narisi2(20,"tests.performed")
+```
+
+

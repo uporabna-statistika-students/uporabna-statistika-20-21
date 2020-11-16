@@ -1,0 +1,83 @@
+---
+title: "Domača naloga 5"
+date: "20.10.2020"
+output: pdf_document
+header-includes:
+   - \usepackage[slovene]{babel}
+
+---
+
+    
+```{r setup, include=FALSE, fig.cap = "Željen rezultat."}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Domačo nalogo shranite v `.Rmd` datoteki z imenom **dn5_priimek.Rmd** (kjer namesto besede *priimek* uporabite vaš priimek).
+
+Narišite dva simetrična cvetova, in sicer pravilnega tri- in šestlistnega.
+Za izračun točk na obsegu cveta v koordinatnem sistemu uporabite naslednja para funkcij $(x_1, y_1)$ in $(x_2, y_2)$
+\begin{align*}
+x_1(r, \phi) = & r \cos(\phi) sin(3 \phi), &
+x_2(r, \phi) = & r \cos(\phi) sin(3 \phi)^2, \\
+y_1(r, \phi) = & r \sin(\phi) sin(3 \phi) , &
+y_2(r, \phi) = & r \sin(\phi) sin(3 \phi)^2.
+\end{align*}
+
+$r$ opisuje velikost cvetnega lista, $\phi$ pa predstavlja kot glede na izhodiščno smer, merjen v radianih (gl. [Wikipedio](https://en.wikipedia.org/wiki/Radian)). Za izris cveta bo torej velikost lista ves čas enaka, kot pa mora zajeti vse vrednosti med 0 in $2\pi$. OPOMBA: Zgornje funkcije so pravzaprav preračun polarnih koordinat oboda cveta v osnovni koordinatni sistem $(x,y)$. Več o tem na [Wikipedii](https://en.wikipedia.org/wiki/Polar_coordinate_system) - spletna stran vsebuje tudi sliko rožnega cveta.
+
+S pomočjo zgornjih funkcij in funkcije `sapply` izrišite dva cvetova (gl. primera na Sliki 1). Cvet lahko enostavno pobarvate, če uporabite funkcijo `polygon`.
+
+Pri reševanju te domače naloge si ne smete pomagati s `for` zanko.
+
+
+```{r, echo = F, fig.cap = "Slika rezultata", fig.width=4, fig.height=2, fig.align="center", results = "hide", fig.pos = "h!"}
+f1 = function(fi,r){
+  x1 = r*cos(fi)*sin(3*fi)
+  y1 = r*sin(fi)*sin(3*fi)
+  return(c(x1,y1))
+} 
+
+f2 = function(fi,r){
+  x2 = r*cos(fi)*sin(3*fi)^2
+  y2 = r*sin(fi)*sin(3*fi)^2
+  return(c(x2,y2))
+} 
+
+par(mfrow = c(1, 2),cex=0.5)
+plot(0,0,type="n",xlab="x",ylab="y",main="Trilistni cvet") # narišemo prazen graf
+sekvenca = seq(0,2*pi,by = 0.01) # sekvenca za kote od 0 do 2*pi
+tocke1 = sapply(sekvenca,FUN = function(x){f1(x,r=1)})
+# ALI PA
+# tocke1 = sapply(sekvenca,FUN=f1,r=1) # zadnji argument je argument r funkcije f1
+lines(tocke1[1,],tocke1[2,],col="violet",lwd=2) # namesto točk rišemo povezave med njimi
+
+plot(0,0,type="n",xlab="x",ylab="y",main="Sestlistni cvet")
+sekvenca = seq(0,2*pi,by = 0.01)
+tocke2 = sapply(sekvenca,FUN = function(x){f2(x,r=0.5)})
+# ALI PA
+# tocke1 = sapply(sekvenca,FUN=f2,r=0.5) # zadnji argument je argument r funkcije f1
+polygon(tocke2[1,],tocke2[2,],col="red") # narišemo pobarvan poligon
+par(op)
+
+##### DRUGA VARIANTA - BREZ UPORABE SAPPLY (naredimo samo dolg vektor)
+dolzinaVektorja = 500
+sekvencaR = rep(1, dolzinaVektorja)
+sekvencaPhi = seq(0, 2*pi, length.out=dolzinaVektorja)
+x = sekvencaR*(cos(sekvencaPhi)*sin(3*sekvencaPhi)) # x je dolg vektor
+y = sekvencaR*(sin(sekvencaPhi)*sin(3*sekvencaPhi))
+#narišemo graf, type določi, da gre za črte
+plot(x,y, type="l", col="red", lwd=4, main = "Trilistni cvet")
+
+```
+
+
+## Dodatne naloge (za znanje - ne za točke)
+
+* Rože narišite s pomočjo knjižnice  `ggplot2`.
+* Oglejte si funkcijo `sample`. S pomočjo te funkcije generirajte 20 vzorcev spremenljivke $X$ velikosti $n=15$. Spremenljivka $X$ lahko zavzame naravna števila od 1 do 5, verjetnosti za posamezno vrednost pa so navedene v tabeli spodaj. Izogibajte se uporabe `for` zanke.
+
+**vrednost $X=x$** | 1 | 2 | 3 | 4 | 5 
+--- | ---:| ---:| ---:| ---:| ---:
+**verjetnost $P(X=x)$** | 0,15 | 0,4 | 0,3 | 0,1 | 0,05
+
+
