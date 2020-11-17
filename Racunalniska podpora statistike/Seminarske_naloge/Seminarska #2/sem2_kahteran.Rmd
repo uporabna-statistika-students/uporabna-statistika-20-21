@@ -1,13 +1,12 @@
 ---
-title: "Seminarska naloga 2"
-author: "Alen Kahteran"
+title: 'Seminarska naloga 2'
 date: '20. 11. 2020'
 output:
   pdf_document:
-    toc: yes
+    toc: no
     toc_depth: '3'
 params:
-  printcode: yes
+  printcode: no
   printresults: hide
 editor_options:
   chunk_output_type: console
@@ -22,8 +21,7 @@ library(knitr)
 library(kableExtra)
 ```
 
-```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
-
+```{r, echo=TRUE, eval=TRUE, results="markup"}
 full_data <- as_tibble(read.table("test_data/pn2020.csv",
                                   header = TRUE,
                                   fill = TRUE,
@@ -31,19 +29,17 @@ full_data <- as_tibble(read.table("test_data/pn2020.csv",
                                   encoding = "WIN-1250",
                                   dec=","))
 
-
-
 #  19, 41, 214
 
 set.seed(8)
 
 data_500 <- sample_n(full_data, 500)
 
-filter(count(full_data, ZaporednaStevilkaPN), n==1)
-filter(full_data, ZaporednaStevilkaPN %in% filter(count(full_data, ZaporednaStevilkaPN), n==1)$ZaporednaStevilkaPN)
-asdf <- filter(full_data, ZaporednaStevilkaPN %in% filter(count(full_data, ZaporednaStevilkaPN), n==1)$ZaporednaStevilkaPN)
-table(asdf$Spol)
-t.test(alkoholicari_full$VrednostAlkotesta ~ alkoholicari_full$Spol, var.equal=FALSE, paired=FALSE)
-
-
+# filter(count(full_data, ZaporednaStevilkaPN), n==1)
+# filter(full_data, ZaporednaStevilkaPN %in% filter(count(full_data, ZaporednaStevilkaPN), n==1)$ZaporednaStevilkaPN)
+# asdf <- filter(full_data, ZaporednaStevilkaPN %in% filter(count(full_data, ZaporednaStevilkaPN), n==1)$ZaporednaStevilkaPN)
+# table(asdf$Spol)
+# t.test(alkoholicari_full$VrednostAlkotesta ~ alkoholicari_full$Spol, var.equal=FALSE, paired=FALSE)
 ```
+
+asdf
