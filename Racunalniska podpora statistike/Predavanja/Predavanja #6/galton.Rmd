@@ -1,0 +1,167 @@
+---
+title: "Poročilo - regresija k povprečju"
+author: "Nataša Kejžar"
+date: "11/9/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,fig.width = 4,fig.height = 4)
+library(knitr)
+library(ggplot2)
+```
+
+```{r podatki}
+studenti = read.table("data/studenti2012.txt",sep="\t",header=TRUE)
+# popravimo napacne vnose in dolocimo faktorje
+studenti[studenti$masa == 700,"masa"] = 70
+studenti = studenti[-which(studenti$starost == 59),]
+studenti$mesec[studenti$mesec==0] = NA
+studenti$mesec = factor(studenti$mesec,levels=1:12,labels=c("jan","feb","mar","apr","maj","jun","jul","avg","sep","okt","nov","dec"))
+studenti$majica = factor(studenti$majica,levels=c("XS","S","M","L","XL"),ordered=TRUE)
+
+# moj podatkovni okvir
+galton = studenti[c("spol","visina","mati","oce")]
+```
+
+## Opis podatkov in opis čiščenja
+
+Na začetku je bilo 43 študentov, izključen je bil študent, ki je bil star 59 let ...
+Na koncu imamo podatke o `r nrow(galton)` študentih iz leta 2012. Torej je naša populacija populacija študentov v Sloveniji v tem obdobju.
+
+### Raziskovalno vprašanje
+Radi bi pokazali, da gre pri višinah staršev in otrok za regresijo k povprečju, torej da so otroci zelo nizkih staršev v povprečju od njih višji, otroci zelo visokih staršev pa v povprečju nižji od njih.
+
+## Predstavitev podatkov (opisna statistika)
+
+```{r}
+# Spremenljivke prikažemo z grafi in izračunamo smiselne opisne statistike...
+# spol: delez fantov
+# vse visine: mera sredine, mera variabilnosti -> povprecje, std.odklon
+# predstavimo vse za vse studente in po spolu posebej
+# vsi studentje | studenti | studentke
+# spol   ....   |  ....    | ....
+# visina ...    |  ....    | ....
+# ...
+
+# delez fantov
+n = nrow(studenti) # st. vseh enot
+delezM = sum(galton$spol=="M")/n
+# povp in std.odklon
+#mean(galton$visina)
+#sd(galton$visina)
+
+izpisPS = function(x){
+  # lep izpis povprecja in std. odklona
+  # nacin izpisa 169.7 (7.7)
+  povp = round(mean(x,na.rm=TRUE),1)
+  stdO = round(sd(x,na.rm=TRUE),1)
+  return(paste(povp," (",stdO,")",sep = ""))
+}
+#izpisPS(galton$visina)
+#sVsi = c(delezM,izpisPS(galton$visina),izpisPS(galton$oce),izpisPS(galton$mati))
+#lepse
+sVsi = c(round(delezM,2),apply(galton[,c("visina","oce","mati")],2,FUN=izpisPS))
+
+sM = c("-",apply(galton[galton$spol=="M",c("visina","oce","mati")],2,FUN=izpisPS))
+sF = c("-",apply(galton[galton$spol=="F",c("visina","oce","mati")],2,FUN=izpisPS))
+
+#zgradimo tabelo, ki jo bomo izpisali v porocilo
+tabela = cbind(sVsi,sM,sF)
+rownames(tabela) = c("delez fantov","visina","visina oceta","visina matere")
+colnames(tabela) = c("cel vzorec","studenti","studentke")
+kable(tabela)
+```
+
+Število manjkajočih vrednosti pri posameznih spremenljivkah je: 
+
+ * spol: `r sum(is.na(galton$spol))`, 
+ * visina študentov: `r sum(is.na(galton$visina))`,
+ * visina očeta: `r sum(is.na(galton$oce))`, od tega za študentke: `r sum(is.na(galton$oce[galton$spol=="F"]))`,
+ * visina matere: `r sum(is.na(galton$mati))`, od tega za študentke: `r sum(is.na(galton$mati[galton$spol=="F"]))`.
+
+### Grafični prikazi spremenljivk
+
+```{r grafStudenti}
+hist(galton$visina,xlab="visina (cm)",ylab="frekvenca",main="Visina studenta")
+boxplot(visina~spol,data=galton,xlab="spol",ylab="visina studenta (cm)")
+```
+
+```{r grafOce}
+hist(galton$oce,xlab="visina (cm)",ylab="frekvenca",main="Visina oceta")
+boxplot(oce~spol,data=galton,xlab="spol",ylab="visina oceta (cm)")
+```
+
+```{r grafMati}
+hist(galton$mati,xlab="visina (cm)",ylab="frekvenca",main="Visina mati")
+boxplot(mati~spol,data=galton,xlab="spol",ylab="visina mati (cm)")
+```
+
+V vzorcu je manj študentov in ti imajo višje starše. To je zelo verjetno samo posledica majhnega vzorca.
+
+## Statistična analiza raziskovalnega vprašanja (inferenčni del)
+
+Za odgovor na raziskovalno vprašanje bomo uporabili linearno regresijo, in sicer bomo skušali dokazati, da je naklon premice (modela linearne regresije) manjši od 1. Spodaj je izrisan razsevni diagram za višino študentov glede na višino **njihovih prednikov istega spola** z vključeno referenčno premico $y=x$ (tj. premico, ko ne gre za regresijo k povprečju).
+
+```{r include=FALSE}
+# izris visin glede na visine  mater in ocetov
+# preko teh grafov smo ugotovili, da je potrebno gledati visino prednika istega spola
+ggplot(galton,aes(x=mati,y=visina)) + geom_point() + 
+  geom_abline(slope=1,intercept = 0,col="red")
+
+ggplot(galton,aes(x=oce,y=visina)) + geom_point() + 
+  geom_abline(slope=1,intercept = 0,col="red")
+```
+
+```{r prednik}
+# naredimo spremenljivko visina prednika, ki je istega spola kot student
+galton$prednik = ifelse(galton$spol=="F",galton$mati,galton$oce)
+
+ggplot(galton,aes(x=prednik,y=visina)) + geom_point() + 
+  geom_abline(slope=1,intercept = 0,col="red")
+```
+
+```{r}
+rez = lm(visina ~ prednik, data=galton)
+rezS = summary(rez)
+# intervali zaupanja
+confint(rez)
+
+# se izracun statisticnega testa, ki preverja
+# H0, ki nas zanima, in sicer H0: beta1 = 1
+# (b1 - beta1)/SE_b1 ~ t_(n-2)
+testna = (rezS$coefficients[2,1] - 1)/rezS$coefficients[2,2]
+# izracun vrednosti p iz testne statistike
+pvrednost = pt(testna,lower.tail = TRUE,df=rez$df.residual)*2
+```
+
+**Potrebno bi bilo še preveriti predpostavke!**
+
+Tabela ocenjenih regresijskih koeficientov (s pripadajočimi standardnimi napakami):
+
+```{r}
+koeficienti = rezS$coefficients[1:2,1:2]
+rownames(koeficienti) = c("reg.konstanta","smerni koeficient")
+colnames(koeficienti) = c("ocena","ocenjena SE")
+kable(koeficienti,digits=c(1,1))
+```
+
+Pri stopnji značilnosti $\alpha = 0.05$ smo dokazali, da je smerni koeficient premice manjši od 1; 95% interval zaupanja je [`r round(confint(rez)[2,1],2)`,`r round(confint(rez)[2,2],2)`]. Vrednost p za pripadajoč statistični test v tem primeru je `r round(pvrednost,4)`. To pomeni, da lahko rečemo, da gre v primeru višin staršev in njihovih otrok istega spola za regresijo k povprečju.
+
+Izris modela:
+
+```{r}
+ggplot(galton,aes(x=prednik,y=visina)) + geom_point(aes(col=spol)) + 
+  geom_abline(slope=1,intercept = 0,col="red") +
+  geom_smooth(method="lm")
+
+# kot dodatek - regresija posebej za dekleta in posebej za fante
+ggplot(galton,aes(x=prednik,y=visina,col=spol)) + geom_point() + 
+  geom_abline(slope=1,intercept = 0,col="red") +
+  geom_smooth(method="lm")
+
+```
+
+

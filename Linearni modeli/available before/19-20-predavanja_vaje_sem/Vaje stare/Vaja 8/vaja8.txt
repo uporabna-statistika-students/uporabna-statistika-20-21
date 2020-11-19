@@ -1,0 +1,576 @@
+andy<-read.table("ANDY.txt", header=T)
+str(andy)
+andy$height<-andy$height/3.2808 # vi�ino dreves izrazimo v metrih
+andy$buckets<-factor(andy$buckets) # buckets naj bo opisna spremenljivka
+summary(andy)
+library(ggplot2)
+ggplot(data=andy, aes(x=age, y=height, col=buckets)) +
+  geom_point() + xlab("Starost (leta)") + ylab("Vi�ina dreves (m)")
+mod.OLS<-lm(height ~ age * buckets, data=andy)
+par(mfrow=c(2,2))
+plot(mod.OLS)
+anova(mod.OLS)
+
+(var.height <- tapply(andy$height, andy$age, var))
+(w <- 1/var.height)
+w.df <- data.frame(as.numeric(names(w)), as.numeric(w))
+names(w.df) <- c("age", "weight")
+andy <- merge(andy, w.df, by="age")
+head(andy)
+par(mfrow=c(1,1))
+plot(andy$age, andy$weight, pch=16, type=c("b"))
+mod.WLS<-lm(height ~ age * buckets, weights = weight, data=andy)
+par(mfrow=c(2,2))
+plot(mod.WLS)
+par(mfrow=c(1,1))
+plot(fitted(mod.WLS), residuals(mod.WLS)/(1/sqrt(andy$weight)), 
+     xlab="Prilagojene vrednosti",ylab="Standardizirani ostanki")
+abline(h=0)
+anova(mod.WLS)
+summary(mod.WLS)
+
+library(effects)
+plot(Effect(c("buckets"), mod.WLS), main="",ylim=c(0,16))
+plot(Effect(c("buckets","age"), mod.WLS), main="", multiline=TRUE, 
+           ci.style="band", ylim=c(0,16))
+
+Vaja
+library(car)
+symbox(~height, data=andy)
+summary(powerTransform(mod.OLS))
+boxCox(mod.OLS)
+
+mod.sqrt<-lm(sqrt(height) ~ age * buckets, weights = weight, data=andy)
+par(mfrow=c(2,2))
+plot(mod.sqrt)
+
+anova(mod.sqrt)
+summary(mod.sqrt)
+C <- rbind(c(0,1,0,0,0,0), c(0,0,0,0,1,0), c(0,0,0,0,0,1), c(0,0,0,0,-1, 1))
+library(multcomp)
+test <- glht(mod.sqrt, linfct=C)
+summary(test)
+plot(Effect(c("buckets"), mod.sqrt), main="",ylim=c(0,5))
+plot(Effect(c("buckets","age"), mod.sqrt),
+     main="", multiline=TRUE, ci.style="band", ylim=c(0,5))
+
+
+# Modeliranje nekonstantne variance 
+
+# generiranje podatkov 
+set.seed(777) # zaradi ponovljivosti
+x<-sample(1:2500,100)
+sim<-function(x){10+1.5*x+ rnorm(100,mean=0,sd=0.5*x)}
+y<-sim(x)
+primer1<-data.frame(x,y)
+par(mfrow=c(1,1))
+plot(x,y, pch=16)
+mod1.lm<-lm(y~x, data=primer1)
+par(mfrow=c(2,2))
+plot(mod1.lm)
+summary(mod1.lm)
+
+# varian�na funkcija varFixed iz paketa nlme
+library(nlme)
+
+# dolo�itev ute�i
+(vf<-varFixed(~x))
+(vf<-Initialize(vf, primer1))
+primer1$varW<-varWeights(vf) ### isto kot 1/sqrt(x)
+head(primer1)
+
+plot(x, varWeights(vf), pch=16)
+
+mod1.gls1<-gls(y~x, weight=varFixed(~x), data=primer1, method="ML")
+# mod1.lm1<-lm(y~x, weight=1/x, data=primer1)
+summary(mod1.gls1)
+plot(mod1.gls1, pch=16)
+
+
+mod1.gls2<-gls(y~x, weight=varFixed(~x^2), data=primer1, method="ML")
+# mod1.lm2<-lm(y~x, weight=1/x^2, data=primer1)
+summary(mod1.gls2)
+
+plot(mod1.gls2, pch=16)
+
+anova(mod1.gls2, mod1.lm)
+
+library(car)
+compareCoefs(mod1.lm, mod1.gls2)
+confint(mod1.lm)
+intervals(mod1.gls2)
+
+library(effects)
+library(gridExtra)
+plot1<-plot(Effect(c("x"), mod1.lm), ci.style="bands", main="")
+plot2<-plot(Effect(c("x"), mod1.gls2), ci.style="bands", main="")
+grid.arrange(plot1, plot2, ncol=2)
+
+mod1.gls3<-gls(y~x, weight=varPower(form=~x), method="ML")
+summary(mod1.gls3)
+
+par(mfrow=c(1,2))
+plot(resid(mod1.gls3, type="p")~fitted(mod1.gls3), pch=16)
+abline(h=0, lty=2)
+qqnorm(resid(mod1.gls3, type="p"), pch=16)
+qqline(resid(mod1.gls3, type="p"), lty=2)
+
+anova(mod1.gls2, mod1.gls3)
+mod1.gls4<-gls(y~x, weight=varPower(form=~fitted(.)), method="ML")
+summary(mod1.gls4)
+
+par(mfrow=c(1,2))
+plot(resid(mod1.gls4, type="p")~fitted(mod1.gls4), pch=16)
+abline(h=0, lty=2)
+qqnorm(resid(mod1.gls4, type="p"), pch=16)
+qqline(resid(mod1.gls4, type="p"), lty=2)
+
+compareCoefs(mod1.lm, mod1.gls2, mod1.gls3, mod1.gls4)
+
+confint(mod1.lm)
+intervals(mod1.gls4)
+
+data<-read.table("POSTAJE.txt", header=TRUE, sep="\t")
+rownames(data)<-data$Postaja
+data.brez<-subset(data, subset=data$Postaja!="Kredarica")
+data64<-na.omit(data.brez)  ### upo�tevajo se samo tisti zapisi, ki so brez NA 
+data64$x<-data64$x.gdol/1000
+data64$y<-data64$y.gsir/1000
+
+model.m2<-lm(padavine~z.nv*x, data=data64)
+summary(model.m2)
+
+par(mfrow=c(2,2),  oma = c(0, 0, 2, 0))
+plot(model.m2)
+par(mfrow=c(1,1))
+plot(data64$x, residuals(model.m2))
+abline(h=0)
+
+model.m2.gls<-gls(padavine~z.nv*x, weight=varPower(form=~fitted(.)),
+                  method="ML",data=data64)
+anova(model.m2.gls, model.m2)
+
+# plot(model.m2.gls, pch=16)
+plot(fitted(model.m2),rstandard(model.m2))
+points(fitted(model.m2.gls), resid(model.m2.gls, type="p"), col="red", pch=17)
+legend(2500, 2.5, legend=c("model.m2","model.m2.gls"),
+       pch=c(1,17), col=(1:2), box.lty = 1)
+abline(h=0)
+
+summary(model.m2.gls)
+compareCoefs(model.m2,model.m2.gls)
+library(multcomp)
+confint(glht(model.m2))  # glht na gls modelu
+
+confint(glht(model.m2.gls))
+plot2<-plot(Effect(c("x", "z.nv"), model.m2, xlevels=list(z.nv=c(250, 500, 750, 1500))),
+            rows=1, cols=1, main="", layout=c(4,1), ylim=c(-2000, 4000))
+plot1<-plot(Effect(c("z.nv","x"), model.m2, xlevels=list(x=c(390,460,540,610))), 
+            rows=1, cols=1, main="", layout=c(4,1), ylim=c(-2000, 4000))
+grid.arrange(plot1, plot2, nrow=2)
+
+plot2<-plot(Effect(c("x", "z.nv"), model.m2.gls, 
+                   xlevels=list(z.nv=c(250, 500, 750, 1500))),
+            rows=1, cols=1, main="", layout=c(4,1), ylim=c(-2000, 4000))
+plot1<-plot(Effect(c("z.nv","x"), model.m2.gls, xlevels=list(x=c(390,460,540,610))), 
+            rows=1, cols=1, main="", layout=c(4,1), ylim=c(-2000, 4000))
+grid.arrange(plot1, plot2, nrow=2)
+
+# varIdent
+
+# generiranje podatkov
+set.seed(777) # zaradi ponovljivosti
+n=20
+ya<-rnorm(n,2,1)
+yb<-rnorm(n,7,3)
+yc<-rnorm(n,6,5)
+y<-c(ya,yb,yc)
+skupina<-rep(c("A","B","C"),each=n)
+primer2<-data.frame(skupina,y)
+
+boxplot(y~skupina,data=primer2, xlab="Skupina", ylab="y")
+mod2.lm<-lm(y~skupina, data=primer2)
+summary(mod2.lm)
+
+par(mfrow=c(2,2), oma=c(0,0,2,0))
+plot(mod2.lm)
+par(mfrow=c(1,1))
+library(nlme)
+mod2.gls1<-gls(y~skupina, weight=varIdent(form=~1|skupina), method="ML")
+summary(mod2.gls1)
+
+plot(mod2.gls1, pch=16, ylim=c(-3, 3))
+
+anova(mod2.gls1,mod2.lm)
+intervals(mod2.gls1) # izra�un intervalov zaupanja za parametre gls modela
+library(car)
+compareCoefs(mod2.lm, mod2.gls1)
+
+library(multcomp)
+C<-rbind(c(0,1,0), c(0,0,1),c(0,-1,1))
+rownames(C)<-c("B-A", "C-A", "C-B")
+test<-glht(mod2.gls1, linfct=C)
+confint(test)
+test.lm<-glht(mod2.lm, linfct=C)
+confint(test.lm)
+library(effects)
+p1 <-plot(Effect(c("skupina"), mod2.lm), ci.style="bars", lty=0, main="", ylim=c(0, 10)) 
+p2 <-plot(Effect(c("skupina"), mod2.gls1), ci.style="bars", lty=0, main="", ylim=c(0, 10)) 
+library(gridExtra)
+grid.arrange(p1, p2, ncol=2)
+
+
+# LESKA
+leska<-read.table("LESKA.txt", header=T)
+str(leska)
+library(car)
+scatterplot(cvet.dan~temp, data=leska, pch=16, smooth=F, regLine=F,
+            xlab="Povpre�na temperatura zraka (�C)", ylab="Dan za�etka cvetenja leske")
+scatterplot(cvet.dan~temp, data=leska, pch=16, smooth=F, regLine=F,
+            xlab="Povpre�na temperatura zraka (�C)", ylab="Dan za�etka cvetenja leske")
+mod.lm<-lm(cvet.dan~temp, data=leska)
+par(oma=c(0,0,2,0), mfrow=c(2,2))
+plot(mod.lm)
+par(mfrow=c(1,1))
+plot(leska$leto, residuals(mod.lm), type="b",pch=16, xlab="Leto", ylab="Ostanki")
+abline(h=0, col="grey")
+
+(DWT1<-durbinWatsonTest(mod.lm, max.lag=5))
+
+acf(residuals(mod.lm), plot=FALSE)
+pacf(residuals(mod.lm), plot=FALSE)
+
+par(oma=c(0,0,2,0), mfrow=c(1,2))
+acf(residuals(mod.lm), main="")
+pacf(residuals(mod.lm), main="")
+
+#  AR(1)
+library(nlme)
+mod.gls.ar<-gls(cvet.dan~temp, correlation=corARMA(p=1), data=leska, method="ML")
+anova(mod.gls.ar, mod.lm)
+summary(mod.gls.ar)
+
+par(oma=c(0,0,2,0), mfrow=c(1,1))
+acf(residuals(mod.gls.ar, type="p"), main="")
+pacf(residuals(mod.gls.ar, type="p"), main="")
+acf(residuals(mod.gls.ar, type="n"), main="")
+pacf(residuals(mod.gls.ar, type="n"), main="")
+
+# primerjava standardiziranih in normaliziranih ostankov
+plot(leska$leto, residuals(mod.gls.ar, type="n"), type="b",pch=16, xlab="Leto",
+     ylab="Ostanki", col="black", ylim=c(-2.5,3))
+points(leska$leto, residuals(mod.gls.ar, type="p"), type="b",pch=2, xlab="Leto",
+       ylab="Ostanki", col="darkgrey")
+legend(x=1965, y=3.5, horiz=T, c("normalizirani", "standardizirani"), box.lty=0, pch=c(16,2),
+       col=c("black", "darkgrey"))
+abline(h=0, col="grey")
+
+#  MA(1)
+
+mod.gls.ma<-gls(cvet.dan~temp, correlation=corARMA(q=1), data=leska, method="ML")
+anova(mod.gls.ma, mod.lm)
+anova(mod.gls.ma, mod.gls.ar)
+summary(mod.gls.ma)
+
+compareCoefs(mod.gls.ar, mod.gls.ma, mod.lm)
+
+library(effects)
+library(gridExtra)
+plot1<-plot(effect(c("temp"), mod.lm), ci.style="bands", main="")
+plot2<-plot(effect(c("temp"), mod.gls.ar), ci.style="bands", main="")
+grid.arrange(plot1, plot2, ncol=2)
+
+intervals(mod.gls.ar)
+
+
+# Hartnagel
+data(Hartnagel)
+str(Hartnagel)
+
+# grafi�ni prikaz �asovnih vrst
+
+plot(cbind(fconvict=ts(Hartnagel$fconvict, start=1931),
+           tfr=ts(Hartnagel$tfr, start=1931), 
+           partic=ts(Hartnagel$partic, start=1931),
+           degrees=ts(Hartnagel$degrees, start=1931),
+           mconvict=ts(Hartnagel$mconvict, start=1931)), nc=1, main="")
+
+pairs(Hartnagel[,c("fconvict", "tfr", "partic", "degrees", "mconvict")])
+
+mod.H.lm<-lm(fconvict ~ tfr + partic + degrees + mconvict, data=Hartnagel)
+vif(mod.H.lm)
+durbinWatsonTest(mod.H.lm, max.lag=5)
+
+par(oma=c(0,0,2,0), mfrow=c(2,2))
+plot(mod.H.lm)
+
+par(mfrow=c(1,2))
+acf(residuals(mod.H.lm), main="")
+pacf(residuals(mod.H.lm), main="")
+
+mod.H.gls<-gls(fconvict ~ tfr + partic + degrees + mconvict, data=Hartnagel,
+               weight=varPower(form=~fitted(.)), method="ML")
+anova(mod.H.gls, mod.H.lm)
+
+par(mfrow=c(1,2))
+plot(resid(mod.H.gls, type="n")~fitted(mod.H.gls), pch=16)
+abline(h=0, lty=2)
+qqnorm(resid(mod.H.gls, type="n"), pch=16)
+qqline(resid(mod.H.gls, type="n"), lty=2)
+
+par(mfrow=c(1,2))
+acf(residuals(mod.H.gls), main="")
+pacf(residuals(mod.H.gls), main="")
+
+mod.H.gls1<-gls(fconvict ~ tfr + partic + degrees + mconvict, data=Hartnagel,
+                weight=varPower(form=~fitted(.)),
+                correlation=corARMA(p=1, q=1), method="ML")
+mod.H.gls2<-gls(fconvict ~ tfr + partic + degrees + mconvict, data=Hartnagel,
+                weight=varPower(form=~fitted(.)),
+                correlation=corARMA(p=2), method="ML")
+
+anova(mod.H.gls1, mod.H.gls2)
+
+par(mfrow=c(1,2))
+plot(resid(mod.H.gls1, type="n")~fitted(mod.H.gls1), pch=16)
+abline(h=0, lty=2)
+qqnorm(resid(mod.H.gls1, type="n"), pch=16)
+qqline(resid(mod.H.gls1, type="n"), lty=2)
+
+
+par(mfrow=c(1,2))
+acf(residuals(mod.H.gls1, type="n"), main="")
+pacf(residuals(mod.H.gls1, type="n"), main="")
+
+intervals(mod.H.gls1)
+library(multcomp)
+confint(glht(mod.H.gls1))
+
+plot1<-plot(Effect(c("tfr"), mod.H.gls1), ci.style="bands", 
+            main="", ylim=c(50,140))
+plot2<-plot(Effect(c("partic"), mod.H.gls1), ci.style="bands",
+            main="", ylim=c(50,140))
+plot3<-plot(Effect(c("degrees"), mod.H.gls1), ci.style="bands", 
+            main="", ylim=c(50,140))
+plot4<-plot(Effect(c("mconvict"), mod.H.gls1), ci.style="bands", 
+            main="", ylim=c(50,140))
+grid.arrange(plot1, plot2, plot3, plot4, ncol=2, nrow=2)
+
+
+# LESKA vaja
+
+par(mfrow=c(1,1))
+plot(leska$leto, residuals(mod.lm), type="b",pch=16, xlab="Leto", ylab="Ostanki")
+abline(h=0, col="grey")
+n<-length(residuals(mod.lm))
+par(mfrow=c(1,2))
+plot(residuals(mod.lm)[2:n],residuals(mod.lm)[1:(n-1)],
+     type="p",pch=16, xlab="Ostanki[i]", ylab="Ostanki[i-1]")
+abline(h=0, col="grey")
+plot(residuals(mod.lm)[3:n],residuals(mod.lm)[1:(n-2)], type="p",pch=16,
+     xlab="Ostanki[i]", ylab="Ostanki[i-2]")
+abline(h=0, col="grey")
+cor(residuals(mod.lm)[2:n],residuals(mod.lm)[1:(n-1)], method="pearson")
+cor(residuals(mod.lm)[3:n],residuals(mod.lm)[1:(n-2)], method="pearson")
+
+# Kardiovaskularna smrtnost
+
+library(astsa)
+str(lap)  # podatki so shranjeni v enajstih �asovnih vrstah
+
+cas<-time(cmort)-1970
+head(cas)
+tempr <- (tempr-32)/1.8  # temperatura zraka v stopinjah Celsiusa
+plot(cbind(Smrtnost=cmort, Temperatura=tempr, Delci=part))
+pairs(cbind(Smrtnost=cmort, Temperatura=tempr, Delci=part))
+library(ggplot2)
+ggplot(data.frame(lap), aes(x=tempr, y=cmort)) + geom_point() + geom_smooth(se=FALSE)
+ggplot(data.frame(lap), aes(x=part, y=cmort)) + geom_point() + geom_smooth(se=FALSE)
+ggplot(data.frame(lap), aes(x=cas, y=cmort)) + geom_line() + geom_smooth(se=FALSE)
+
+mod<-lm(cmort~cas+tempr+part, data=lap)
+par(mfrow=c(2,2))
+plot(mod)
+library(car)
+avPlots(mod)
+crPlots(mod)
+
+mod1<-lm(cmort~cas+poly(tempr,2)+part, data=lap)
+anova(mod,mod1)
+par(mfrow=c(2,2))
+plot(mod1)
+avPlots(mod1)
+crPlots(mod1)
+
+# ali bi morali v modelu upo�tevati interakcijo med tempr in part?
+library(effects)
+plot(Effect(c("tempr", "part"), mod1, partial.residuals=TRUE))
+mod1.int<-lm(cmort~cas+poly(tempr,2)*part, data=lap)
+anova(mod1,mod1.int)
+
+
+# nelinearnost modeliramo z naravnimi zlepki s tremi vozli��i
+library(splines)
+mod2<-lm(cmort~cas+ns(tempr,df=4)+part, data=lap)
+anova(mod1,mod2)
+par(mfrow=c(2,2))
+plot(mod2)
+avPlots(mod2)
+crPlots(mod2)
+par(mfrow=c(1,2))
+acf(residuals(mod2))
+pacf(residuals(mod2))
+
+# obstaja avtokorelacija v ostankih in imamo nekonstantno varianco napak
+library(nlme)
+
+#  varianca sorazmerna s pri�akovano vrednostjo
+mod1.gls<-gls(cmort ~ cas+poly(tempr,2)+part, data=lap,
+             weight=varPower(form=~fitted(.)), method="ML")
+anova(mod1.gls,mod1)
+par(mfrow=c(1,2))
+plot(resid(mod1.gls, type="n")~fitted(mod1.gls), pch=16)
+abline(h=0, lty=2)
+qqnorm(resid(mod1.gls, type="n"), pch=16)
+qqline(resid(mod1.gls, type="n"), lty=2)
+
+# avtokorelacija napak AR(2)
+mod2.gls<-gls(cmort ~ cas+poly(tempr,2)+part, data=lap,
+              weight=varPower(form=~fitted(.)), 
+              correlation=corARMA(p=2, q=0), method="ML")
+anova(mod1.gls,mod2.gls)
+par(mfrow=c(1,2))
+plot(resid(mod2.gls, type="n")~fitted(mod2.gls), pch=16)
+abline(h=0, lty=2)
+qqnorm(resid(mod2.gls, type="n"), pch=16)
+qqline(resid(mod2.gls, type="n"), lty=2)
+
+acf(resid(mod2.gls, type="n"))
+pacf(resid(mod2.gls, type="n"))
+
+summary(mod2.gls)
+
+plot(Effect(c("tempr"), mod2.gls), ylim=c(70, 130))
+plot(Effect(c("part"), mod2.gls), ylim=c(70, 130))
+
+# avtokorelacija napak AR(2), naravni zlepki
+mod3.gls<-gls(cmort ~ cas+ns(tempr,df=4)+part, data=lap,
+              weight=varPower(form=~fitted(.)), 
+              correlation=corARMA(p=2, q=0), method="ML")
+anova(mod2.gls,mod3.gls)
+par(mfrow=c(1,2))
+plot(resid(mod3.gls, type="n")~fitted(mod3.gls), pch=16)
+abline(h=0, lty=2)
+qqnorm(resid(mod3.gls, type="n"), pch=16)
+qqline(resid(mod3.gls, type="n"), lty=2)
+
+acf(resid(mod3.gls, type="n"))
+pacf(resid(mod3.gls, type="n"))
+
+summary(mod3.gls)
+
+library(effects)
+plot(Effect(c("tempr", "part"), mod3.gls, partial.residuals=TRUE))
+plot(Effect(c("tempr"), mod3.gls), ylim=c(70, 130))
+plot(Effect(c("part"), mod3.gls), ylim=c(70, 130))
+par(mfrow=c(1,1))
+
+#  Plju�na kapaciteta
+library(GLMsData)
+data(lungcap)
+str(lungcap) # 0.0254 m =1 palec
+lungcap$Ht<-lungcap$Ht*2.54 #telesna visina v cm
+lungcap$Smoke<-factor(lungcap$Smoke, levels=c(0, 1), labels=c("nekadilec", "kadilec"))
+summary(lungcap)
+
+library(ggplot2)
+ggplot(lungcap,aes(x=Age,y=FEV)) + geom_point() + geom_smooth(se=F)
+ggplot(lungcap,aes(x=Ht,y=FEV)) + geom_point() + geom_smooth(se=F)
+
+# logaritmiram odzivno spremenljivko
+ggplot(lungcap,aes(x=Age,y=log(FEV))) + 
+  geom_point() + geom_smooth(se=F)
+ggplot(lungcap,aes(x=Ht,y=log(FEV))) + 
+  geom_point() + geom_smooth(se=F)
+
+# popgledam �e vpliv spola in kajenja 
+ggplot(lungcap,aes(x=Age,y=log(FEV), col=Gender)) + 
+  geom_point() + geom_smooth(se=F) + facet_grid(.~Smoke) 
+ggplot(lungcap,aes(x=Ht,y=log(FEV), col=Gender)) + 
+  geom_point() + geom_smooth(se=F, span=0.9) + facet_grid(.~Smoke) 
+
+library(car)
+symbox(~FEV, data=lungcap)
+mod<-lm(FEV~Age + Ht + Gender + Smoke, data=lungcap)
+summary(powerTransform(mod))
+boxCox(mod)
+
+ggplot(lungcap,aes(x=Age,y=log(FEV), col=Smoke)) + 
+  geom_point() + geom_smooth(se=F) + facet_grid(.~Gender) 
+ggplot(lungcap,aes(x=Ht,y=log(FEV), col=Smoke)) + 
+  geom_point() + geom_smooth(se=F, span=0.9) + facet_grid(.~Gender) 
+
+
+mod0<-lm(log(FEV)~Age + Ht + Gender + Smoke, data=lungcap)
+par(mfrow=c(2,2))
+plot(mod0)
+avPlots(mod0)
+crPlots(mod0)
+par(mfrow=c(1,1))
+
+mod1<-lm(log(FEV)~Age + Ht + Gender + Smoke + Age:Gender, data=lungcap)
+anova(mod0,mod1)
+summary(mod0)
+anova(mod0)
+
+library(multcomp)
+mod0.test<-glht(mod0)
+summary(mod0.test)
+confint(mod0.test)
+
+outlierTest(mod0)
+par(mfrow=c(1,1))
+influencePlot(mod0, id = list(method = "noteworthy", n = 2))
+
+library(effects)
+# slika za ugotavljanje interakcije med Age in Ht
+plot(Effect(c("Age", "Ht"), mod0, partial.residuals=TRUE))
+
+plot(Effect(c("Age", "Smoke","Gender"), mod0), multiline=TRUE, ci.style = "bands")
+plot(Effect(c("Ht", "Smoke","Gender"), mod0), multiline=TRUE, ci.style = "bands")
+
+#  Kaj pa, �e spremenljivke Ht ne damo v model?
+
+mod0<-lm(log(FEV)~Age + Gender + Smoke, data=lungcap)
+par(mfrow=c(2,2))
+plot(mod0)  # nekonstantna varianca in nelinearnost, poglejmo podrobneje
+avPlots(mod0)
+crPlots(mod0)
+par(mfrow=c(1,1))
+
+# ali so v tem primeru potrebni interakcijski �leni?
+mod1<-lm(log(FEV)~Age + Gender + Smoke + Age:Gender, data=lungcap)
+anova(mod0,mod1)
+anova(mod1)
+mod2<-lm(log(FEV)~Age + Gender + Smoke + Age:Gender + Age:Smoke, data=lungcap)
+anova(mod1,mod2)
+anova(mod2)
+
+par(mfrow=c(2,2))
+plot(mod2)  # �e vedno nelinearno
+avPlots(mod2)
+par(mfrow=c(1,1))
+
+mod3<-lm(log(FEV)~ns(Age, df=5) + Gender + Smoke + Age:Gender + Age:Smoke, data=lungcap)
+anova(mod2,mod3)
+anova(mod3)
+par(mfrow=c(2,2))
+plot(mod3)  # ni ve� nelinearnosti
+par(mfrow=c(1,1))
+
+outlierTest(mod3)
+par(mfrow=c(1,1))
+influencePlot(mod3, id = list(method = "noteworthy", n = 2))
+
+library(effects)
+plot(Effect(c("Age", "Smoke","Gender"), mod3), multiline=TRUE, ci.style = "bands")
