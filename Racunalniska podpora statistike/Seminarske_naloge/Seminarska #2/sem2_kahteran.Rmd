@@ -1,45 +1,590 @@
 ---
-title: 'Seminarska naloga 2'
-date: '20. 11. 2020'
+title: "Seminarska naloga 2"
+subtitle: "Računalniška podpora statistike"
+author: "Alen Kahteran"
+date: "22. 11. 2020"
 output:
   pdf_document:
-    toc: no
-    toc_depth: '3'
+    fig_caption: yes
 params:
   printcode: no
   printresults: hide
 editor_options:
   chunk_output_type: console
+header-includes:
+  - \usepackage[slovene]{babel}
+  - \usepackage{float}
+  - \usepackage[T1]{fontenc}
 ---
 
 ```{r, setup, include=FALSE}
 # set this option in the first code chunk in the document
-knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE)
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE, message = FALSE)
 # importing required library
 library(tidyverse)
 library(knitr)
 library(kableExtra)
+library(lubridate)
 ```
 
-```{r, echo=TRUE, eval=TRUE, results="markup"}
+```{r cleaning, echo=FALSE, eval=FALSE, results="markup"}
+# read full data
 full_data <- as_tibble(read.table("test_data/pn2020.csv",
-                                  header = TRUE,
-                                  fill = TRUE,
-                                  sep = ";",
-                                  encoding = "WIN-1250",
-                                  dec=","))
+                                  header=TRUE,
+                                  sep=";",
+                                  encoding="WIN-1250", # due to reading shumniki
+                                  dec=",",
+                                  na.strings=c("", " ")))
 
-#  19, 41, 214
 
+# setting seed for selection of 500 rows
 set.seed(8)
 
-data_500 <- sample_n(full_data, 500)
+# Selecting "povzrocitelj" and "voznike osebnih avtomobilov" which are Slovene, 
+# as this represents our population
+data_500 <- full_data %>%
+    filter(Povzrocitelj == "POVZROČITELJ",
+           VrstaUdelezenca == "VOZNIK OSEBNEGA AVTOMOBILA",
+           Drzavljanstvo == "SLOVENIJA") %>%
+    sample_n(500)
 
-# filter(count(full_data, ZaporednaStevilkaPN), n==1)
-# filter(full_data, ZaporednaStevilkaPN %in% filter(count(full_data, ZaporednaStevilkaPN), n==1)$ZaporednaStevilkaPN)
-# asdf <- filter(full_data, ZaporednaStevilkaPN %in% filter(count(full_data, ZaporednaStevilkaPN), n==1)$ZaporednaStevilkaPN)
-# table(asdf$Spol)
-# t.test(alkoholicari_full$VrednostAlkotesta ~ alkoholicari_full$Spol, var.equal=FALSE, paired=FALSE)
+# data cleaning
+# change to date time and add hours
+data_500$DatumPN <- parse_date_time(data_500$DatumPN, c("dmY")) + data_500$UraPN * 3600
+
+# change to years to months and add to months
+data_500$VozniskiStazVMesecih <- data_500$VozniskiStazVMesecih + data_500$VozniskiStazVLetih * 12
+
+data_500 <- data_500 %>%
+    # Removing non used variables, which are either too fragmented or make no sense
+    # when looking at the population
+    select(ZaporednaStevilkaPN,
+           DatumPN,
+           VNaselju,
+           VzrokNesrece,
+           VremenskeOkoliscine,
+           StanjePrometa,
+           StanjeVozisca,
+           VrstaVozisca,
+           Starost,
+           Spol,
+           VozniskiStazVMesecih,
+           VrednostAlkotesta)
+
+# removing rows with NA values if there are any
+data_500 <- data_500[rowSums(is.na(data_500)) == 0, ]
+
+write.table(data_500, 
+            "data.txt", 
+            sep="\t", 
+            dec=",", 
+            row.names=FALSE,
+            col.names=TRUE)
+
+
+
 ```
 
-asdf
+```{r preparing, echo=FALSE, eval=TRUE, results="markup"}
+
+desc_table <- cbind(c("ZaporednaStevilkaPN", #1
+                      "KlasifikacijaNesrece", #2
+                      "UpravnaEnotaStoritve", #3
+                      "DatumPN", #4
+                      "UraPN", #5
+                      "VNaselju", #6
+                      "Lokacija", #7
+                      "VrstaCesteNaselja", #8
+                      "SifraCesteNaselja", #9
+                      "TekstCesteNaselja", #10
+                      "SifraOdsekaUlice", #11
+                      "TekstOdsekaUlice", #12
+                      "StacionazaDogodka", #13
+                      "OpisKraja", #14
+                      "VzrokNesrece", #15
+                      "TipNesrece", #16
+                      "VremenskeOkoliscine", #17
+                      "StanjePrometa", #18
+                      "StanjeVozisca", #19
+                      "VrstaVozisca", #20
+                      "GeoKoordinataX", #21
+                      "GeoKoordinataY", #22
+                      "ZaporednaStevilkaOsebeVPN", #23
+                      "Povzrocitelj", #24
+                      "Starost", #25
+                      "Spol", #26
+                      "UEStalnegaPrebivalisca", #27
+                      "Drzavljanstvo", #28
+                      "PoskodbaUdelezenca", #29
+                      "VrstaUdelezenca", #30
+                      "UporabaVarnostnegaPasu", #31
+                      "VozniskiStazVLetih", #32
+                      "VozniskiStazVMesecih", #33
+                      "VrednostAlkotesta", #34
+                      "VrednostStrokovnegaPregleda"), #35
+                    c("številka za štetje in ločevanje posamezne prometne nesreče",
+                      "klasifikacija nesreče glede na posledice (Izračuna se avtomatično glede na najhujšo posledico pri udeležencih v prometni nesreči)",
+                      "upravna enota, na območju katere se je zgodila prometna nesreča",
+                      "datum nesreče (format: dd.mm.llll)",
+                      "ura nesreče (format: hh)",
+                      "indikator ali se je nesreča zgodila v naselju (D) ali izven (N)",
+                      "lokacija nesreče",
+                      "vrsta ceste ali naselja na kateri je prišlo do nesreče",
+                      "oznaka ceste ali šifra naselja kjer je prišlo do nesreče",
+                      "tekst ceste ali naselja, kjer je prišlo do nesreče",
+                      "oznaka odseka ceste ali šifra ulice, kjer je prišlo do nesreče",
+                      "tekst odseka ali ulice, kjer je prišlo do nesreče",
+                      "točna stacionaža ali hišna številka, kjer je prišlo do nesreče",
+                      "opis prizorišča nesreče",
+                      "glavni vzrok nesreče",
+                      "tip nesreče",
+                      "vremenske okoliščine v času nesreče",
+                      "stanje prometa v času nesreče",
+                      "stanje vozišča v času nesreče",
+                      "stanje površine vozišča v času nesreče",
+                      "Geo Koordinata X (Gauß-Krüger-jev koordinatni sistem)",
+                      "Geo Koordinata Y (Gauß-Krüger-jev koordinatni sistem)",
+                      "številka za štetje in ločevanje oseb, udeleženih v prometnih nesrečah",
+                      "kot kaj nastopa oseba v prometni nesreči",
+                      "starost osebe (LL)",
+                      "spol",
+                      "upravna enota stalnega prebivališča",
+                      "državljanstvo osebe",
+                      "poškodba osebe",
+                      "vrsta udeleženca v prometu",
+                      "ali je oseba uporabljala varnostni pas ali čelado (polje se interpretira v odvisnosti od vrste udeleženca) (Da/Ne)",
+                      "vozniški staž osebe za kategorijo, ki jo potrebuje glede na vrsto udeleženca v prometu (LL)",
+                      "vozniški staž osebe za kategorijo, ki jo potrebuje glede na vrsto udeleženca v prometu (MM)",
+                      "vrednost alkotesta za osebo, če je bil opravljen (n.nn)",
+                      "vrednost strokovnega pregleda za osebo, če je bil odrejen in so rezultati že znani (n.nn)"),
+                    c("da", #1
+                      "ne", #2
+                      "ne", #3
+                      "da", #4
+                      "ne", #5
+                      "da", #6
+                      "ne", #7
+                      "ne", #8
+                      "ne", #9
+                      "ne", #10
+                      "ne", #11
+                      "ne", #12
+                      "ne", #13
+                      "ne", #14
+                      "da", #15
+                      "ne", #16
+                      "da", #17
+                      "da", #18
+                      "da", #19
+                      "da", #20
+                      "ne", #21
+                      "ne", #22
+                      "ne", #23
+                      "da", #24
+                      "da", #25
+                      "da", #26
+                      "ne", #27
+                      "da", #28
+                      "ne", #29
+                      "da", #30
+                      "ne", #31
+                      "ne", #32
+                      "da", #33
+                      "da", #34
+                      "ne"))#35
+
+desc_table <- data.frame(desc_table)
+
+colnames(desc_table) <- c("Ime spremenljivke", "Opis spremenljivke (in morebiten format)", "Uporaba")
+
+desc_table <- as_tibble(desc_table)
+
+
+# defining helper functions
+chi_test_filter <- function(data, column, k=10){
+    # a function which returns data grouped into new value by column where each groups 
+    # size was less than k. This is due to chi squared test requiring the sizes of data
+    # to be larger than 5, default is set to 10, so that the assumption that the data is
+    # distrubited by chi squared distribution holds true (if k is large enough)
+    # input:
+    #     data - tibble or data.frame of entire data
+    #     column - string of column name
+    #     n - the limit below which we combine the groups into "OTHER"/"OSTALO"
+    
+    # so we correctly evaluate column name.
+    column = enquo(arg = column)
+    
+    temp <- data %>% 
+        # count by gender and then column
+        count(Spol, !!column) %>%
+        # pivot to wide
+        pivot_wider(names_from = Spol,
+                    values_from = n) %>%
+        # check if male/female group is larger than k and if also both are.
+        mutate(.,
+               M_larger = if_else(.$'MOŠKI' >= k, 1,0,0),
+               F_larger = if_else(.$'ŽENSKI' >= k, 1,0,0)) %>%
+        mutate(both = if_else(M_larger == 1 & F_larger == 1, 1, 0, 0)) %>%
+        select(-'MOŠKI',
+               -'ŽENSKI',
+               -M_larger,
+               -F_larger)
+    # left join to data, filter by both groups
+    
+    return(left_join(data, temp) %>% mutate(!!column := if_else(both == 0, "OSTALO", !!column)) %>% select(-both))
+}
+
+
+t_test_filter <- function(data, column, k=30){
+    # a function which returns data filtered by column where each groupćs size was less
+    # than k. This is due to two sample t-test requiring the averages of data to be 
+    # normally distributed, which holds true (if k is large enough) 
+    # due to Central Limit Theorem.
+    # input:
+    #     data - tibble or data.frame of entire data
+    #     column - string of column name
+    #     n - the limit below which we remove the group
+    
+    # so we correctly evaluate column name.
+    column = enquo(arg = column)
+    
+    temp <- data %>% 
+        # count by gender and then column
+        count(Spol, !!column) %>%
+        # pivot to wide
+        pivot_wider(names_from = Spol,
+                    values_from = n) %>%
+        # check if male/female group is larger than k and if also both are.
+        mutate(.,
+               M_larger = if_else(.$'MOŠKI' >= k, 1,0,0),
+               F_larger = if_else(.$'ŽENSKI' >= k, 1,0,0)) %>%
+        mutate(both = if_else(M_larger == 1 & F_larger == 1, 1, 0, 0)) %>%
+        select(-'MOŠKI',
+               -'ŽENSKI',
+               -M_larger,
+               -F_larger)
+    # left join to data, filter by both groups
+    
+    return(left_join(data, temp) %>% filter(both == 1) %>% select(-both))
+}
+
+p_return <- function(p, conf.level=0.05) {
+    # a function which returns a string of "zavrnemo" or "ne zavrnemo" depending on p
+    # value given at conf.level.
+    # input:
+    #     p - numeric value of p value
+    #     conf.level - numeric value of conf.level, default= 0.05
+    if (p < conf.level) {
+        return("zavrnemo")
+    } else{
+        return("ne zavrnemo")
+    }
+}
+
+data_500 <- as_tibble(read.table("data.txt",
+                                 header=TRUE,
+                                 sep="\t",
+                                 encoding="WIN-1250",
+                                 dec=","))
+
+# correctly converting to datetime (POSIXct)
+data_500$DatumPN <- parse_date_time(data_500$DatumPN, c("Ymd HMS"))
+
+```
+
+## Uvod
+
+Pred kratkim sem si hotel odgovoriti na vprašanje ali obstaja kakšna razlika med moškimi in ženskami, ki povzročijo nesrečo z osebnim avtomobilom v različnih okoliščinah.
+
+Podatke o vseh (od leta 1995 dalje) prometnih nesrečah v Sloveniji, lahko dobimo na spletni strani policije[^1]. Odločil sem se, da raziščem podatke za leto 2020, saj je možno, da je kje opazen tudi vpliv COVID-19. Seveda za ta namen bi bila potrebna podrobnejša analiza, ter primerjava s prejšnjimi leti, vendar je v vsakem primeru najprej potrebno analizirati le letošnje podatke. Trenutni podatki vsebujejo prometne nesreče le do konca avgusta 2020. 
+
+Naše podatke bomo primarno delili na moške in ženske, za tem pa še na posamezne skupine, glede na določeno spremenljivko. Okoliščine so lahko različnih oblik. Večina je povezanih s samo prometno nesrečo (gostota prometa, lokacija, vremenske razmere, itd.), nekaj pa jih je z voznikom (starost, vozniški staž, itd.). Najprej je bilo potrebno podatke korektno pripraviti za obdelavo, kar si lahko pogledamo v naslednjem poglavju.
+
+## Čiščenje podatkov
+
+Preden se kakorkoli dotaknemo podatkov, je potrebno vedeti kakšne podatke sploh imamo. Tu nam je policija poleg podatkov, pripravila tudi opise (in formate) vseh spremenljivk. Žal ti niso točno povedali kateri opis pripada kateri spremenljivki, vendar je že samo ime spremenljivke povedalo večino informacij. Tako da v tabeli \ref{tab:table1} si lahko pogledamo imena spremenljivk, njihove opise ter ali so bile uporabljene ali ne.
+
+```{r table1, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisi spremenljivk"}
+
+kable(desc_table, caption="Opisi spremenljivk", booktabs=T) %>% 
+    kable_styling(latex_options=c("striped")) %>%
+    column_spec(2, width = "9.5cm") 
+    
+```
+
+Za večino spremenljivk je bil podan format. Ponekod, kjer je bil podatek ločen na dva stolpca, kot npr. `DatumPN` in `UraPN` sem ustrezno pretvoril v datum z uro. Podobno sem storil pri vozniškem stažu, kjer sem vse pretvoril v mesece. 
+
+Spremenljivke ki sem jih obdržal so bile `ZaporednaStevilkaPN`, `DatumPN`, `VNaselju`, `VzrokNesrece`, `VremenskeOkoliscine`, `StanjePrometa`, `StanjeVozisca`, `VrstaVozisca`, `Starost`, `Spol`, `VozniskiStazVMesecih` in `VrednostAlkotesta`. `Povzrocitelj`, `VrstaUdelezenca` in `Drzavljanstvo` sem uporabil le toliko, da smo dobili pravilen vzorec naših začetnih podatkov (povzročitelje nesreč, ki so vozili osebni avtomobil in imajo slovensko državljanstvo).
+
+`UraPN` in `VozniskiStazVLetih` sta bila ustrezno dodana drugim spremenljivkam.
+
+Ostale spremenljivke so ali preveč razdrobljeni podatki, ali neuporabni saj se osredotočamo na slovensko populacijo, ali pa vezani na posledice nesreče. Tako si poglejmo še preostale spremenljivke v naslednjem poglavju.
+
+## Pregled podatkov
+
+Najprej si poglejmo na sliki \ref{fig:histogram1} porazdeljenost nesreč v času. V normalnih okoliščinah bi pričakovali, da so nesreče čez celo leto enakomerno porazdeljene (dogodki so časovno neodvisni). V našem časovnem obdobju (od 1. 1. 2020 do 31. 8. 2020) vidimo da temu ni tako, saj se je v sredini marca 2020 začelo ustavljanje javnega življenja zaradi COVID-19. Ker je takrat večina ljudi bila doma, in ne v avtu, je v našem časovnem obdobju pričakovano, da bo v obdobju, ko je bilo ustavljeno javno življenje, manj nesreč. Kljub temu to ne bi smelo vplivati na rezultate, saj se ne osredotočamo na to kdaj so se zgodili, temveč kdo jih je storil.
+
+```{r histogram1, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev nesreč v času"}
+ggplot(data_500, aes(DatumPN, ..count..)) + 
+    geom_histogram() +
+    labs(x=NULL, y="Št. nesreč")
+```
+
+```{r bar1, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev spola povzročiteljev nesreč."}
+
+ggplot(data_500, aes(Spol, ..count..)) + 
+    geom_bar() +
+    labs(x="Spol", y="Št. povzročiteljev nesreč")
+    
+```
+
+Zato si na sliki \ref{fig:bar1} najprej poglejmo porazdelitev našega vzorca po spolu. Videti je da je moških približno dvakrat toliko kot žensk (moških - `r table(data_500$Spol)[["MOŠKI"]]`, žensk - `r table(data_500$Spol)[["ŽENSKI"]]`). Poglejmo si naš vzorec še za ostale spremenljivke
+
+### Starost
+
+Porazdelitev starosti lahko vidimo na sliki \ref{fig:histMF}. Videti je da št. povzročiteljev nesreč pada s starostjo. Če primerjamo našo porazdelitev s starostno porazdelitvijo Slovenije[^2], je videti da ta ne pada s starostjo. To bi mogoče lahko pripisali dvem stvarem, ali temu da so mlajši vozniki osebnih avtomobilov bolj pogosti da povzročijo nesrečo (zaradi voznih izkušenj), ali pa temu, da starejši ljudje manj vozijo avte.
+
+```{r histMF, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev starosti"}
+
+ggplot(data_500, aes(Starost, ..count..)) + 
+    geom_histogram(bins=30) +
+    labs(x="Starost", y="Frekvenca")
+    
+```
+
+Poglejmo si še opisne statistike Starosti za oba spola, za moške in za ženske v tabeli \ref{tab:tab_opis} in še grafični prikaz opisnih statistik starosti za moške in ženske s škatlo z ročaji na sliki \ref{fig:fig_star}. Iz grafa okvirjev z ročaji, je videti da sta si porazdelitvi precej podobni. Videti je da so porazdelitve asimetrične (Zgornji del je daljši), in je zato mediana smiselna mera središčnosti, medtem ko je interkvartilni razmik smiselna mera razpršenosti. Žal iz teh fotografij ne moremo nič sklepati. Poleg tega je iz tabele razvidno, da naš vzorec vsebuje celoten spekter starosti, od mladih, ki so komaj opravili izpit, do starejših (75+).
+
+```{r tab_opis, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisne statistike starosti"}
+
+tmp <- rbind(data.frame(unclass(summary(data_500$Starost))), 
+             IQR(data_500$Starost))
+
+tmpm <- rbind(data.frame(unclass(summary(data_500$Starost[data_500$Spol == "MOŠKI"]))), 
+              IQR(data_500$Starost[data_500$Spol == "MOŠKI"]))
+
+tmpf <- rbind(data.frame(unclass(summary(data_500$Starost[data_500$Spol == "ŽENSKI"]))), 
+              IQR(data_500$Starost[data_500$Spol == "ŽENSKI"]))
+
+tmp <- cbind(tmp, tmpm, tmpf)
+
+rownames(tmp)[rownames(tmp) == 7] <- "IQR"
+colnames(tmp) <- c("Skupno", "Moški", "Ženske")
+
+kable(tmp, digits=1, caption="Opisne statistike starosti", booktabs=T) %>% 
+    kable_styling(latex_options=c("striped"), full_width=FALSE)
+    
+```
+
+```{r fig_star, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Škatle z brki za starost po spolu."}
+
+ggplot(data_500, aes(y=Starost, x=Spol)) + 
+    geom_boxplot() +
+    labs(x="Spol", y="Starost")
+
+```
+
+### V naselju
+
+Vidimo da se v našem vzorcu zgodi več nesreč v naselju (V naselju - `r table(data_500$VNaselju)[["DA"]]`, Izven naselja - `r table(data_500$VNaselju)[["NE"]]`). To sem tudi pričakoval, saj mislim da se največ vožnje z avtomobilom zgodi ravno v naselju. Podoben razmislej je da tudi zato, ker je tam največ ljudi in avtov.
+
+V tabeli \ref{tab:tab_spol_nas} si oglejmo kontingenčno tabelo opazovanih frekvenc za spol povzročiteljev nesreč, ter ali je bila nesreča v naselju, ali ne. Po občutku bi rekel da večjih odstopanj od pričakovanj (če gledamo vsote) ni. To bomo v naslednjem poglavju preverili s testom $\chi^2$.
+
+```{r fig_nas, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Frekvenca ali je bila nesreča storjena v naselju ali ne"}
+ggplot(data_500, aes(VNaselju, ..count..)) + 
+    geom_bar() +
+    labs(x="Nesreča storjena v naselju", y="Frekvenca")
+```
+
+```{r tab_spol_nas, echo=FALSE, eval=TRUE, results="markup", tab.cap="Kontingenča tabela za spol in ali je bila nesreča storjena v naselju"}
+
+tmp <- table(data_500$VNaselju, data_500$Spol)
+
+tmp <- cbind(tmp, rowSums(tmp))
+
+tmp <- rbind(tmp, colSums(tmp))
+
+colnames(tmp) <- c(unique(data_500$Spol), "VSOTA")
+rownames(tmp) <- c(unique(data_500$VNaselju), "VSOTA")
+
+kable(tmp, 
+      caption="Kontingenča tabela za spol in ali je bila nesreča storjena v naselju",
+      booktabs=TRUE) %>% 
+    kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
+
+```
+
+Podobno lahko sklepamo iz slike \ref{fig:fig_nas_rel}, saj vidimo da nekih velikih razlik v relativnih frekvencah ni.
+
+```{r fig_nas_rel, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Relativen prikaz, ali je bila nesreča storjena v naselju ali ne, po spolu."}
+ggplot(data_500, aes(VNaselju, ..count.., fill=Spol)) + 
+    geom_bar(position = "fill") +
+    labs(x="Nesreča storjena v naselju", y="Relativna frekvenca") +
+    scale_fill_manual(values = c("#00BFC4", "#F8766D"))
+```
+
+Na sliki \ref{fig:fig_nas_str} je prikazana porazdelitev starosti znotraj vsake izmed skupin. Če primerjamo s sliko \ref{fig:fig_star}, večjih odstopanj v starosti ni. Ker so skupine dovolj velike ($n \geq 30$), bomo lahko s $t$-testom preverili če se povprečje starosti bistveno razlikuje med spoloma.
+
+```{r fig_nas_str, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5, fig.cap="Relativen prikaz, ali je bila nesreča storjena v naselju ali ne, po spolu."}
+ggplot(data_500, aes(y=Starost)) + 
+    geom_boxplot() +
+    labs(x=NULL, y="Starost") +
+    facet_grid(cols=vars(Spol),
+               rows=vars(VNaselju),
+               labeller=labeller(.rows = label_both, .cols = label_both)) + 
+    theme(axis.ticks.x = element_blank(),
+          axis.text.x = element_blank())
+```
+
+
+### VremenskeOkoliscine
+
+Na sliki \ref{fig:fig_vrm} so prikazane absolutne frekvence nesreč v različnih vremenskih okoliščinah. Vidimo da se največ nesreč zgodi pri vremenu `r count(data_500, VremenskeOkoliscine)$VremenskeOkoliscine[count(data_500, VremenskeOkoliscine)$n == max(count(data_500, VremenskeOkoliscine)$n)]`. Če si pogledamo še dejanske številke v tabeli \ref{tab:tab_spol_vrm}, vidimo da so nekatere izmed skupin manjše od zahtevanega za $\chi^2$ test (vsaj $80\%$ skupin mora imeti vsaj $5$ opazovanj). Tu lahko storimo dve stvari, bodisi odstranimo skupine, ki so manjše od $5$ opazovanj, ali pa jih združimo v novo skupino - `OSTALO`. Sam sem se odločil da jih združim, saj bomo tako še vedno imeli `r nrow(data_500)` opazovanj.
+
+
+```{r fig_vrm, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Frekvence vremenskih okoliščin"}
+ggplot(data_500, aes(VremenskeOkoliscine, ..count..)) + 
+    geom_bar() +
+    labs(x="Vremenske okoliščine", y="Frekvenca")
+```
+
+
+```{r tab_spol_vrm, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, tab.cap="Kontingenča tabela za spol in vremenske okoliščine"}
+
+tmp <- table(data_500$VremenskeOkoliscine, data_500$Spol)
+
+tmp <- cbind(tmp, rowSums(tmp))
+
+tmp <- rbind(tmp, colSums(tmp))
+
+colnames(tmp) <- c(head(colnames(tmp), -1), "VSOTA")
+rownames(tmp) <- c(head(rownames(tmp), -1), "VSOTA")
+
+kable(tmp, 
+      caption="Kontingenča tabela za spol in vremenske okoliščine",
+      booktabs=TRUE) %>% 
+    kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
+
+```
+
+```{r fig_vrm_rel, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Relativen prikaz vremenskih razmer po spolu."}
+ggplot(data_500, aes(VremenskeOkoliscine, ..count.., fill=Spol)) + 
+    geom_bar(position = "fill") +
+    labs(x="Vremenske okoliščine", y="Relativna frekvenca") +
+    scale_fill_manual(values = c("#00BFC4", "#F8766D"))
+```
+
+### StanjePrometa
+
+
+
+```{r fig_stpr, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Frekvence stanj prometa"}
+ggplot(data_500, aes(StanjePrometa, ..count..)) + 
+    geom_bar() +
+    labs(x="Stanje prometa", y="Frekvenca")
+```
+
+
+```{r tab_spol_stpr, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, tab.cap="Kontingenča tabela za spol stanje prometa"}
+
+tmp <- table(data_500$StanjePrometa, data_500$Spol)
+
+tmp <- cbind(tmp, rowSums(tmp))
+
+tmp <- rbind(tmp, colSums(tmp))
+
+colnames(tmp) <- c(head(colnames(tmp), -1), "VSOTA")
+rownames(tmp) <- c(head(rownames(tmp), -1), "VSOTA")
+
+kable(tmp, 
+      caption="Kontingenča tabela za spol in stanje prometa",
+      booktabs=TRUE) %>% 
+    kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
+
+```
+
+```{r fig_stpr_rel, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Relativen prikaz stanj prometa po spolu."}
+ggplot(data_500, aes(StanjePrometa, ..count.., fill=Spol)) + 
+    geom_bar(position = "fill") +
+    labs(x="Stanje prometa", y="Relativna frekvenca") +
+    scale_fill_manual(values = c("#00BFC4", "#F8766D"))
+```
+
+
+### StanjeVozisca
+
+```{r fig_stvz, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=4, fig.cap="Frekvence stanj vozišča"}
+ggplot(data_500, aes(StanjeVozisca, ..count..)) + 
+    geom_bar() +
+    labs(x="Stanje vozišča", y="Frekvenca") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r tab_spol_stvz, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, tab.cap="Kontingenča tabela za spol stanje vozišča"}
+
+tmp <- table(data_500$StanjeVozisca, data_500$Spol)
+
+tmp <- cbind(tmp, rowSums(tmp))
+
+tmp <- rbind(tmp, colSums(tmp))
+
+colnames(tmp) <- c(head(colnames(tmp), -1), "VSOTA")
+rownames(tmp) <- c(head(rownames(tmp), -1), "VSOTA")
+
+kable(tmp, 
+      caption="Kontingenča tabela za spol in stanje vozišča",
+      booktabs=TRUE) %>% 
+    kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
+
+```
+
+
+```{r fig_stvz_rel, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=4, fig.cap="Relativen prikaz stanj vozišča po spolu."}
+ggplot(data_500, aes(StanjeVozisca, ..count.., fill=Spol)) + 
+    geom_bar(position = "fill") +
+    labs(x="Stanje vozišča", y="Relativna frekvenca") +
+    scale_fill_manual(values = c("#00BFC4", "#F8766D")) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### VrstaVozisca
+
+```{r fig_vrvz, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=4, fig.cap="Frekvence vrst vozišča"}
+ggplot(data_500, aes(VrstaVozisca, ..count..)) + 
+    geom_bar() +
+    labs(x="Vrsta vozišča", y="Frekvenca") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r tab_spol_vrvz, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, tab.cap="Kontingenča tabela za spol vrsto vozišča"}
+
+tmp <- table(data_500$VrstaVozisca, data_500$Spol)
+
+tmp <- cbind(tmp, rowSums(tmp))
+
+tmp <- rbind(tmp, colSums(tmp))
+
+colnames(tmp) <- c(head(colnames(tmp), -1), "VSOTA")
+rownames(tmp) <- c(head(rownames(tmp), -1), "VSOTA")
+
+kable(tmp, 
+      caption="Kontingenča tabela za spol in vrsto vozišča",
+      booktabs=TRUE) %>% 
+    kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
+
+```
+
+
+```{r fig_vrvz_rel, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=4, fig.cap="Relativen prikaz vrst vozišča po spolu."}
+ggplot(data_500, aes(VrstaVozisca, ..count.., fill=Spol)) + 
+    geom_bar(position = "fill") +
+    labs(x="Vrsta vozišča", y="Relativna frekvenca") +
+    scale_fill_manual(values = c("#00BFC4", "#F8766D")) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+[^1]:
+https://www.policija.si/o-slovenski-policiji/statistika/prometna-varnost
+[^2]:
+https://pxweb.stat.si/SiStatData/pxweb/sl/Data/-/05C5002S.px/
