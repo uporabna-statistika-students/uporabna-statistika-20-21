@@ -285,8 +285,15 @@ data_500 <- as_tibble(read.table("data.txt",
 # correctly converting to datetime (POSIXct)
 data_500$DatumPN <- parse_date_time(data_500$DatumPN, c("Ymd HMS"))
 
+# removing rows with NA values again, just in case if there are any.
+data_500 <- data_500[rowSums(is.na(data_500)) == 0, ]
+
+# defining sizes for filter functions
 k_chi <- 10
 k_t <- 30
+
+conf.level <- 0.05
+
 
 ```
 
@@ -294,17 +301,17 @@ k_t <- 30
 
 Pred kratkim sem si hotel odgovoriti na vprašanje ali obstaja kakšna razlika med moškimi in ženskami, ki povzročijo nesrečo z osebnim avtomobilom v različnih okoliščinah.
 
-Podatke o vseh (od leta 1995 dalje) prometnih nesrečah v Sloveniji, lahko dobimo na spletni strani policije[^1]. Odločil sem se, da raziščem podatke za leto 2020, saj je možno, da je kje opazen tudi vpliv COVID-19. Seveda za ta namen bi bila potrebna podrobnejša analiza, ter primerjava s prejšnjimi leti, vendar je v vsakem primeru najprej potrebno analizirati le letošnje podatke. Trenutni podatki vsebujejo prometne nesreče le do konca avgusta 2020. 
+Podatke o vseh (od leta 1995 dalje) prometnih nesrečah v Sloveniji, lahko dobimo na spletni strani policije[^1]. Odločil sem se, da raziščemo podatke za leto 2020, saj je možno, da je kje opazen tudi vpliv COVID-19. Seveda za ta namen bi bila potrebna podrobnejša analiza, ter primerjava s prejšnjimi leti, vendar je v vsakem primeru najprej potrebno analizirati le letošnje podatke. Trenutni podatki vsebujejo prometne nesreče le do konca avgusta 2020. 
 
 Naše podatke bomo primarno delili na moške in ženske, za tem pa še na posamezne skupine, glede na določeno spremenljivko. Okoliščine so lahko različnih oblik. Večina je povezanih s samo prometno nesrečo (gostota prometa, lokacija, vremenske razmere, itd.), nekaj pa jih je z voznikom (starost, vozniški staž, itd.).
 
-Najprej je bilo podatke korektno pripraviti za obdelavo, kar si lahko pogledamo v naslednjem poglavju.
+Najprej je bilo podatke korektno pripraviti za obdelavo.
 
 ## Čiščenje podatkov
 
-Preden se kakorkoli dotaknemo podatkov, je potrebno vedeti kakšne podatke sploh imamo. Tu nam je policija poleg podatkov, pripravila tudi opise (in formate) vseh spremenljivk. Žal ti niso točno povedali kateri opis pripada kateri spremenljivki, vendar je že samo ime spremenljivke povedalo večino informacij. Tako da v tabeli \ref{tab:table1} si lahko pogledamo imena spremenljivk, njihove opise ter ali so bile uporabljene ali ne.
+Preden se kakorkoli dotaknemo podatkov, je potrebno vedeti kakšne podatke sploh imamo. Tu nam je policija poleg podatkov, pripravila tudi opise (in formate) vseh spremenljivk. Žal niso točno povedali kateri opis pripada kateri spremenljivki, vendar je že samo ime spremenljivke povedalo večino informacij. Tako da v tabeli \ref{tab:table1} vidimo imena spremenljivk, njihove opise ter ali so bile uporabljene za analizo ali ne.
 
-```{r table1, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisi spremenljivk"}
+```{r table1, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisi spremenljivk."}
 
 kable(desc_table, caption="Opisi spremenljivk", booktabs=T) %>% 
     kable_styling(latex_options=c("striped")) %>%
@@ -312,17 +319,18 @@ kable(desc_table, caption="Opisi spremenljivk", booktabs=T) %>%
     
 ```
 
-Za večino spremenljivk je bil podan format. Ponekod, kjer je bil podatek ločen na dva stolpca, kot npr. `DatumPN` in `UraPN` kar sem ustrezno pretvoril v datum z uro. 
+Za večino spremenljivk je bil podan format. Ponekod, kjer je bil podatek ločen na dva stolpca, kot npr. `DatumPN` in `UraPN`, smo ustrezno pretvorili v datum z uro. 
 
-Spremenljivke ki sem jih obdržal so bile `ZaporednaStevilkaPN`, `DatumPN`, `VNaselju`, `VremenskeOkoliscine`, `Starost`, `Spol` in `VrednostAlkotesta`. `Povzrocitelj`, `VrstaUdelezenca` in `Drzavljanstvo` sem uporabil le toliko, da smo dobili pravilen vzorec naših začetnih podatkov (povzročitelje nesreč, ki so vozili osebni avtomobil in imajo slovensko državljanstvo).
+Spremenljivke ki smo jih obdržali so bile `ZaporednaStevilkaPN`, `DatumPN`, `VNaselju`, `VremenskeOkoliscine`, `Starost`, `Spol` in `VrednostAlkotesta`. `Povzrocitelj`, `VrstaUdelezenca` in `Drzavljanstvo` sem uporabil le toliko, da smo dobili pravilen vzorec naših začetnih podatkov (povzročitelje nesreč, ki so vozili osebni avtomobil in imajo slovensko državljanstvo).
 
-Ostale spremenljivke so ali preveč razdrobljene, ali neuporabne saj se osredotočamo na slovensko populacijo, ali pa vezane na posledice nesreče. Tako si poglejmo še preostale izbrane spremenljivke v naslednjem poglavju.
+Ostale spremenljivke so ali preveč razdrobljene, ali neuporabne saj se osredotočamo na slovensko populacijo, ali pa vezane na posledice nesreče.
 
+\newpage
 ## Pregled podatkov
 
 Najprej si poglejmo na sliki \ref{fig:histogram1} porazdeljenost nesreč v času. V normalnih okoliščinah bi pričakovali, da so nesreče čez celo leto enakomerno porazdeljene (dogodki so časovno neodvisni). V našem časovnem obdobju (od 1. 1. 2020 do 31. 8. 2020) vidimo da temu ni tako, saj se je v sredini marca 2020 začelo ustavljanje javnega življenja zaradi COVID-19. Ker je takrat večina ljudi bila doma, in ne v avtu, je v našem časovnem obdobju pričakovano, da bo v obdobju, ko je bilo ustavljeno javno življenje, manj nesreč. Kljub temu to ne bi smelo vplivati na rezultate, saj se ne osredotočamo na to kdaj so se zgodili, temveč kdo jih je storil.
 
-```{r histogram1, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev nesreč v času"}
+```{r histogram1, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev nesreč v času."}
 ggplot(data_500, aes(DatumPN, ..count..)) + 
     geom_histogram() +
     labs(x=NULL, y="Št. nesreč")
@@ -341,9 +349,9 @@ Zato si na sliki \ref{fig:bar1} najprej poglejmo porazdelitev našega vzorca po 
 
 ### Starost
 
-Porazdelitev starosti lahko vidimo na sliki \ref{fig:histMF}. Videti je da št. povzročiteljev nesreč pada s starostjo. Če primerjamo našo porazdelitev s starostno porazdelitvijo Slovenije[^2], je videti da ta ne pada s starostjo. To bi mogoče lahko pripisali dvem stvarem, ali temu da so mlajši vozniki osebnih avtomobilov bolj pogosti da povzročijo nesrečo (zaradi voznih izkušenj), ali pa temu, da starejši ljudje manj vozijo avte.
+Porazdelitev starosti lahko vidimo na sliki \ref{fig:histMF}. Videti je da št. povzročiteljev nesreč pada s starostjo. Če primerjamo našo porazdelitev s starostno porazdelitvijo Slovenije[^2], je videti da ta ne pada s starostjo. To padanje starosti bi mogoče lahko pripisali dvem stvarem, ali temu da so mlajši vozniki osebnih avtomobilov bolj pogosti, da povzročijo nesrečo (zaradi manj izkušenj), ali pa temu, da starejši ljudje manj vozijo avte.
 
-```{r histMF, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev starosti"}
+```{r histMF, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev starosti."}
 
 ggplot(data_500, aes(Starost, ..count..)) + 
     geom_histogram(bins=30) +
@@ -351,9 +359,9 @@ ggplot(data_500, aes(Starost, ..count..)) +
     
 ```
 
-Poglejmo si še opisne statistike Starosti za oba spola, za moške in za ženske v tabeli \ref{tab:tab_opis} in še grafični prikaz opisnih statistik starosti za moške in ženske s škatlo z ročaji na sliki \ref{fig:fig_star}. Iz grafa okvirjev z ročaji, je videti da sta si porazdelitvi precej podobni. Videti je da so porazdelitve asimetrične (Zgornji del je daljši), in je zato mediana smiselna mera središčnosti, medtem ko je interkvartilni razmik smiselna mera razpršenosti. Žal iz teh slik ne moremo nič sklepati. Poleg tega je iz tabele razvidno, da naš vzorec vsebuje celoten spekter starosti, od mladih, ki so komaj opravili izpit, do starejših (75+).
+Poglejmo si še opisne statistike starosti za oba spola, za moške in za ženske v tabeli \ref{tab:tab_opis} in še grafični prikaz opisnih statistik starosti za moške in ženske s škatlo z ročaji na sliki \ref{fig:fig_star}. Iz grafa okvirjev z ročaji, je videti da sta si porazdelitvi precej podobni. Videti je da so porazdelitve asimetrične (Zgornji del je daljši), in je zato mediana smiselna mera središčnosti, medtem ko je interkvartilni razmik smiselna mera razpršenosti. Žal iz teh slik ne moremo nič sklepati. Poleg tega je iz tabele razvidno, da naš vzorec vsebuje celoten spekter starosti, od mladih, ki so komaj opravili izpit, do starejših (75+).
 
-```{r tab_opis, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisne statistike starosti"}
+```{r tab_opis, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisne statistike starosti."}
 
 tmp <- rbind(data.frame(unclass(summary(data_500$Starost))), 
              IQR(data_500$Starost))
@@ -384,28 +392,28 @@ ggplot(data_500, aes(y=Starost, x=Spol)) +
 
 ### V naselju
 
-Enostaven način kako ločiti podatke kje se nesreča zgodi, je ali se je ta zgodila v naselju ali ne. Posledično si lahko pogledamo kje je več nesreč. Vidimo da se v našem vzorcu zgodi več nesreč v naselju (V naselju - `r table(data_500$VNaselju)[["DA"]]`, Izven naselja - `r table(data_500$VNaselju)[["NE"]]`). To sem tudi pričakoval, saj mislim da se največ vožnje z avtomobilom zgodi ravno v naselju. Podoben razmislek je da tudi zato, ker je tam največ ljudi in avtov.
+Enostaven način kako ločiti podatke kje se nesreča zgodi, je ali se je ta zgodila v naselju ali ne. Posledično si lahko pogledamo kje je več nesreč. Vidimo da se v našem vzorcu zgodi več nesreč v naselju (V naselju - `r table(data_500$VNaselju)[["DA"]]`, Izven naselja - `r table(data_500$VNaselju)[["NE"]]`). To je bilo pričakovano, saj se najverjetneje največ vožnje z avtomobilom zgodi ravno v naselju. Podoben razmislek je tudi da zato, ker je tam največ ljudi in avtov.
 
-V tabeli \ref{tab:tab_spol_nas} si oglejmo kontingenčno tabelo opazovanih frekvenc za spol povzročiteljev nesreč, ter ali je bila nesreča v naselju, ali ne. Po občutku bi rekel da večjih odstopanj od pričakovanj (če gledamo vsote) ni. To bomo v naslednjem poglavju preverili s testom $\chi^2$.
+V tabeli \ref{tab:tab_spol_nas} si oglejmo kontingenčno tabelo opazovanih frekvenc za spol povzročiteljev nesreč, ter ali je bila nesreča v naselju, ali ne. Po občutku bi rekli, da večjih odstopanj od pričakovanj (če gledamo vsote) ni. To bomo v naslednjem poglavju preverili s testom $\chi^2$.
 
-```{r fig_nas, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Frekvenca ali je bila nesreča storjena v naselju ali ne"}
+```{r fig_nas, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Frekvenca ali je bila nesreča storjena v naselju ali ne."}
 ggplot(data_500, aes(VNaselju, ..count..)) + 
     geom_bar() +
     labs(x="Nesreča storjena v naselju", y="Frekvenca")
 ```
 
-```{r tab_spol_nas, echo=FALSE, eval=TRUE, results="markup", tab.cap="Kontingenča tabela za spol in ali je bila nesreča storjena v naselju"}
+```{r tab_spol_nas, echo=FALSE, eval=TRUE, results="markup", tab.cap="Kontingenča tabela za spol in ali je bila nesreča storjena v naselju."}
 
-tmp <- table(data_500$VNaselju, data_500$Spol)
+tmp_nas <- table(data_500$VNaselju, data_500$Spol)
 
-tmp <- cbind(tmp, rowSums(tmp))
+tmp_nas <- cbind(tmp_nas, rowSums(tmp_nas))
 
-tmp <- rbind(tmp, colSums(tmp))
+tmp_nas <- rbind(tmp_nas, colSums(tmp_nas))
 
-colnames(tmp) <- c(unique(data_500$Spol), "VSOTA")
-rownames(tmp) <- c(unique(data_500$VNaselju), "VSOTA")
+colnames(tmp_nas) <- c(head(colnames(tmp_nas), -1), "VSOTA")
+rownames(tmp_nas) <- c(head(rownames(tmp_nas), -1), "VSOTA")
 
-kable(tmp, 
+kable(tmp_nas, 
       caption="Kontingenča tabela za spol in ali je bila nesreča storjena v naselju",
       booktabs=TRUE) %>% 
     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
@@ -421,18 +429,20 @@ ggplot(data_500, aes(VNaselju, ..count.., fill=Spol)) +
     scale_fill_manual(values = c("#00BFC4", "#F8766D"))
 ```
 
-Na sliki \ref{fig:fig_nas_str} je prikazana porazdelitev starosti znotraj vsake izmed skupin. Če primerjamo s sliko \ref{fig:fig_star}, večjih odstopanj v starosti ni. Ker so skupine dovolj velike ($n \geq$ `r k_t`), bomo lahko s $t$-testom preverili če se povprečje starosti bistveno razlikuje med spoloma.
 
-```{r fig_nas_str, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5, fig.cap="Škatle z ročaji za starost razdeljena na ali je bila nesreča storjena v naselju ali ne, po spolu."}
-ggplot(data_500, aes(y=Starost)) + 
-    geom_boxplot() +
-    labs(x=NULL, y="Starost") +
-    facet_grid(cols=vars(Spol),
-               rows=vars(VNaselju),
-               labeller=labeller(.rows = label_both, .cols = label_both)) + 
-    theme(axis.ticks.x = element_blank(),
-          axis.text.x = element_blank())
-```
+<!-- # ne uporabimo tega -->
+<!-- Na sliki \ref{fig:fig_nas_str} je prikazana porazdelitev starosti znotraj vsake izmed skupin. Če primerjamo s sliko \ref{fig:fig_star}, večjih odstopanj v starosti ni. Ker so skupine dovolj velike ($n \geq$ `r k_t`), bomo lahko s $t$-testom preverili če se povprečje starosti bistveno razlikuje med spoloma. -->
+
+<!-- ```{r fig_nas_str, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5, fig.cap="Škatle z ročaji za starost razdeljena na ali je bila nesreča storjena v naselju ali ne, po spolu."} -->
+<!-- ggplot(data_500, aes(y=Starost)) + -->
+<!--     geom_boxplot() + -->
+<!--     labs(x=NULL, y="Starost") + -->
+<!--     facet_grid(cols=vars(Spol), -->
+<!--                rows=vars(VNaselju), -->
+<!--                labeller=labeller(.rows = label_both, .cols = label_both)) + -->
+<!--     theme(axis.ticks.x = element_blank(), -->
+<!--           axis.text.x = element_blank()) -->
+<!-- ``` -->
 
 ### VremenskeOkoliscine
 
@@ -441,26 +451,26 @@ Pri vremenskih okoliščinah nas zanima, če obstajajo take vremenske okolišči
 Na sliki \ref{fig:fig_vrm} so prikazane absolutne frekvence nesreč v različnih vremenskih okoliščinah. Vidimo da se največ nesreč zgodi pri vremenu `r count(data_500, VremenskeOkoliscine)$VremenskeOkoliscine[count(data_500, VremenskeOkoliscine)$n == max(count(data_500, VremenskeOkoliscine)$n)]`. 
 
 
-```{r fig_vrm, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Frekvence vremenskih okoliščin"}
+```{r fig_vrm, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Frekvence vremenskih okoliščin."}
 ggplot(data_500, aes(VremenskeOkoliscine, ..count..)) + 
     geom_bar() +
     labs(x="Vremenske okoliščine", y="Frekvenca")
 ```
 
-Če si pogledamo še dejanske številke v tabeli \ref{tab:tab_spol_vrm}, vidimo da so nekatere izmed skupin manjše od zahtevanega za $\chi^2$ test (vsaj $80\%$ skupin mora imeti vsaj $5$ opazovanj). Tu lahko storimo dve stvari, ali odstranimo skupine, ki so manjše od `r k_chi` (nastavljeno na `r k_chi`, da bo manj skupin) opazovanj, ali pa jih združimo v novo skupino - `OSTALO`. Sam sem se odločil da jih združim, saj bomo tako še vedno imeli `r nrow(data_500)` opazovanj. Še prej pa lahko vidimo na sliki \ref{fig:fig_vrm_rel} relativne frekvence. Takoj vidimo, da `SNEG` in `NEZNANO` izstopata, kar je razložljivo, da so tu absolutne frekvence zelo nizke (tabela \ref{tab:tab_spol_vrm}), in ne moremo nič sklepati iz te slike.
+Če si pogledamo še dejanske številke v tabeli \ref{tab:tab_spol_vrm}, vidimo da so nekatere izmed skupin manjše od zahtevanega za $\chi^2$ test (vsaj $80\%$ skupin mora imeti vsaj $5$ opazovanj). Tu lahko storimo dve stvari, ali odstranimo skupine, ki so manjše od `r k_chi` (nastavljeno na `r k_chi`, da bo manj skupin) opazovanj, ali pa jih združimo v novo skupino - `OSTALO`. Sam sem se odločil da jih združim, saj bomo tako še vedno imeli `r nrow(data_500)` opazovanj. Še prej pa lahko vidimo na sliki \ref{fig:fig_vrm_rel} relativne frekvence. Takoj vidimo, da `SNEG` in `NEZNANO` izstopata, kar je razložljivo s tem, da so tu absolutne frekvence zelo nizke (tabela \ref{tab:tab_spol_vrm}), in ne moremo nič sklepati iz te slike.
 
-```{r tab_spol_vrm, echo=FALSE, eval=TRUE, results="markup", tab.cap="Kontingenča tabela za spol in vremenske okoliščine"}
+```{r tab_spol_vrm, echo=FALSE, eval=TRUE, results="markup", tab.cap="Kontingenčna tabela za spol in vremenske okoliščine."}
 
-tmp <- table(data_500$VremenskeOkoliscine, data_500$Spol)
+tmp_vrm <- table(data_500$VremenskeOkoliscine, data_500$Spol)
 
-tmp <- cbind(tmp, rowSums(tmp))
+tmp_vrm <- cbind(tmp_vrm, rowSums(tmp_vrm))
 
-tmp <- rbind(tmp, colSums(tmp))
+tmp_vrm <- rbind(tmp_vrm, colSums(tmp_vrm))
 
-colnames(tmp) <- c(head(colnames(tmp), -1), "VSOTA")
-rownames(tmp) <- c(head(rownames(tmp), -1), "VSOTA")
+colnames(tmp_vrm) <- c(head(colnames(tmp_vrm), -1), "VSOTA")
+rownames(tmp_vrm) <- c(head(rownames(tmp_vrm), -1), "VSOTA")
 
-kable(tmp, 
+kable(tmp_vrm, 
       caption="Kontingenča tabela za spol in vremenske okoliščine",
       booktabs=TRUE) %>% 
     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
@@ -474,22 +484,22 @@ ggplot(data_500, aes(VremenskeOkoliscine, ..count.., fill=Spol)) +
     scale_fill_manual(values = c("#00BFC4", "#F8766D"))
 ```
 
-Zato si poglejmo še spremenjeno tabelo (tabela \ref{tab:tab_vrm_rel_rst}), oziroma sliko (slika \ref{fig:fig_vrm_rel_rst}), kjer smo majhne skupine združili v skupino `OSTALO`. Vidimo da relativna frekvenca žensk v skupini `OSTALO` nekoliko odstopa, v primerjavi z ostalimi skupinami. Kot je razvidno iz tabele \ref{tab:tab_vrm_rel_rst}, je ta skupina še vedno nekoliko majhna, in je lahko to razlog za odstopanje. Je pa nova tabela primerna za $\chi^2$ test, kar bomo preverili v naslednjem poglavju.
+Zato si poglejmo še spremenjeno tabelo (tabela \ref{tab:tab_vrm_rel_rst}), oziroma sliko (slika \ref{fig:fig_vrm_rel_rst}), kjer smo majhne skupine združili v skupino `OSTALO`. Vidimo da relativna frekvenca žensk v skupini `OSTALO` nekoliko odstopa, v primerjavi z ostalimi skupinami. Kot je razvidno iz tabele \ref{tab:tab_vrm_rel_rst}, je ta skupina še vedno nekoliko majhna, in je lahko to razlog za odstopanje. Je pa nova tabela primerna za $\chi^2$ test, kar bomo preverili naknadno.
 
 ```{r tab_vrm_rel_rst, echo=FALSE, eval=TRUE, results="markup", tab.cap="Kontingenča tabela za spol in vremenske okoliščine s spremenjenimi skupinami."}
 
-tmp_data <- chi_test_filter(data_500, VremenskeOkoliscine, k=k_chi)
+tmp_vrm_sm_df <- chi_test_filter(data_500, VremenskeOkoliscine, k=k_chi)
 
-tmp <- table(tmp_data$VremenskeOkoliscine, tmp_data$Spol)
+tmp_vrm_sm <- table(tmp_vrm_sm_df$VremenskeOkoliscine, tmp_vrm_sm_df$Spol)
 
-tmp <- cbind(tmp, rowSums(tmp))
+tmp_vrm_sm <- cbind(tmp_vrm_sm, rowSums(tmp_vrm_sm))
 
-tmp <- rbind(tmp, colSums(tmp))
+tmp_vrm_sm <- rbind(tmp_vrm_sm, colSums(tmp_vrm_sm))
 
-colnames(tmp) <- c(head(colnames(tmp), -1), "VSOTA")
-rownames(tmp) <- c(head(rownames(tmp), -1), "VSOTA")
+colnames(tmp_vrm_sm) <- c(head(colnames(tmp_vrm_sm), -1), "VSOTA")
+rownames(tmp_vrm_sm) <- c(head(rownames(tmp_vrm_sm), -1), "VSOTA")
 
-kable(tmp, 
+kable(tmp_vrm_sm, 
       caption="Kontingenča tabela za spol in vremenske okoliščine (združene majhne skupine)",
       booktabs=TRUE) %>% 
     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
@@ -497,30 +507,17 @@ kable(tmp,
 ```
 
 ```{r fig_vrm_rel_rst, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.cap="Relativen prikaz vremenskih razmer (združene majhne skupine) po spolu."}
-ggplot(tmp_data, aes(VremenskeOkoliscine, ..count.., fill=Spol)) + 
+ggplot(tmp_vrm_sm_df, aes(VremenskeOkoliscine, ..count.., fill=Spol)) + 
     geom_bar(position = "fill") +
     labs(x="Vremenske okoliščine", y="Relativna frekvenca") +
     scale_fill_manual(values = c("#00BFC4", "#F8766D"))
 ```
 
-Na sliki \ref{fig:fig_vrm_str} je prikazana porazdelitev starosti znotraj vsake izmed skupin (Združene skupine). Takoj je opazno, da pri deževnem vremenu vidimo večje razlike v mediani starosti med moškimi in ženskami. Žal za to skupino ne moremo uporabiti $t$-testa saj obe skupini nimata več kot `r k_t` opazovanj. $t$-testa bomo lahko uporabili za skupine kjer je število opazovanj v obeh skupinah vsaj `r k_t`.
-
-```{r fig_vrm_str, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=6.5, fig.cap="Relativen prikaz, ali je bila nesreča storjena v naselju ali ne, po spolu."}
-ggplot(tmp_data, aes(y=Starost)) + 
-    geom_boxplot() +
-    labs(x=NULL, y="Starost") +
-    facet_grid(cols=vars(Spol),
-               rows=vars(VremenskeOkoliscine)) + 
-    theme(axis.ticks.x = element_blank(),
-          axis.text.x = element_blank())
-```
-
-
 ### VrednostAlkotesta
 
-Vrednost alkotesta, če je ta bil izveden (Če ni, je vrednost $0$), bi tudi lahko bil dober pokazatelj za razliko med moškimi in ženskami. Najprej si poglejmo porazdelitev na sliki \ref{fig:fig_alko}.
+Vrednost alkotesta, če je ta bil izveden (če ni, je vrednost $0$), bi lahko bil dober pokazatelj za razliko med moškimi in ženskami. Najprej si poglejmo porazdelitev na sliki \ref{fig:fig_alko}.
 
-```{r fig_alko, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev vrednosti alkotesta"}
+```{r fig_alko, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev vrednosti alkotesta."}
 
 ggplot(data_500, aes(VrednostAlkotesta, ..count..)) + 
     geom_histogram(bins=30) +
@@ -530,7 +527,7 @@ ggplot(data_500, aes(VrednostAlkotesta, ..count..)) +
 
 Vidimo da je večina voznikov ki so povzročili nesrečo imelo vrednost alkotesta enako $0$. Poglejmo si sliko \ref{fig:fig_alko2}, kjer je prikazan okvir z ročajo za tiste, ki so imeli vrednost alkotesta večjo od $0$. Vidimo da je porazdelitev nekoliko asimetrična, vendar iz te slike ne moremo nič sklepati.
 
-```{r fig_alko2, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev vrednosti alkotesta"}
+```{r fig_alko2, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.width=3, fig.cap="Porazdelitev vrednosti alkotesta za tiste ki so imeli vrednost večjo od 0."}
 
 ggplot(data_500 %>% filter(VrednostAlkotesta > 0), aes(y=VrednostAlkotesta)) + 
     geom_boxplot() +
@@ -542,68 +539,68 @@ ggplot(data_500 %>% filter(VrednostAlkotesta > 0), aes(y=VrednostAlkotesta)) +
 
 Zato je smiselno pogledati še opisne statistike v tabeli \ref{tab:tab_alko}. Te so deljene tudi po spolu, saj nas zanima če so kakšne razlike med spoloma.
 
-```{r tab_alko, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisne statistike vrednosti alkotesta"}
+```{r tab_alko, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisne statistike vrednosti alkotesta."}
 
-tmp <- rbind(data.frame(unclass(summary(data_500$VrednostAlkotesta))), 
-             IQR(data_500$VrednostAlkotesta))
+tmp_alk <- rbind(data.frame(unclass(summary(data_500$VrednostAlkotesta))),
+                 IQR(data_500$VrednostAlkotesta))
 
-tmpm <- rbind(data.frame(unclass(summary(data_500$VrednostAlkotesta[data_500$Spol == "MOŠKI"]))), 
-              IQR(data_500$VrednostAlkotesta[data_500$Spol == "MOŠKI"]))
+tmp_alk_m <- rbind(data.frame(unclass(summary(data_500$VrednostAlkotesta[data_500$Spol == "MOŠKI"]))),
+                   IQR(data_500$VrednostAlkotesta[data_500$Spol == "MOŠKI"]))
 
-tmpf <- rbind(data.frame(unclass(summary(data_500$VrednostAlkotesta[data_500$Spol == "ŽENSKI"]))), 
-              IQR(data_500$VrednostAlkotesta[data_500$Spol == "ŽENSKI"]))
+tmp_alk_f <- rbind(data.frame(unclass(summary(data_500$VrednostAlkotesta[data_500$Spol == "ŽENSKI"]))),
+                   IQR(data_500$VrednostAlkotesta[data_500$Spol == "ŽENSKI"]))
 
-tmp <- cbind(tmp, tmpm, tmpf)
+tmp_alk <- cbind(tmp_alk, tmp_alk_m, tmp_alk_f)
 
-rownames(tmp)[rownames(tmp) == 7] <- "IQR"
-colnames(tmp) <- c("Skupno", "Moški", "Ženske")
+rownames(tmp_alk)[rownames(tmp_alk) == 7] <- "IQR"
+colnames(tmp_alk) <- c("Skupno", "Moški", "Ženske")
 
-kable(tmp, digits=1, caption="Opisne statistike vrednosti alkotesta", booktabs=T) %>% 
+kable(tmp_alk, digits=2, caption="Opisne statistike vrednosti alkotesta", booktabs=T) %>% 
     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
     
 ```
 
-Kot je videti, iz teh opisnih statistik težko razberemo kakšno informacijo, zato si poglejmo še opisne statistike za tiste povzročitelje nesreč ki so imeli vrednost alkotesta večjo od $0$.
+Iz teh opisnih statistik težko razberemo kakšno informacijo, zato si poglejmo še opisne statistike za tiste povzročitelje nesreč ki so imeli vrednost alkotesta večjo od $0$.
 
-```{r tab_alko2, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisne statistike vrednosti alkotesta, za tiste ki so imeli alkotest večji od 0"}
+```{r tab_alko2, echo=FALSE, eval=TRUE, results="markup", tab.cap="Opisne statistike vrednosti alkotesta, za tiste ki so imeli alkotest večji od 0."}
 
 alko_tmp <- data_500 %>% filter(VrednostAlkotesta > 0)
 
-tmp <- rbind(data.frame(unclass(summary(alko_tmp$VrednostAlkotesta))), 
+tmp_alk2 <- rbind(data.frame(unclass(summary(alko_tmp$VrednostAlkotesta))), 
              IQR(alko_tmp$VrednostAlkotesta))
 
-tmpm <- rbind(data.frame(unclass(summary(alko_tmp$VrednostAlkotesta[alko_tmp$Spol == "MOŠKI"]))), 
+tmp_alk_m2 <- rbind(data.frame(unclass(summary(alko_tmp$VrednostAlkotesta[alko_tmp$Spol == "MOŠKI"]))), 
               IQR(alko_tmp$VrednostAlkotesta[alko_tmp$Spol == "MOŠKI"]))
 
-tmpf <- rbind(data.frame(unclass(summary(alko_tmp$VrednostAlkotesta[alko_tmp$Spol == "ŽENSKI"]))), 
+tmp_alk_f2 <- rbind(data.frame(unclass(summary(alko_tmp$VrednostAlkotesta[alko_tmp$Spol == "ŽENSKI"]))), 
               IQR(alko_tmp$VrednostAlkotesta[alko_tmp$Spol == "ŽENSKI"]))
 
-tmp <- cbind(tmp, tmpm, tmpf)
+tmp_alk2 <- cbind(tmp_alk2, tmp_alk_m2, tmp_alk_f2)
 
-rownames(tmp)[rownames(tmp) == 7] <- "IQR"
-colnames(tmp) <- c("Skupno", "Moški", "Ženske")
+rownames(tmp_alk2)[rownames(tmp_alk2) == 7] <- "IQR"
+colnames(tmp_alk2) <- c("Skupno", "Moški", "Ženske")
 
-kable(tmp, digits=1, caption="Opisne statistike vrednosti alkotesta, za tiste ki so imeli alkotest večji od 0", booktabs=T) %>% 
+kable(tmp_alk2, digits=1, caption="Opisne statistike vrednosti alkotesta, za tiste ki so imeli alkotest večji od 0", booktabs=T) %>% 
     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
 
 ```
 
 Večjih razlik v spolu ni videti, zato si poglejmo še kontingenčno tabelo \ref{tab:tab_alko3} za spol in ali je bil alkotest pozitiven ali ne.
 
-```{r tab_alko3, echo=FALSE, eval=TRUE, results="markup", tab.cap="Kontingenčna tabela za spol in ali je nekdo imel alkotest večji od 0"}
+```{r tab_alko3, echo=FALSE, eval=TRUE, results="markup", tab.cap="Kontingenčna tabela za spol in ali je nekdo imel alkotest večji od 0."}
 
-alko_tmp <- data_500 %>% mutate(alko_bin = if_else(VrednostAlkotesta > 0, "> 0.0", "< 0.0"))
+alko_tmp2 <- data_500 %>% mutate(alko_bin = if_else(VrednostAlkotesta > 0, "> 0.0", "< 0.0"))
 
-tmp <- table(alko_tmp$alko_bin, alko_tmp$Spol)
+tmp_alk3 <- table(alko_tmp2$alko_bin, alko_tmp2$Spol)
 
-tmp <- cbind(tmp, rowSums(tmp))
+tmp_alk3 <- cbind(tmp_alk3, rowSums(tmp_alk3))
 
-tmp <- rbind(tmp, colSums(tmp))
+tmp_alk3 <- rbind(tmp_alk3, colSums(tmp_alk3))
 
-colnames(tmp) <- c(head(colnames(tmp), -1), "VSOTA")
-rownames(tmp) <- c(head(rownames(tmp), -1), "VSOTA")
+colnames(tmp_alk3) <- c(head(colnames(tmp_alk3), -1), "VSOTA")
+rownames(tmp_alk3) <- c(head(rownames(tmp_alk3), -1), "VSOTA")
 
-kable(tmp, 
+kable(tmp_alk3, 
       caption="Kontingenčna tabela za spol in ali je nekdo imel alkotest večji od 0",
       booktabs=TRUE) %>% 
     kable_styling(latex_options=c("striped", "hold_position"), full_width=FALSE)
@@ -611,9 +608,9 @@ kable(tmp,
 
 ```
 
-Tu je videti, da se razmerje med moškimi in ženskami podre ($2:1$). Pričakujem, da bomo s $\chi^2$ testom tu zavrnili ničelno hipotezo. To bomo preverili v naslednjem poglavju. Najprej si poglejmo če obstaja še kaka odvisnost od starosti. Vidimo da večje odvisnosti ni. Podatkov za ženske, ki so povzročile nesrečo pod vplivom alkohola je le `r tmp["> 0.0", "ŽENSKI"]`. Iz toliko zapisov težko kaj sklepamo.
+Tu je videti, da se razmerje med moškimi in ženskami podre (drugod $\sim2:1$). Pričakujem, da bomo s $\chi^2$ testom tu zavrnili ničelno hipotezo. To bomo preverili v naslednjem poglavju. Najprej si poglejmo če obstaja še kaka odvisnost od starosti. Vidimo da večje odvisnosti ni. Podatkov za ženske, ki so povzročile nesrečo pod vplivom alkohola je le `r tmp_alk3["> 0.0", "ŽENSKI"]`. Iz toliko zapisov težko kaj sklepamo.
 
-```{r fig_alko_str, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Porazdelitev vrednosti alkotesta"}
+```{r fig_alko_str, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=2, fig.cap="Razsevni diagram za vrednost alkotesta v odvisnosti od starosti."}
 
 ggplot(data_500, aes(x=Starost, y=VrednostAlkotesta, col=Spol)) + 
     geom_point() +
@@ -622,12 +619,67 @@ ggplot(data_500, aes(x=Starost, y=VrednostAlkotesta, col=Spol)) +
     scale_color_manual(values = c("#00BFC4", "#F8766D"))
 ```
 
-Korelacijski koeficient le za tiste, ki so imeli vrednost alkotesta večjo od nič (saj za tiste ki so imeli nič, nima smisla saj ni nobene razpršenosti v starosti), je `r sprintf("%.3f",cor(filter(data_500, VrednostAlkotesta >0)$Starost,filter(data_500, VrednostAlkotesta >0)$VrednostAlkotesta))`.
+Korelacijski koeficient le za tiste, ki so imeli vrednost alkotesta večjo od nič, je `r sprintf("%.3f",cor(filter(data_500, VrednostAlkotesta >0)$Starost,filter(data_500, VrednostAlkotesta >0)$VrednostAlkotesta))`. Kar praktično pomeni da ni linearne povezanosti med starostjo in vrednostjo alkohola v krvi.
 
+## Rezultati
 
+Torej naš zastavljen problem je bil, da najdemo morebitne razlike med moškimi in ženskami ki so z osebnim avtomobilom povzročili prometno nesrečo. Analizirali smo spremenljivke `VNaselju`, `VremenskeOkoliscine`, `Starost`, in `VrednostAlkotesta`. Sklepati karkoli iz samih tabel in grafov bi bilo neodgovorno, zato bomo uporabili 2 statistična testa za primerjavo med moškimi in ženskami.
 
+1.) Predpostavke testov
 
+Pri primerjavi številskih spremenljivk bomo uporabili $t$-test za neodvisna vzorca, saj primerjamo dve različni skupini. En vzorec bo predstavljal moške, drugi ženske. Predpostavka $t$-testa je, da ali je vzorec normalno porazdeljen, ali pa da je vzorec dovolj velik ($n\geq30$), saj zahteva da so povprečja vzorcev normalno porazdeljena (kar drži zaradi centralno limitnega izreka). Pri starosti ta predpostavka drži, saj je vzorec moških velikosti `r table(data_500$Spol)[["MOŠKI"]]` in žensk `r table(data_500$Spol)[["ŽENSKI"]]`. $t$-test primerja povprečja skupin, in za ničelno hipotezo trdi, da sta povprečji enaki.
 
+Če bomo pa primerjali opisne spremenljivke, bomo uporabili $\chi^2$-test. Predpostavka testa je, da mora biti velikost (vsaj 80% polj) v kontingenčni tabeli, večja od $5$, da je testna statistika porazdeljena po $\chi^2$ porazdelitvi. Preverja če obstaja dovolj velika razlika med opazovanimi in pričakovanimi frekvencami v eni ali več skupinah. Ničelna hipoteza pravi, da ni dovolj velikih odstopanj, tj. da so frekvence opazovanih skupin enake frekvencam pričakovanih skupin.
+
+2.) Primerjava starosti
+
+```{r t_str, echo=FALSE, eval=TRUE, results="markup"}
+
+t_str <- t.test(data_500$Starost ~ data_500$Spol, vars.equal=FALSE, paired=FALSE)
+
+```
+
+Testna statistika $t$-testa za ta primer je bila `r sprintf("%.3f", t_str$statistic)`, medtem ko je bila $p$ vrednost enaka `r sprintf("%.3f", t_str$p.value)` in posledično ničelne hipoteze pri $\alpha =$ `r conf.level`, `r p_return(t_str$p.value, conf.level)`. Torej ne moremo trditi da se v povprečju starosti povzročiteljev nesreč v osebnih avtomobilih med moškimi in ženskami razlikujejo na našem vzorcu.
+
+3.) Primerjava `VNaselju`
+
+```{r chi_nas, echo=FALSE, eval=TRUE, results="markup"}
+
+chi_nas <- chisq.test(table(data_500$VNaselju, data_500$Spol))
+
+```
+
+Pri preverjanju $\chi^2$-testa za razlike kje je bila storjena nesreča (v naselju ali izven), smo izračunali $p$ vrednost, ki je bila `r sprintf("%.3f", chi_nas$p.value)` in posledično ničelne hipoteze pri $\alpha =$ `r conf.level`, `r p_return(chi_nas$p.value, conf.level)`. Se pravi ne moremo trditi da obstajajo dovolj velike razlike med opazovanimi in pričakovanimi frekvencami. Lahko bi tudi rekli, da ne moremo trditi da bodisi moški bodisi ženske povzročijo več ali manj nesreč v naselju, oz. izven naselja.
+
+4.) Primerjava `VremenskeOkoliscine`
+
+```{r chi_vrm, echo=FALSE, eval=TRUE, results="markup"}
+
+data_500_vrm <- chi_test_filter(data_500, VremenskeOkoliscine, k_chi)
+
+chi_vrm <- chisq.test(table(data_500_vrm$VremenskeOkoliscine, data_500$Spol))
+
+```
+
+Kot smo videli pri preverjanju podatkov, za nekatere skupine v spremenljivki `VremenskeOkoliscine` imamo premalo opazovanj, te smo nato združili v skupino `OSTALO` in s tem pridobili dovolj velike skupine, da lahko preverimo če obstajajo razlike med opazovanimi in pričakovanimi frekvencami. Za to smo zopet uporabili $\chi^2$-test.
+
+$p$ vrednost $\chi^2$-testa je bila `r sprintf("%.3f", chi_vrm$p.value)`. Na podlagi $p$ vrednosti pri stopnji tveganja $\alpha =$ `r conf.level` ničelno hipotezo `r p_return(chi_vrm$p.value, conf.level)`. Torej ne moremo trditi da obstajajo razlike med moškimi in ženskami v različnih vremenskih okoliščinah.
+
+5.) Primerjava `VrednostAlkotesta`
+
+```{r chi_alko, echo=FALSE, eval=TRUE, results="markup"}
+
+chi_alko <- chisq.test(table(alko_tmp2$alko_bin, alko_tmp2$Spol))
+
+```
+
+Pri pregledovanju naših podatkov, smo videli, da pri preverjanju odvisnosti vrednosti alkotesta od starosti zaradi majhnega števila podatkov žensk, ne moremo uporabiti linearne regresije. Če pa vrednosti spremenimo v binarno spremenljivko, kjer so bile vrednosti ali enake $0$ ali pa večje od $0$ lahko uporabimo $\chi^2$-test, saj so še vedno izpolnjene predpostavke testa.
+
+V našem primeru je bila vrednost $p$ enaka `r sprintf("%.4f", chi_alko$p.value)` in zato ničelno hipotezo `r p_return(chi_alko$p.value, conf.level)` pri stopnji tveganja $\alpha =$ `r conf.level`. Kot je bilo razvidno iz tabele so moški tisti, ki so večkrat povzročili nesrečo pod vplivom alkohola kot ženske.
+
+## Zaključek
+
+Na podlagi našega vzorca kjer smo imeli `r nrow(data_500)` opazovanj, lahko trdimo da obstaja razlika med moškimi in ženskami, ki povzročijo nesrečo z osebnim avtomobilom. Ta razlika je v našem primeru bila le pri številu tistih, ki so nesrečo povzročili pod vplivom alkohola. Sumim, da bi se lahko tudi to spremenilo, če bi uporabili ali drug vzorec, ali večji vzorec. V ostalih pogledih ne moremo trditi da razlike obstajajo.
 
 
 
