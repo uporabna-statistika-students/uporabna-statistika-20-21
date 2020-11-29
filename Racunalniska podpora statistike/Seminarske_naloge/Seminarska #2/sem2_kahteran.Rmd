@@ -6,6 +6,8 @@ date: "22. 11. 2020"
 output:
   pdf_document:
     fig_caption: yes
+    toc: no
+    toc_depth: '3'
 params:
   printcode: no
   printresults: hide

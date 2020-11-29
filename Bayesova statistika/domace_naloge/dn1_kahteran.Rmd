@@ -1,0 +1,196 @@
+---
+title: "Domača naloga 1"
+subtitle: "Bayesova statistika"
+author: "Alen Kahteran"
+date: "29. 11. 2020"
+output:
+  pdf_document:
+    fig_caption: yes
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+header-includes:
+  - \usepackage[slovene]{babel}
+  - \usepackage{float}
+  - \usepackage[T1]{fontenc}
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE, message = FALSE)
+# importing required library
+library(tidyverse)
+```
+
+# Naloga 1
+
+## Definicija funkcij in začetnih parametrov
+
+Za podatke sem določil enake, kot smo jih imeli na vajah in to sta
+
+$$n = 26\ \ \ \ in\ \ \ \ k=6 \,,$$
+
+kjer $n$ predstavlja število poskusov in $k$ predstavlja število uspehov. Sta vnaprej določena parametra s katerima, bomo risali funkcijo verjetja, apriorno ter aposteriorno porazdelitev za parameter $\theta$ kjer velja 
+
+$$\Pr(X=k\ |\ \theta)=\binom{n}{k}\theta^k(1-\theta)^{n-k} \,.$$
+Funkcija verjetja bo na vseh slikah enaka, saj je določena s prej napisano enačbo.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# initial parameters
+n <- 26
+k <- 6
+
+# likelihood function
+verjetje <- function(theta, k, n){
+  dbinom(k, size = n, prob = theta)
+}
+```
+
+Pomembno je da funkcijo `verjetje()` množimo s konstanto, tako da bo integral te funkcije vedno enak $1$. Zato jo pomnozimo s funkcijo `konst()`.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# multiplying with konst we achieve that the integral of likelihood (on theta) is equal to
+# 1
+konst <- function(k, n){
+  theta <- seq(0.001, 1, 0.001)
+  1 / (0.001 * sum(verjetje(theta, k, n)))
+}
+```
+
+Vse skupaj zavijemo v funkcijo `plot_3()`, ki za podan `alpha` in `beta` izračuna funkcijo verjetja, apriorno ter aposteriorno porazdelitev, in jih izriše na eno sliko.
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+plot_3 <- function(alpha, beta) {   
+
+
+    # calculate alpha and beta posterior
+    alpha.apost <- k + alpha
+    beta.apost <- n - k + beta
+    
+    # generate theta values and calculate posterier, prior and likelihood
+    theta <- seq(0, 1, 0.001)
+    aposteriorna <- dbeta(theta, alpha.apost, beta.apost)
+    konst.verjetje <- konst(k, n) * verjetje(theta, k, n)
+    apriorna <- dbeta(theta, alpha, beta)
+
+    # just getting max value from likelihood and posterior for proper plotting
+    # as prior could have infinite values (when theta is 0 or 1)
+    y.max <- max(c(konst.verjetje, aposteriorna))
+    # defining colors
+    colors <- c("Verjetje" = "black", 
+                "Apriorna" = "red", 
+                "Aposteriorna" = "green3")
+
+    # plotting likelihood, prior and posterior distributions.
+    ggplot(NULL, aes(x=theta)) +
+        geom_line(aes(y=konst.verjetje, col="Verjetje")) +
+        geom_line(aes(y=apriorna, col="Apriorna")) +
+        geom_line(aes(y=aposteriorna, col="Aposteriorna")) +
+        scale_color_manual(values = colors) +
+        labs(x=expression(theta),
+             color="Legenda",
+             title=paste0("Apriorna porazdelitev Beta(", alpha, ", ", beta, ")")) +
+        theme_minimal() +
+        theme(axis.title.y=element_blank()) +
+        ylim(c(0, y.max))
+}
+
+```
+\newpage
+## Izris
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=3.8}
+plot_3(1, 1)
+plot_3(5, 5)
+plot_3(10, 10)
+plot_3(20, 20)
+plot_3(100, 100)
+plot_3(1, 3)
+plot_3(1, 6)
+plot_3(3, 6)
+plot_3(6, 3)
+plot_3(3, 1)
+plot_3(6, 1)
+plot_3(100, 1)
+plot_3(1, 100)
+plot_3(0.3, 0.3)
+plot_3(0.5, 0.5)
+plot_3(0.7, 0.7)
+plot_3(0.3, 0.7)
+plot_3(0.7, 0.3)
+plot_3(0.5, 2)
+plot_3(2, 0.5)
+plot_3(100, 0.1)
+plot_3(0.1, 100)
+```
+
+## Ugotovitve
+
+Funkcija verjetja so informacije, ki smo jih pridobili z eksperimentom (26 poskusov, 6 uspehov). Apriorna porazdelitev določa koliko vemo o parametru $\theta$ predhodno, mogoče iz drugih eksperimentov. Več kot vemo o predhodni porazdelitvi, bolj je aposteriorna porazdelitev blizu apriorni. To je videti iz zelo velikih $\alpha$ in $\beta$ parametrov (primeri ko je vsaj eden izmed parametrov enak 100)
+
+z $\alpha$ in $\beta$ smo določali obliko apriorne porazdelitve. Večji kot je $\beta$ bolj se nagibamo proti $1$, večji kot je $\alpha$ bolj se nagibamo proti $0$. Seveda mora veljati da sta tako $\alpha$ kot $\beta$ večja od 0.
+
+V primeru neinformativne porazdelitve (nimamo nobenih predhodnih informacij o parametru $\theta$; $\alpha = \beta = 1$), praktično vse naše znanje o parametru $\theta$ izhaja iz funkcije verjetja. 
+
+
+# Naloga 2
+
+Izbrati moramo takšen $\alpha$ in $\beta$ da bo pričakovana vrednost $\theta$ enak $0.25$. Vemo da velja $E[B(\alpha,\beta)]=\frac{\alpha}{\alpha + \beta}$. Glede na to lahko izračunamo naslednje
+
+$$\frac{\alpha}{\alpha + \beta} = \frac{1}{4} \\
+4\alpha = \alpha + \beta \\
+3\alpha = \beta \,.$$
+
+Se pravi lahko izberemo takšen par $\alpha$ in $\beta$, da velja $3\alpha = \beta$.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=3.8}
+plot_3_estimate <- function(alpha, beta) {
+    
+    # calculate alpha and beta posterior
+    alpha.apost <- k + alpha
+    beta.apost <- n - k + beta
+    
+    # generate theta values and calculate posterier, prior and likelihood
+    theta <- seq(0, 1, 0.001)
+    aposteriorna <- dbeta(theta, alpha.apost, beta.apost)
+    konst.verjetje <- konst(k, n) * verjetje(theta, k, n)
+    apriorna <- dbeta(theta, alpha, beta)
+    
+    # just getting max value from likelihood and posterior for proper plotting
+    # as prior could have infinite values (when theta is 0 or 1)
+    y.max <- max(c(konst.verjetje, aposteriorna))
+    # defining colors
+    colors <- c("Verjetje" = "black", 
+                "Apriorna" = "red", 
+                "Aposteriorna" = "green3")
+
+    # plotting likelihood, prior and posterior distributions.
+    ggplot(NULL, aes(x=theta)) +
+        geom_line(aes(y=konst.verjetje, col="Verjetje")) +
+        geom_line(aes(y=apriorna, col="Apriorna")) +
+        geom_line(aes(y=aposteriorna, col="Aposteriorna")) +
+        scale_color_manual(values = colors) +
+        labs(x=expression(theta),
+             color="Legenda",
+             title=paste0("Apriorna porazdelitev Beta(", alpha, ", ", beta, ")"),
+             subtitle=paste0("Ocena = ", alpha.apost/(alpha.apost + beta.apost))) +
+        theme_minimal() +
+        theme(axis.title.y=element_blank()) +
+        ylim(c(0, y.max))
+}
+
+plot_3_estimate(0.1, 0.3)
+plot_3_estimate(0.5, 1.5)
+plot_3_estimate(1, 3)
+plot_3_estimate(8, 24)
+plot_3_estimate(32, 96)
+plot_3_estimate(128, 384)
+plot_3_estimate(512, 1536)
+
+```
+
+Podobno kot pri nalogi 1, vidimo kako vpliva bodisi funkcija verjetja bodisi apriorna porazdelitev. Pri majhnih $\alpha$ in $\beta$, smo manj prepričani v porazdelitev apriorne porazdelitve, vendar kljub precej neinformativni apriorni porazdelitvi smo še vedno blizu pričakovani vrednosti $0.25$, ker je tudi vrh funkcije verjetja zelo blizu naši pričakovani vrednosti. S tem ko večamo tako $\alpha$ kot $\beta$ pravzaprav manjšamo varianco, in posledično je naša pričakovana vrednost aposteriorne porazdelitve, vedno bližje naši pričakovani vrednosti. Podobno je tudi aposteriorna porazdelitev vedno bližje apriorni porazdelitvi.
