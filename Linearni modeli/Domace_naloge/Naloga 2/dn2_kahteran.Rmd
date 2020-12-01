@@ -1,0 +1,157 @@
+---
+title: "Domača naloga 2"
+subtitle: "Linearni modeli"
+author: "Alen Kahteran"
+date: "30. 11. 2020"
+output:
+  pdf_document:
+    fig_caption: no
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+header-includes:
+  - \usepackage[slovene]{babel}
+  - \usepackage{float}
+  - \usepackage[T1]{fontenc}
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, warning = FALSE, message = FALSE)
+# importing required library
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(ISLR)
+data("Credit")
+
+```
+
+## Analiza `Balance` glede na ostale spremenljivke
+
+Želimo si zgraditi linearen model stanja na kreditni kartici (`Balance`), v odvisnosti od ostalih spremenljivk. Najprej je potrebno pregledati podatke, ki jih imamo.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.height=4}
+Credit <- as_tibble(Credit)
+
+g <- ggplot(Credit, aes(x=Balance))
+
+g + geom_histogram(bins=50)
+
+```
+
+Vidimo, da je veliko takšnih, ki imajo povprečno stanje na kreditni kartici enako 0. Poglejmo si odvisnosti od ostalih številskih spremenljivk. 
+
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.height=3.7}
+g <- ggplot(Credit, aes(y=Balance))
+g + geom_point(aes(x=Income)) +
+    labs(subtitle = paste0("Korelacijski koeficient r = ", 
+                           round(cor(Credit$Balance, Credit$Income), digits=3)))
+g + geom_point(aes(x=Limit)) +
+    labs(subtitle = paste0("Korelacijski koeficient r = ", 
+                           round(cor(Credit$Balance, Credit$Limit), digits=3)))
+g + geom_point(aes(x=Rating)) +
+    labs(subtitle = paste0("Korelacijski koeficient r = ", 
+                           round(cor(Credit$Balance, Credit$Rating), digits=3)))
+g + geom_point(aes(x=Cards)) +
+    labs(subtitle = paste0("Korelacijski koeficient r = ", 
+                           round(cor(Credit$Balance, Credit$Cards), digits=3)))
+g + geom_point(aes(x=Age)) +
+    labs(subtitle = paste0("Korelacijski koeficient r = ", 
+                           round(cor(Credit$Balance, Credit$Age), digits=3)))
+g + geom_point(aes(x=Education)) +
+    labs(subtitle = paste0("Korelacijski koeficient r = ", 
+                           round(cor(Credit$Balance, Credit$Education), digits=3)))
+
+```
+
+Hitro vidimo, da je spremenljivka `Rating` zelo podobna spremenljivki `Limit`. Kot vidimo pri sliki spremenljivke `Limit`, ima ta zelo visok korelacijski koeficient, kar pomeni da ima odvisna spremenljivka `Balance` visoko linearno povezanost z neodvisno spremenljivko `Limit`. Predpostavljam, da je spremenljivka `Rating`, ali linearna kombinacije spremenljivke `Limit` s katero od ostalih spremenljivk, ali pa linearen model vseh spremenljivk. Poglejmo si še nekaj drugih kombinacij, ki bi nam lahko pokazale kakšno pomembno informacijo, kot npr. `Limit` v odvisnosti od `Income` ali pa `Rating` v odvisnosti od `Limit` (da preverimo našo domnevo).
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.height=3.7}
+
+ggplot(Credit, aes(x=Income, y=Limit)) +
+    geom_point() +
+    labs(subtitle = paste0("Korelacijski koeficient r = ", 
+                           round(cor(Credit$Income, Credit$Limit), digits=3)))
+
+ggplot(Credit, aes(x=Limit, y=Rating)) +
+    geom_point() +
+    labs(subtitle = paste0("Korelacijski koeficient r = ", 
+                           round(cor(Credit$Limit, Credit$Rating), digits=3)))
+```
+
+Zelo hitro vidimo, da je pravzaprav `Limit` linearno odvisen od višine `Income`. Se pravi banka oz. kreditodajalec se skoraj zagotovo vsaj na podlagi prihodkov odloči kolikšen bo `Limit` za vsakega posameznika (z določenim oknom, najverjetneje glede na potrebe posameznika). Poleg tega pa vidimo, kar smo prej domnevali, da sta `Rating` in `Limit` zelo linearno povezana.
+
+Poglejmo si še morebitne odvisnosti od neštevilskih spremenljivk (`Gender`, `Student`, `Married`, `Ethnicity`)
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.height=4}
+g + geom_boxplot(aes(x=Gender))
+g + geom_boxplot(aes(x=Student))
+g + geom_boxplot(aes(x=Married))
+g + geom_boxplot(aes(x=Ethnicity))
+                           
+```
+
+Tu vidimo da večjih razlik med določenimi vrednostmi v spremenljivkah ni, z izjemo tega ali je nekdo študent ali ne. Poglejmo si za vsak slučaj še porazdelitev, da vidimo če kaj preveč izstopa.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.height=3}
+h <- ggplot(Credit, aes(Balance, ..count..))
+
+h + geom_histogram(bins=100) +
+    facet_grid(rows = vars(Student))
+                           
+```
+
+Vidimo da je ogromno takih, ki niso študentje in je povprečno stanje na kreditni kartici enako 0. To smo videli že pri prvi porazdelitvi spremenljivke `Balance`. Če narišemo enako sliko škatle z ročaji, po tem ko smo izločili tiste, ki imajo stanje na kartici enako 0, vidimo da so razlike še vedno opazne (pri histogramu so te razlike manj opazne). Intuitivno bi težko rekel, da to v splošnem drži, saj ponavadi študentje težko ob študiju še delajo, ter privarčujejo. Potrebno se je res dobro vprašati kaj `Balance` pravzaprav predstavlja. A predstavlja "porabo" na kreditni kartici, ali predstavlja koliko je še "prostega" na njej, saj je to pomembna razlika in bi si s tem lažje razložili morebitna odstopanja. Poleg tega, sumim da to odstopanje lahko izvira tudi iz tega, da je število zapisov kjer je nekdo študent, majhno (št. študentov - `r table(Credit$Student)["Yes"]`)
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.height=3}
+g2 <- ggplot(Credit %>% filter(Balance != 0), aes(y=Balance))
+
+g2 + geom_boxplot(aes(x=Student))
+
+ggplot(Credit %>% filter(Balance != 0), aes(Balance, ..count..))+geom_histogram(bins=100) +
+    facet_grid(rows = vars(Student))
+                           
+```
+
+## Linearna regresija
+
+Kakorkoli, potrebno je narediti linearen regresijski model `Balance` na ostale številske spremenljivke. 
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.height=5, fig.align="center"}
+
+mod <- lm(Credit$Balance ~ Credit$Income + 
+           Credit$Limit + 
+           Credit$Rating + 
+           Credit$Cards + 
+           Credit$Age + 
+           Credit$Education)
+
+par(mfrow=c(2,2))
+plot(mod)
+
+```
+
+Iz grafov preverimo, če so izpolnjene predpostavke za linearno regresijo.
+
+Hitro vidimo (levo zgoraj), da podatki najverjetneje niso linearno povezani. Mogoče bi bila smiselna kakšna transformacija za "spodnji" del, da bi dosegli linearnost, v primeru če bi "zgornji" del privzeli kot regresijske osamelce. 
+
+Desno zgoraj je videti, da standardizirani ostanki niso porazdeljeni normalno, kar zopet predstavlja problem.
+
+Spodaj levo opazimo pojav heteroskedastičnosti, kar spet krši eno izmed predpostavk linearne regresije.
+
+Spodaj desno načeloma ne vidimo težav, saj pravzaprav ne vidimo območja Cook-ove razdalje, torej predpostavljam da so vse točke nižje od "kritičnih" Cook-ovih razdalj. Torej nobena izmed točk ni pretirano vplivna.
+
+
+V primeru ko bi predpostavke držale in bi tudi imeli korektno linearno regresijo, bi si lahko naslednje koeficiente interpretirali na naslednji način
+
+```{r, echo=FALSE, eval=TRUE, results="markup"}
+
+kable(coef(summary(mod)), digits=3) %>% kable_styling(full_width=FALSE)
+
+```
+
+Ko se recimo `Income` poveča za 10000 dolarjev, se `Balance` zmanjša za $\sim7.56$. Podobno velja tudi za ostale spremenljivke, ko se določena spremenljivka spremeni za eno enoto se `Balance` spremeni za njen `Estimate`.
