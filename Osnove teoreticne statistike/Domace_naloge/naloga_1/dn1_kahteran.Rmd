@@ -59,9 +59,14 @@ E(X) = 6-5q = 5\\
 Var(X) = 5 q - 5 q^2 = 0.8
 $$
 
+## Simulacije
+
 S simulacijo lahko preverimo če dobimo enake rezultate
 
 ```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# setting seed for reproducibility
+set.seed(8)
 # define q
 q <- 0.2
 # define sample size
@@ -84,7 +89,7 @@ var(tmp)
 mean(tmp)
 ```
 
-Poglejmo si še primer ene porazdelitve ko smo vzorčili s prejšnjimi verjetnostmi
+Poglejmo si še primer porazdelitve ko smo vzorčili s prejšnjimi verjetnostmi
 
 ```{r, echo=TRUE, eval=TRUE, results="markup"}
 
@@ -93,9 +98,27 @@ ggplot(NULL, aes(x=tmp)) +
 
 ```
 
-Simulirajmo 1000-krat vzorčenje z omenjenimi verjetnostmi
+Simulirajmo vzorčenje 1000-krat, z omenjenimi verjetnostmi, da vidimo ocene pričakovanih vrednosti ter ocene varianc.
+
+
 ```{r, echo=TRUE, eval=TRUE, results="markup"}
-replicate(1000,mean(sample(1:6, sample_size, replace=TRUE, prob=probs)))
+
+expected <- replicate(1000,mean(sample(1:6, sample_size, replace=TRUE, prob=probs)))
+variance <- replicate(1000,var(sample(1:6, sample_size, replace=TRUE, prob=probs)))
+
+ggplot(NULL, aes(x=expected)) +
+    geom_histogram(bins=20, col="lightgray") +
+    labs(x="Ocena pričakovane vrednosti s simulacijami",
+         y="Frekvenca")
+
+ggplot(NULL, aes(x=variance)) +
+    geom_histogram(bins=20, col="lightgray") +
+    labs(x="Ocena variance s simulacijami",
+         y="Frekvenca")
 
 
 ```
+
+## Pristranskost cenilke
+
+wat
