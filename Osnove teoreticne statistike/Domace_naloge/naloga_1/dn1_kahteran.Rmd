@@ -1,0 +1,101 @@
+---
+title: "Domača naloga 1"
+subtitle: "Osnove teoretične statistike"
+author: "Alen Kahteran"
+date: "1 12 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+# importing required library
+library(tidyverse)
+```
+
+## Izračun pričakovanih vrednosti in variance
+
+Pričakovano vrednost izračunamo na naslednji način
+
+$$E(X) = \sum_{i=1}^{n=6}x_ip(x_i)
+$$
+
+
+V našem primeru ko ustavimo naše podatke, zapišemo na naslednji način
+
+$$
+E(X) = 1 \cdot q^5 + 2 \cdot 5q^4(1-q) + 3 \cdot 10 \cdot q^3(1-q)^2 + 4 \cdot 10q^2(1-q)^3 + 5 \cdot 5q(1-q)^4 + 6 \cdot(1-q)^5 \\
+E(X) = 6-5q
+$$
+Izračunajmo najprej še $E(X^2)$ saj bomo to potrebovali da izračunamo varianco.
+
+$$
+E(X^2) = 1^2 \cdot q^5 + 2^2 \cdot 5q^4(1-q) + 3^2 \cdot 10q^3(1-q)^2 + 4^2 \cdot 10q^2(1-q)^3 + 5^2 \cdot 5q(1-q)^4 + 6^2 \cdot(1-q)^5 \\
+E(X^2) = 5q(4q-11)+36
+$$
+
+Če sedaj to ustavimo v enačbo za varianco, dobimo naslednje
+
+$$
+Var(X) = E(X^2) - E(X)^2 \\
+Var(X) = 20q^2-55q+36 - (6-5q)^2 \\
+Var(X) = 5 q - 5 q^2
+$$
+
+Se pravi pričakovana vrednost in varianca za naš primer ($q=0.2$) sta
+
+$$
+q = 0.2 \\
+E(X) = 6-5q = 5\\
+Var(X) = 5 q - 5 q^2 = 0.8
+$$
+
+S simulacijo lahko preverimo če dobimo enake rezultate
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# define q
+q <- 0.2
+# define sample size
+sample_size <- 10^5
+# define probabilities
+probs <- c(q^5, 
+           5*q^4*(1-q), 
+           10*q^3*(1-q)^2, 
+           10*q^2*(1-q)^3,
+           5*q*(1-q)^4,
+           (1-q)^5)
+
+# create one sample
+tmp <- sample(1:6, sample_size, replace=TRUE, prob=probs)
+
+# get variance
+# should be 1/n instead of 1/n-1 but the sample is large enough not to matter
+var(tmp)
+# get expected value
+mean(tmp)
+```
+
+Poglejmo si še primer ene porazdelitve ko smo vzorčili s prejšnjimi verjetnostmi
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+ggplot(NULL, aes(x=tmp)) +
+    geom_bar()
+
+```
+
+Simulirajmo 1000-krat vzorčenje z omenjenimi verjetnostmi
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+replicate(1000,mean(sample(1:6, sample_size, replace=TRUE, prob=probs)))
+
+
+```
