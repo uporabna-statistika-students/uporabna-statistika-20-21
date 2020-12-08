@@ -83,28 +83,32 @@ probs <- c(q^5,
 tmp <- sample(1:6, sample_size, replace=TRUE, prob=probs)
 
 # get variance
-# should be 1/n instead of 1/n-1 but the sample is large enough not to matter
-var(tmp)
+# unbiased
+varianca <- function(x){1/length(x)* sum((x-mean(x))^2)}
+varianca(tmp)
 # get expected value
 mean(tmp)
 ```
 
-Poglejmo si še primer porazdelitve ko smo vzorčili s prejšnjimi verjetnostmi
+Poglejmo si še primer porazdelitve ko smo vzorčili s prejšnjimi verjetnostmi, kjer je tudi videti da je pričakovana vrednost enaka $5$.
 
-```{r, echo=TRUE, eval=TRUE, results="markup"}
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
 
 ggplot(NULL, aes(x=tmp)) +
-    geom_bar()
+    geom_bar() +
+    labs(x="Št. pik na kocki",
+         y="Frekvenca")
+
+
 
 ```
 
 Simulirajmo vzorčenje 1000-krat, z omenjenimi verjetnostmi, da vidimo ocene pričakovanih vrednosti ter ocene varianc.
 
 
-```{r, echo=TRUE, eval=TRUE, results="markup"}
-
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
 expected <- replicate(1000,mean(sample(1:6, sample_size, replace=TRUE, prob=probs)))
-variance <- replicate(1000,var(sample(1:6, sample_size, replace=TRUE, prob=probs)))
+variance <- replicate(1000,varianca(sample(1:6, sample_size, replace=TRUE, prob=probs)))
 
 ggplot(NULL, aes(x=expected)) +
     geom_histogram(bins=20, col="lightgray") +
@@ -121,4 +125,51 @@ ggplot(NULL, aes(x=variance)) +
 
 ## Pristranskost cenilke
 
-wat
+
+Imamo cenilko za $\hat{q}$,
+
+$$
+\hat{q} = \sqrt[4]{\frac{5\frac{n_1}{n}+\frac{n_2}{n}}{5}} \,.
+$$
+
+Da preverimo če je ta nepristranska mora veljati $E[\hat{q}] = q$. V našem primeru velja naslednje (konstanto lahko vzamemo ven iz pričakovane vrednosti)
+
+$$
+E[\hat{q}] = \frac{1}{\sqrt[4]{5}}E\left[\sqrt[4]{5\frac{n_1}{n}+\frac{n_2}{n}}\right] \,.
+$$
+
+Če uporabimo Jensenovo neenakost (v našem primeru je funkcija četrti koren) vemo da velja naslednje
+
+$$
+E[\hat{q}] = \frac{1}{\sqrt[4]{5}}E\left[\sqrt[4]{5\frac{n_1}{n}+\frac{n_2}{n}}\right] \leq \frac{1}{\sqrt[4]{5}}\sqrt[4]{E\left[5\frac{n_1}{n}+\frac{n_2}{n}\right]} \,.
+$$
+Ker je koren strogo konkavna funkcija velja tudi stroga neenakost. Poleg tega lahko pričakovano vrednost vsote razdelimo na vsoto pričakovanih vrednosti
+
+$$
+E[\hat{q}] < \frac{1}{\sqrt[4]{5}}\sqrt[4]{E\left[5\frac{n_1}{n}\right]+E\left[\frac{n_2}{n}\right]} \,.
+$$
+Podobno kot prej, lahko konstante nesemo ven iz pričakovane vrednosti
+
+$$
+E[\hat{q}] < \frac{1}{\sqrt[4]{5}}\sqrt[4]{\frac{5}{n}E\left[n_1\right]+\frac{1}{n}E\left[n_2\right]} \,.
+$$
+Ker $n_1$ in $n_2$ predstavljata cenilki za $5q^5$ oz. $5q^4(1-q)$, velja naslednje
+
+$$
+E[\hat{q}] < \frac{1}{\sqrt[4]{5}}\sqrt[4]{5q^5+5q^4(1-q)} \,.
+$$
+Če stvari nekoliko pokrajšamo, dobimo sledeče neenačbe
+
+$$
+E[\hat{q}] < \frac{1}{\sqrt[4]{5}}\sqrt[4]{5q^4}\,,
+$$
+
+$$
+E[\hat{q}] < \frac{\sqrt[4]{5}}{\sqrt[4]{5}}\sqrt[4]{q^4}\,,
+$$
+
+$$
+E[\hat{q}] < \frac{\sqrt[4]{5}}{\sqrt[4]{5}}q = q\,.
+$$
+Torej vidimo da je pričakovana vrednost $E[\hat{q}]$ manjša od vrednosti $q$. Potemtakem naša cenilka ni nepristranska in sicer jo podcenjuje.
+
