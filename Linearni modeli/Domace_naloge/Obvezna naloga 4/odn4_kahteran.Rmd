@@ -1,0 +1,93 @@
+---
+title: "Obvezna domača naloga 4"
+subtitle: "Linearni modeli"
+author: "Alen Kahteran"
+date: "9. 12. 2020"
+output:
+  pdf_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(mvtnorm)
+library(multcomp)
+library(tidyverse)
+library(effects)
+library(gridExtra)
+```
+
+##  3.1 model.spol
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# read data
+tlak <- read.table(file="SKT.txt", header=TRUE, stringsAsFactors=TRUE)
+# create linear model based on spol
+model.spol <- lm(data=tlak, SKT~spol)
+
+# create matrix of coefficients to be tested
+test_matr <- matrix(c(1,0,1,1), nrow=2, byrow=TRUE)
+# rename for easier viewing
+colnames(test_matr) <- c("b0", "b1")
+rownames(test_matr) <- c("M", "F")
+
+# use glht with test_matr for multiple testing
+model.spol_test <- glht(model.spol, linfct=test_matr)
+# get values
+summary(model.spol_test)
+confint(model.spol_test)
+```
+
+Povprečna vrednost SKT pri moških je bila $155.15 mm$ z intervalom zaupanja $[149.02 mm, 161.28 mm]$ medtem ko je bila pri ženskah $139.86 mm$ z intervalom zaupanja $[132.66 mm, 147.06 mm]$ pri stopnji tveganja $\alpha=0.05$.
+
+## 3.2 model.razlicne
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# get correct data
+tlak$skupina <- factor(rep(c("A", "B", "C"), 
+                           times=c(20, 20, 29))) 
+tlak$starost.50 <- tlak$starost - 50
+model.razlicne <- lm(data=tlak, SKT~skupina*starost.50)
+
+# create matrix of coefficients to be tested
+test_matr <- matrix(c(0, 1, 0, 0, 0, 0,
+                      0, 0, 1, 0, 0, 0,
+                      0,-1, 1, 0, 0, 0,
+                      0, 0, 0, 1, 0, 0,
+                      0, 0, 0, 0, 1, 0,
+                      0, 0, 0, 0, 0, 1,
+                      0, 0, 0, 0,-1, 1),
+                    nrow=7,
+                    byrow=TRUE)
+
+# rename for easier viewing
+rownames(test_matr) <- c("mu|B-A", "mu|C-A", "mu|C-B", 
+                 "k|A", "k|B-A", "k|C-A", "k|C-B")
+
+colnames(test_matr) <- c("b0","b1","b2","b3","b4","b5")
+test_matr
+
+# use glht with test_matr for multiple testing
+test.razlicne <- glht(model.razlicne, linfct=test_matr)
+# get values
+summary(test.razlicne)
+confint(test.razlicne)
+```
+
+1. Povprečni SKT med skupino A in skupino B ni statistično značilno drugačen ($p=0.94$).
+
+2. Povprečni SKT med skupino A in skupino C je statistično značilno drugačen ($p=0.0001$). Povprečni SKT skupine A je višji za $12.38 mm$ s pripadajočim intervalom zaupanja, pri $\alpha = 0.05$, $[5.12 mm, 19.63 mm]$.
+
+3. Podobno kot pri prejšnji točki je povprečni SKT med skupino B in C statistično značilno drugačen ($p < 10^{-4}$). Povprečni SKT skupine B je višji za $14.63 mm$ s pripadajočim intervalom zaupanja, pri $\alpha = 0.05$, $[7.24 mm, 22.01 mm]$.
+
+4. Ko gledamo odvisnost SKT skupine A od starosti, vidimo da je statistično značilno ($p < 10^{-4}$) drugačna od 0. V povprečju se vsako leto SKT poveča za  $1.04 mm$. Interval zaupanja ($\alpha = 0.05$) je $[0.67 mm, 1.40 mm]$
+
+5. Razlike odvisnosti SKT od starosti po skupinah ($BA$, $CA$ in $CB$), niso statistično značilno drugačne od $0$.
