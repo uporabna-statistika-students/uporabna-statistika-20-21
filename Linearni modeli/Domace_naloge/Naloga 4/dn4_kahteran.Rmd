@@ -1,0 +1,135 @@
+---
+title: "Domača naloga 4"
+subtitle: "Linearni modeli"
+author: "Alen Kahteran"
+date: "10. 12. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(tidyverse)
+library(effects)
+library(car)
+library(ggfortify)
+library(multcomp)
+```
+
+Najprej si poglejmo podatke.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+# read data
+pelod <- as_tibble(read.table(file="PELOD.txt", header=TRUE, stringsAsFactors=TRUE))
+
+ggplot(pelod, aes(x=Sevanje, y=Kalivost)) +
+    geom_point() +
+    facet_grid(cols = vars(Vlaga)) +
+    geom_smooth(se=FALSE) +
+    labs(x="Sevanje [Gy]",
+         y="Kalivost",
+         title="Kalivost v odvisnosti od sevanja z gladilniki, pri različni vlažnosti",
+         subtitle="HH - Visoka vlažnost, RH - Sobna vlažnost")
+```
+
+Vidimo, da tako pri visoki kot sobni vlažnosti kalivost pada z višjim sevanjem. Poglejmo si še podobno sliko, le da so tokrat oboji podatki za vlažnost na isti sliki.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+ggplot(pelod, aes(x=Sevanje, y=Kalivost, col=Vlaga)) +
+    geom_point() +
+    geom_smooth(se=FALSE) +
+    labs(x="Sevanje [Gy]",
+         y="Kalivost",
+         title="Kalivost v odvisnosti od sevanja z gladilniki, pri različni vlažnosti",
+         subtitle="HH - Visoka vlažnost, RH - Sobna vlažnost")
+```
+
+Iz tega grafa se da le razbrati, da je kalivost pri višji vlažnosti nekoliko boljša.
+
+Sedaj si poglejmo diagnostične grafe modela `Kalivost` v odvisnosti od `Vlaga` in `Sevanje` in njune interakcije. 
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=8}
+mod_0 <- lm(Kalivost ~ Vlaga + Sevanje + Vlaga*Sevanje, data=pelod)
+autoplot(mod_0, which = c(1:6))
+```
+
+Hitro vidimo da imamo težavo z naraščajočo varianco. Glede ne da to modeliramo `Kalivost`, ki je pravzaprav spremenljivka v obliki deleža, jo je potrebno smiselno transformirati. Uporabimo naslednjo transformacijo 
+
+$$
+f(Kalivost)=arcsin(\sqrt{\mathrm{Kalivost}}) \,,
+$$
+saj so naše vrednosti na celotni zalogi vrednosti $[0,1]$. V primeru ko bi bile na približno $[0.25, 0.75]$ tedaj transformacija ne bi bila potrebna. To lahko preverimo z enostavnim histogramom, kjer vidimo da so vse naše vrednosti v območju $[0, 0.25]$ in je zato transformacija potrebna.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+# interakcija
+ggplot(pelod, aes(x=Kalivost)) +
+    geom_histogram() +
+    labs(x="Kalivost",
+         y="Frekvenca",
+         title="histogram kalivosti")
+```
+
+Zato ponovno naredimo linearni model z omenjeno transformacijo, ter pogledamo če so izpolnjene predpostavke.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=8}
+# interakcija
+mod_1 <- lm(asin(sqrt(Kalivost)) ~ Vlaga + Sevanje + Vlaga*Sevanje, data=pelod)
+autoplot(mod_1, which = c(1:6))
+```
+
+Vidimo da smo s to transformacijo izpolnili vse predpostavke kar se linearnega modela tiče. Varianca je konstantna, ostanki so porazdeljeni normalno, nimamo vplivnih točk, saj nima nobena izmed točk Cookove razdalje niti nad $0.1$.
+
+Poglejmo si še koeficiente ter intervale zaupanja.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+general_tests <- glht(mod_1)
+
+summary(general_tests)
+
+confint(general_tests)
+```
+
+S tem modelom smo pravzaprav naredili model dveh premic, kjer je ena premica za vlago pri sobni vlažnosti druga pa za vlago pri visoki vlažnosti. Enačbi ki ju opišeta sta
+
+$$
+\mathrm{RH} : \widehat{\arcsin(\sqrt{Kalivost})}=0.45 - 4.67 \cdot 10^{-4}\cdot Sevanje
+$$
+$$
+\mathrm{HH} : \widehat{\arcsin(\sqrt{Kalivost})}=(0.45 + (- 9.74\cdot 10^{-3})) + (-4.67 \cdot 10^{-4} + (- 1.36 \cdot 10^{-4}))\cdot Sevanje = 0.44 - 6.03  \cdot 10^{-4} \cdot Sevanje
+$$
+
+Preden si grafično pogledamo rezultate, je smiselno še obrazložiti koeficiente:
+
+Naša enačba
+
+$$
+\widehat{\arcsin(\sqrt{Kalivost})} = \beta_0 + \beta_1 \cdot Vlaga + \beta_2 \cdot Sevanje + \beta_3 \cdot Vlaga \cdot Sevanje
+$$
+
+a) $\beta_0$ nam pove kolikšna bo povprečna vrednost $\arcsin(\sqrt{Kalivost})$ v primeru ko je sevanje enako $0$. V primeru RH vlažnosti je ta enak $0.45$ s 95% intervalom zaupanja $[0.41, 0.49]$. V primeru HH so te vrednosti $0.44$ z intervalom zaupanja $[0.38, 0.50]$.
+
+b) Zaradi zgornjih rezultatov se je pokazalo da je koeficient $\beta_1$ statistično neznačilen, saj se oba intervala pokrivata, in potemtakem bi lahko rekli da sta začetni vrednosti obeh regresijskih premic enaki.
+
+c) $\beta_2$ koeficient nam pove, da če se sevanje poveča za $100\ Gy$ se bo povprečna vrednost $\arcsin(\sqrt{Kalivost})$ pri sobni vlažnosti zmanjšala za $-4.67\cdot 10^{-4}$. $95\%$ interval zaupanja je $[-5.62\cdot 10^{-4}, -3.73\cdot 10^{-4}]$
+
+d) $\beta_3$ koeficient pa nam pove, da če se sevanje poveča za $100\ Gy$ se bo povprečna vrednost $\arcsin(\sqrt{Kalivost})$ zmanjšala za $1.36 \cdot 10^{-4}$ več pri sobni vlažnosti kot pri visoki vlažnosti. $95\%$ interval zaupanja je $[-2.69\cdot 10^{-4}, -2.10\cdot 10^{-6}]$
+
+Še grafični prikaz naših napovedi.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+plot(Effect(c("Vlaga", "Sevanje"), mod_1), 
+     multiline=T, 
+     ci.style="bands", 
+     key.args=list(x=0.8, y=0.8, corner=c(0,0)), 
+     main="Odvisnost kalivosti od sevanja in vlage, ter njune interakcije\n RH: Sobna vlaznost, HH: Visoka vlaznost",
+     lty=c(1:2))
+```
+
