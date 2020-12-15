@@ -1,0 +1,81 @@
+---
+title: "Domača naloga 5"
+subtitle: "Linearni modeli"
+author: "Alen Kahteran"
+date: "10. 12. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(MASS)
+library(effects)
+library(car)
+library(ggfortify)
+library(multcomp)
+library(tidyverse)
+library(GGally)
+data("Cars93")
+```
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+Cars93 <- as_tibble(Cars93)
+Cars93$Poraba<-235.21/Cars93$MPG.highway  # v l/100 km
+Cars93$Masa<-Cars93$Weight*0.45359/100    # v 100 kg
+Cars93$Prostornina<-Cars93$EngineSize     # v litrih
+Cars93$Moc<-Cars93$Horsepower             # v KM
+Cars93$Poreklo<-Cars93$Origin             # Poreeklo
+Cars93$Tip<-Cars93$Type                   # Tip
+
+avti <- subset(Cars93, select=c(Poraba, Masa, Prostornina, Moc, Poreklo, Tip))
+rownames(avti) <- Cars93$Make
+
+avti$Tip <- relevel(avti$Tip, ref="Van")
+
+mod_0 <- lm(Poraba~Masa + log(Prostornina)*log(Moc), data = avti)
+
+autoplot(mod_0, which=1:6)
+
+avti$log_poraba <- log(avti$Poraba)
+avti$sqrt_poraba <- sqrt(avti$Poraba)
+avti$inv_poraba <- 1-avti$Poraba
+avti$log_prostornina <- log(avti$Prostornina)
+avti$log_moc <- log(avti$Moc)
+avti$sqrt_prostornina <- sqrt(avti$Prostornina)
+avti$sqrt_moc <- sqrt(avti$Moc)
+avti$inv_prostornina <- 1/avti$Prostornina
+avti$inv_moc <- 1/avti$Moc
+
+
+ggpairs(avti[c("Poraba","log_poraba","sqrt_poraba","inv_poraba", "Masa", "Prostornina", "log_prostornina", "sqrt_prostornina", "inv_prostornina", "Moc", "log_moc", "sqrt_moc", "inv_moc")])
+
+ggpairs(avti[c("Poraba", "Masa", "inv_prostornina", "inv_moc")])
+
+mod_1 <- lm(1/Poraba~Masa + inv_prostornina + inv_moc, data = avti)
+
+autoplot(mod_1, which=1:6)
+
+
+mod_1 <- lm(Poraba~Masa + inv_prostornina*inv_moc, data = avti[c(-31, -39, -42),])
+
+autoplot(mod_1, which=1:6)
+
+summary(mod_1)
+
+summary(glht(mod_1))
+
+ggplot(avti, aes(x=inv_prostornina, y=inv_moc)) +
+    geom_point()
+           
+
+
+```
