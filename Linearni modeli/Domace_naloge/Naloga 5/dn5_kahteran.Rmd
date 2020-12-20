@@ -2,7 +2,7 @@
 title: "Domača naloga 5"
 subtitle: "Linearni modeli"
 author: "Alen Kahteran"
-date: "10. 12. 2020"
+date: "18. 12. 2020"
 output:
   html_document:
     fig_caption: no
@@ -17,15 +17,21 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
-library(MASS)
 library(effects)
 library(car)
 library(ggfortify)
 library(multcomp)
-library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(magrittr)
 library(GGally)
-data("Cars93")
+library(splines)
+Cars93 <- MASS::Cars93
 ```
+
+# Avti
+
+Najprej pretvorimo podatke.
 
 ```{r, echo=TRUE, eval=TRUE, results="markup"}
 Cars93 <- as_tibble(Cars93)
@@ -40,42 +46,200 @@ avti <- subset(Cars93, select=c(Poraba, Masa, Prostornina, Moc, Poreklo, Tip))
 rownames(avti) <- Cars93$Make
 
 avti$Tip <- relevel(avti$Tip, ref="Van")
+```
 
-mod_0 <- lm(Poraba~Masa + log(Prostornina)*log(Moc), data = avti)
+Za začetek zgradimo osnovni model brez interakcij z vsemi spremenljivkami in si poglejmo diagnostične grafe ostankov, da vidimo če imamo kakšno težavo.
 
-autoplot(mod_0, which=1:6)
-
-avti$log_poraba <- log(avti$Poraba)
-avti$sqrt_poraba <- sqrt(avti$Poraba)
-avti$inv_poraba <- 1-avti$Poraba
-avti$log_prostornina <- log(avti$Prostornina)
-avti$log_moc <- log(avti$Moc)
-avti$sqrt_prostornina <- sqrt(avti$Prostornina)
-avti$sqrt_moc <- sqrt(avti$Moc)
-avti$inv_prostornina <- 1/avti$Prostornina
-avti$inv_moc <- 1/avti$Moc
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+mod_0 <- lm(Poraba~Masa + Prostornina + Moc + Poreklo + Tip, data=avti)
+```
 
 
-ggpairs(avti[c("Poraba","log_poraba","sqrt_poraba","inv_poraba", "Masa", "Prostornina", "log_prostornina", "sqrt_prostornina", "inv_prostornina", "Moc", "log_moc", "sqrt_moc", "inv_moc")])
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=4}
+autoplot(mod_0, which=1:4)
+```
 
-ggpairs(avti[c("Poraba", "Masa", "inv_prostornina", "inv_moc")])
+Vidimo da z ostanki ni težav, zato izračunajmo $VIF$ da vidimo če mogoče obstaja kolinearnost med spremenljivkami.
 
-mod_1 <- lm(1/Poraba~Masa + inv_prostornina + inv_moc, data = avti)
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+vif(mod_0)
+```
 
-autoplot(mod_1, which=1:6)
+Videti je, da spremenljivka `Masa` izstopa, in je zato smiselno ponoviti postopek, le da tokrat brez spremenljivke `Masa`.
 
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+mod_1 <- lm(Poraba~Prostornina + Moc + Poreklo + Tip, data=avti)
+```
 
-mod_1 <- lm(Poraba~Masa + inv_prostornina*inv_moc, data = avti[c(-31, -39, -42),])
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=4}
+autoplot(mod_1, which=1:4)
+```
 
-autoplot(mod_1, which=1:6)
+Zopet vidimo da večjih težav ni, predpostavke bi rekel da so izpolnjene. Poglejmo si zato zopet $VIF$.
 
-summary(mod_1)
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+vif(mod_1)
+```
 
-summary(glht(mod_1))
+Tokrat vidimo, da težav nimamo.
 
-ggplot(avti, aes(x=inv_prostornina, y=inv_moc)) +
-    geom_point()
-           
+Da preverimo morebitno korelacijo med napovednimi spremenljivkami, je potrebno vedeti kakšna je približna odvisnost, zato da vemo katero metodo izračuna korelacije bomo uporabili.
 
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+ggplot(avti, aes(x=Prostornina, y=Moc)) +
+    geom_point() +
+    labs(title="Razsevni diagram moči in prostornine")
+```
+
+Vidimo da obstaja linearna povezanost, zato lahko uporabimo Pearsonov koeficient korelacije.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+cor(avti %>% select(Prostornina, Moc), method="pearson")
+```
+
+Torej vidimo da imamo še vedno težavo s kolinearnostjo. Da bomo prepričani v to, preverimo še napovedne grafe.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
+plot(predictorEffects(mod_1, ~.), main="")
+```
+
+Vidimo da `Prostornina` predstavlja večjo težavo (intervali zaupanja). Poglejmo kako izgleda model še brez spremenljivke `Prostornina`.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+mod_2 <- lm(Poraba~Moc + Poreklo + Tip, data=avti)
+```
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=4}
+autoplot(mod_2, which=1:4)
+```
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+vif(mod_2)
+```
+
+Vidimo da so predpostavke o modelu izpolnjene. Na nobenem izmed diagnostičnih grafov ne vidimo težav. $VIF$ vrednosti so tudi vredu. Korelacije nima več smisla računati saj imamo le še eno številsko napovedno spremenljivko. Sedaj si poglejmo izračunane koeficiente za naš model. Naredili smo model več regresijskih premic (Vse možne kombinacije `Tip` in `Poreklo` za napovedno spremenljivko `Moc`).
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+res <- glht(mod_2)
+
+summary(res)
+
+summary(mod_2)$r.squared
+
+confint(res)
+```
+
+Vidimo, da so vse vrednosti statistično značilne z izjemo spremenljivke `Poreklo`. Torej ne moremo trditi da sta začetni vrednosti za `Poreklo` različni. V ostalih primerih, lahko trdimo da obstajajo razlike. Poglejmo si to še na naslednji sliki
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5}
+plot(Effect(c("Moc", "Poreklo"), mod_2), multiline=T, ci.style="bands", key.args=list(x=0.05, y=0.8, corner=c(0,0)),  main="Odvisnost porabe od moči glede na poreklo", lty=c(1:3))
+```
+
+Vidimo da sta obe regresijski črti vsebovani v intervalu zaupanja druge. To je lep grafičen prikaz statistične neznačilnosti spremenljivke `Poreklo`.
+
+Če interpretiramo rezultate v sklopu začetnih vprašanj, izgleda tako:
+
+a) Poraba goriva je odvisna tehničnih karakteristik avta. Videli smo da je večina informacij o spremenljivki `Masa` najverjetneje vsebovana v ostalih spremenljivkah saj je imela zelo visoko vrednost $VIF$ (Sumim da je večina informacije v spremenljivki `Tip`). Poleg tega pa smo videli da sta `Prostornina` in `Moč` zelo linearno povezana. Ker obe spremenljivki govorita o enaki informaciji, smo posledično odstranili spremenljivko `Prostornina` iz modela. Zato je naša najbolj informativna spremenljivka o porabi ravno `Moč`.
+
+b) Poraba goriva je tudi odvisna od tipa avtomobila. Statistično značilno ima vsak tip avtomobila drugačno začetno vrednost.
+
+c) Ne moremo trditi da ima spremenljivka `Poreklo` vpliv na porabo pri avtomobilih.
+
+# Telesna masa in višina žensk
+
+```{r, echo=FALSE, eval=TRUE, results="markup"}
+women <- as_tibble(women)
+```
+
+Najprej si poglejmo razsevni diagram teh podatkov.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5}
+ggplot(women, aes(x=height, y=weight)) +
+    geom_point() + 
+    geom_smooth() +
+    labs(title="Razsevni diagram teže od višine")
+```
+
+Vidimo manjšo uklonjenost našega gladilnika. Poglejmo si diagnostične grafe linearnega modela spremenljivke `weight` v odvisnosti od spremenljivke `height`.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=5}
+mod_0 <- lm(weight~height, data=women)
+autoplot(mod_0, which=1:4)
+```
+
+Zelo hitro vidimo da imamo veliko težavo z nelinearnostjo. Poskusimo najprej rešiti model s kvadratnim polinomom.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=5}
+mod_1 <- lm(weight~poly(height, degree=2, raw=TRUE), data=women)
+
+autoplot(mod_1, which=1:4)
+```
+
+Vidimo da imamo še vedno težave z nelinearnostjo. Najprej z $ANOVA$ preverimo, če sta modela ekvivalentna.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=5}
+anova(mod_0, mod_1)
+```
+Ker modela nista ekvivalentna, lahko dodamo še eno stopnjo več. Poskusimo torej še s polinomom tretje stopnje.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=5}
+mod_2 <- lm(weight~poly(height, degree=3, raw=TRUE), data=women)
+
+autoplot(mod_2, which=1:4)
+
+anova(mod_1, mod_2)
+```
+
+Še vedno imamo manjše težave z nelinearnostjo. Ne vidim veliko smisla v večanju stopnje polinoma, saj imamo le 15 zapisov. Kmalu bomo začeli modelirati že varianco. Poskusimo še z logaritemsko transformacijo odzivne spremenljivke, mogoče se bo stanje izboljšalo.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center", fig.height=5}
+mod_2.1 <- lm(log(weight)~poly(height, degree=3, raw=TRUE), data=women)
+
+autoplot(mod_2.1, which=1:4)
 
 ```
+
+Precej smo izboljšali linearnost, ostanki so dokaj normalno porazdeljeni, vidimo pa da varianca zagotovo ni konstantna. To lahko pripišemo prvi točki (mogoče tudi drugi), za katero tudi vidimo da je zelo vplivna. Točk ne bi odstranjevali saj imamo le 15 zapisov. Če zanemarimo prvi dve točki, bi lahko rekli da je varianca konstantna.
+
+Z zlepki najverjetneje ne bi rešili teh težav saj imamo le 15 zapisov.
+
+Poglejmo si izračunane koeficiente
+
+```{r, echo=FALSE, eval=TRUE, results="markup"}
+summary(mod_2.1)
+```
+Vidimo da so naši koeficienti statistično značilni.
+
+```{r, echo=FALSE, eval=TRUE, results="markup"}
+summary(mod_2.1)$r.squared
+```
+
+Z našim modelom lahko razložimo $99.98\%$ variance.
+
+Z našim modelom opišemo logaritem teže žensk iz Združenih Držav Amerike starih od 30-39 s polinomom tretje stopnje. Oblika je sledeča
+
+$$
+log(Weight) = \beta_0 + \beta_1Height + \beta_2Height^2 + \beta_3Height^3
+$$
+Kjer so $\beta_0$, $\beta_1$, $\beta_2$ in $\beta_3$ naslednje vrednosti (Vrednosti v oklepaju predstavljata 95% interval zaupanja)
+
+$$
+\beta_0 = -1.01,\ [-5.79,\ 3.78]
+$$
+$$
+\beta_1 = 0.42,\ [0.02,\ 0.46]
+$$
+$$
+\beta_2 = -0.0036,\ [-0.0071,\ -0.00021]
+$$
+$$
+\beta_3 = 2.01 \cdot 10^{-5},\ [2.54\cdot 10^{-6},\ 3.76\cdot 10^{-5}]
+$$
+
+Poglejmo si še graf naše napovedi.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=6, fig.width=10}
+plot(Effect(c("height"), mod_2.1), multiline=T, ci.style="bands", main="Odvisnost logaritma teže od višine", lty=c(1:3))
+
+```
+
