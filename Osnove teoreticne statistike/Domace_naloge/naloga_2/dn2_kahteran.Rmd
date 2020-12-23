@@ -1,0 +1,124 @@
+---
+title: "Domača naloga 2"
+subtitle: "Osnove teoretične statistike"
+author: "Alen Kahteran"
+date: "24. 12. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(ggplot2)
+library(dplyr)
+library(magrittr)
+```
+
+# 1.
+
+Pričakovana vrednost se izračuna na naslednji način
+
+$$
+E(X) = \sum_{i=0}^{\infty} x_i\cdot\Pr(x_i)\,.
+$$
+
+Zanima nas pričakovana vrednost Poissonove porazdelitve. Zapišemo jo z enačbo
+
+$$
+\Pr(X=x) = \frac{\lambda^xe^{-\lambda}}{x!};\ \mathrm{kjer\ \ je\ \ x} = \{0, 1, \dots\} \,.
+$$
+
+Če ti enačbi združimo dobimo naslednje
+
+$$
+E(X) = \sum_{x=0}^{\infty} x\cdot \frac{\lambda^{x}e^{-\lambda}}{x!}\,,
+$$
+
+Oz. pravilneje, saj je prvi člen enak 0.
+
+$$
+E(X) = \sum_{x=1}^{\infty} x\cdot \frac{\lambda^{x}e^{-\lambda}}{x!}\,.
+$$
+
+Pokrajšamo $x$ zgoraj in spodaj
+
+$$
+E(X) = \sum_{x=1}^{\infty}\frac{\lambda^{x}e^{-\lambda}}{(x-1)!}\,.
+$$
+
+Nesemo $e^{-\lambda}$ in eno $\lambda$ ven iz vsote
+
+$$
+E(X) =\lambda e^{-\lambda} \sum_{x=1}^{\infty}\frac{\lambda^{x-1}}{(x-1)!}\,.
+$$
+
+Če vsoto razpišemo, dobimo naslednjo enačbo
+
+$$
+E(X) =\lambda e^{-\lambda} \left(\frac{\lambda^{0}}{0!} + \frac{\lambda^{1}}{1!} + \frac{\lambda^{2}}{2!} + \dots\right)\,.
+$$
+
+To lahko ponovno pretvorimo v malce drugačno vsoto
+
+$$
+E(X) =\lambda e^{-\lambda} \sum_{x=0}^{\infty}\frac{\lambda^{x}}{x!}\,.
+$$
+Za to vsoto velja naslednje
+$$
+\sum_{x=0}^{\infty}\frac{\lambda^{x}}{x!} = e^\lambda\,.
+$$
+Torej dobimo
+
+$$
+E(X) =\lambda e^{-\lambda} e^\lambda=\lambda\,.
+$$
+
+Za varianco velja
+
+$$
+Var(X) = E(X^2) - E(X)^2 \,.
+$$
+
+Kar je veliko lažje izračunati če $E(X^2)$ zapišemo kot
+
+$$
+E(X^2)=E((X)(X-1)+X) \,.
+$$
+Ustavimo v enačbo za varianco
+
+$$
+Var(X) = E((X)(X-1)+X) - E(X)^2
+$$
+in nekoliko preoblikujemo v
+
+$$
+Var(X) = E((X)(X-1)) + E(X) - E(X)^2 \,.
+$$
+
+Za $E(X)$ smo prej pokazali da je njegova vrednost $\lambda$, in je potrebno izračunati le še $E((X)(X-1)$. Če ustavimo v enačbo za pričakovano vrednost dobimo
+
+$$
+E((X)(X-1)) = \sum_{x=0}^{\infty} x(x-1)\cdot \frac{\lambda^{x}e^{-\lambda}}{x!}\,.
+$$
+
+Po podobnem razmisleku kot pri izračunu pričakovane vrednosti lahko pokažemo, da velja
+
+$$
+E((X)(X-1))=\lambda^2
+$$
+
+in potemtakem velja
+
+$$
+Var(X) = \lambda^2 + \lambda - \lambda^2 = \lambda\,.
+$$
+
+# 2.
