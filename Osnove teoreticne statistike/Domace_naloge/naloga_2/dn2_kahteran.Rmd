@@ -2,7 +2,7 @@
 title: "Domača naloga 2"
 subtitle: "Osnove teoretične statistike"
 author: "Alen Kahteran"
-date: "24. 12. 2020"
+date: "25. 12. 2020"
 output:
   html_document:
     fig_caption: no
@@ -42,7 +42,7 @@ $$
 E(X) = \sum_{x=0}^{\infty} x\cdot \frac{\lambda^{x}e^{-\lambda}}{x!}\,,
 $$
 
-Oz. pravilneje, saj je prvi člen enak 0.
+oz. pravilneje, saj je prvi člen enak 0.
 
 $$
 E(X) = \sum_{x=1}^{\infty} x\cdot \frac{\lambda^{x}e^{-\lambda}}{x!}\,.
@@ -60,13 +60,13 @@ $$
 E(X) =\lambda e^{-\lambda} \sum_{x=1}^{\infty}\frac{\lambda^{x-1}}{(x-1)!}\,.
 $$
 
-Če vsoto razpišemo, dobimo naslednjo enačbo
+Če vsoto razpišemo, dobimo
 
 $$
 E(X) =\lambda e^{-\lambda} \left(\frac{\lambda^{0}}{0!} + \frac{\lambda^{1}}{1!} + \frac{\lambda^{2}}{2!} + \dots\right)\,.
 $$
 
-To lahko ponovno pretvorimo v malce drugačno vsoto
+To lahko ponovno pretvorimo v vsoto
 
 $$
 E(X) =\lambda e^{-\lambda} \sum_{x=0}^{\infty}\frac{\lambda^{x}}{x!}\,.
@@ -84,10 +84,10 @@ $$
 Za varianco velja
 
 $$
-Var(X) = E(X^2) - E(X)^2 \,.
+Var(X) = E(X^2) - E(X)^2 \,,
 $$
 
-Kar je veliko lažje izračunati če $E(X^2)$ zapišemo kot
+kar je veliko lažje izračunati če $E(X^2)$ zapišemo kot
 
 $$
 E(X^2)=E((X)(X-1)+X) \,.
@@ -103,7 +103,7 @@ $$
 Var(X) = E((X)(X-1)) + E(X) - E(X)^2 \,.
 $$
 
-Za $E(X)$ smo prej pokazali da je njegova vrednost $\lambda$, in je potrebno izračunati le še $E((X)(X-1)$. Če ustavimo v enačbo za pričakovano vrednost dobimo
+Za $E(X)$ smo prej pokazali da je $\lambda$, in je potrebno izračunati le še $E((X)(X-1)$. Če ustavimo v enačbo za pričakovano vrednost dobimo
 
 $$
 E((X)(X-1)) = \sum_{x=0}^{\infty} x(x-1)\cdot \frac{\lambda^{x}e^{-\lambda}}{x!}\,.
@@ -115,10 +115,208 @@ $$
 E((X)(X-1))=\lambda^2
 $$
 
-in potemtakem velja
+in posledično dobimo
 
 $$
 Var(X) = \lambda^2 + \lambda - \lambda^2 = \lambda\,.
 $$
 
 # 2.
+
+Našo Poissonovo porazdelitev lahko aproksimiramo z normalno porazdelitvijo. Za našo Poissonovo porazdelitev velja naslednje
+$$
+\lambda = 50 \,,
+$$
+
+$$
+E(X) = 50 \,,
+$$
+
+$$
+Var(X) = 50 \,.
+$$
+To Poissonovo porazdelitev lahko aproksimiramo z normalno oblike $N(50, 50)$.
+
+V našem primeru bomo naključno generirali $2^{11}$ vrednosti iz Poissonove porazdelitve z zgornjimi parametri. Poleg porazdelitve dobljenega vzorca bomo dodali še normalno porazdelitev, da bomo videli prileganje. Vzorec bi lahko bil manjši, vendar je prileganje bolj očitno pri višjih vzorcih. S tem ko večamo velikost vzorca bo porazdelitev tega vzorca vedno bolj podobna pravi Poissonovi porazdelitvi. Na sliki rdeče pike predstavljajo Teoretične vrednosti Poissonove porazdelitve, medtem ko modra črta predstavlja normalno porazdelitev
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+# poisson dist parameters
+lambda <- 50
+
+# number of samples
+n <- 2^11 #2048
+
+# setting seeed for reproducibility
+set.seed(8)
+
+# generate n samples from poisson dist
+pois_sample <- rpois(n, lambda=lambda)
+
+
+# plotting sample distribution with normal distribution and poisson theoretical values/
+ggplot(data.frame(x=pois_sample), aes(x, col="Vzorčna porazdelitev")) +
+    geom_density() +
+    stat_function(fun=dnorm,
+                  geom="line",
+                  alpha=1,
+                  args=list(mean=lambda, sd=sqrt(lambda)),
+                  aes(colour = "Normalna")) +
+    stat_function(fun=dpois,
+                  geom="point",
+                  n=length(table(pois_sample))+6, # no idea why 6 works, but it does.
+                  alpha=1,
+                  args=list(lambda=lambda),
+                  aes(colour = "Poisson")) +
+    scale_colour_manual("Legenda", values = c("steelblue", "darkred", "darkgreen")) +
+    labs(y="Gostota")
+```
+
+# 3.
+
+## S simulacijami - a
+
+Za simulacije je dobro da vedno izberemo dovolj velik vzorec, saj se tako bolje približamo pravi porazdelitvi.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+smpl <- rpois(2^14, lambda=lambda)
+
+x <- quantile(smpl, probs=0.05) - 1 # -1 Because it returns the smallest larger integer.
+# 2.3 returns 3 for example.
+x
+```
+
+Prodajalec lahko s $95\%$ zaupanjem trdi, da je število naročil na uro padlo, ko v eni uri prejme `r x` naročil.
+
+Še grafični prikaz, kjer črtkana rdeča črta predstavlja mejno vrednost pod katero lahko prodajalec trdi da je št. naročil na uro padlo.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+ggplot(data.frame(x_data=smpl), aes(x_data)) +
+    geom_density() +
+    geom_vline(xintercept=x,
+               col="red",
+               linetype="dashed") +
+    labs(y="Frekvenca",
+         x="x")
+```
+
+## Teoretično - a
+
+Pri tej nalogi nas zanima za kateri $x$ velja naslednja neenačba.
+
+$$
+\Pr(Poisson(\lambda=50) \leq x) < 0.05
+$$
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+x <- qpois(0.05, lambda=lambda) - 1 # -1 Because it returns the smallest integer x such 
+# that P(X ≤ x) ≥ p.
+x
+```
+
+To lahko preverimo z `ppois()` funkcijo
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+ppois(39, lambda=lambda)
+ppois(38, lambda=lambda)
+```
+
+Prodajalec lahko s $95\%$ zaupanjem trdi, da je število naročil na uro padlo, ko v eni uri prejme `r x` ali manj naročil.
+
+
+## S simulacijami - b
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+set.seed(8)
+
+smpl <- replicate(2^14, sum(rpois(8, lambda=lambda)))
+
+x <- quantile(smpl, probs=0.05)-1 # -1 similarly as above for qpois
+x
+```
+
+Prodajalec lahko s $95\%$ zaupanjem trdi, da je število naročil na uro padlo, ko v osmih urah prejme `r x` naročil.
+
+Še grafični prikaz, kjer črtkana rdeča črta predstavlja mejno vrednost pod katero lahko prodajalec trdi da je št. naročil na uro padlo.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+ggplot(data.frame(x_data=smpl), aes(x_data)) +
+    geom_density() +
+    geom_vline(xintercept=x,
+               col="red",
+               linetype="dashed") +
+    labs(y="Frekvenca",
+         x="x")
+```
+
+## Teoretično - b
+
+V tem primeru nas zanima podobno kot v prejšnjem le da tokrat iščemo $x$ za katerega velja
+
+$$
+\Pr(Poisson(\lambda=50\cdot8) \leq x) < 0.05 \,.
+$$
+To lahko preverjamo na tak način, ker vemo da velja
+
+$$
+X_i\ \overset{iid}{\sim}\ Poisson(\lambda=50)
+$$
+
+in posledično
+
+$$
+\sum_{i=1}^{n} X_i \sim Poisson(n\cdot\lambda)
+$$
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+x <- qpois(0.05, lambda=lambda*8) - 1 # -1 Because it returns the smallest integer x such 
+# that P(X ≤ x) ≥ p.
+x
+```
+
+To lahko preverimo z `ppois()` funkcijo
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+ppois(367, lambda=lambda*8)
+ppois(366, lambda=lambda*8)
+```
+
+Prodajalec lahko s $95\%$ zaupanjem trdi, da je število naročil na uro padlo, ko v osmih urah prejme `r x` ali manj naročil.
+
+
+Primer $b$ ni večkratnik primera $a$. Ne more biti ker če bi bil večkratnik, bi pravzaprav preverjali da v vsaki uri posebej velja da so naročila vpadla. Lahko se zgodi da je v eni uri $0$ naročil v drugi pa dvakrat toliko kot je povprečje, in nas zato zanima vsota osmih ur.
+
+# 4.
+
+Histogram predstavlja porazdelitev povprečnih št. naročil v enem dnevu (v osmih urah). Modra črta predstavlja normalno porazdelitev $N(\lambda, \lambda/8)$. Kljub temu da je število opazovanj pred izračunavanjem povprečja zelo majhno (8), vemo da so ta porazdeljena po Poissonovi porazdelitvi. Poissonovo porazdelitev pri $\lambda=50$ lahko aproksimiramo z normalno porazdelitvijo. Zato tudi če imamo majhno število opazovanj njihova povprečja lahko aproksimiramo s centralno limitnim izrekom.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+means <- replicate(2^11, mean(rpois(8, lambda=lambda)))
+
+ggplot(data.frame(x=means), aes(x)) +
+    geom_density() +
+    stat_function(fun=dnorm,
+                  geom="line",
+                  col="steelblue",
+                  alpha=1,
+                  args=list(mean=lambda, sd=sqrt(lambda/8)))
+
+```
+
+## a.
+
+Od prej vemo, da če je število naročil v osmih urah manjše od 366 lahko s $95\%$ zaupanjem trdimo, da je povprečno število naročil vpadlo. Torej zanima nas naslednje
+
+$$
+\frac{366}{8} = 45.75 \,.
+$$
+Se pravi, če bo povprečno število naročil na uro v enem dnevu enako $45$, lahko s $95\%$ zaupanjem trdimo da je število naročil na uro vpadlo.
+
+# 5.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+# -1 due to lower.tail=FALSE looking as P[X > x].
+ppois(1.1 * lambda*8 - 1, lambda=lambda*8, lower.tail=FALSE)
+```
