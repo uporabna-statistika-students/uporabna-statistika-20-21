@@ -1,0 +1,662 @@
+---
+title: "Domača naloga 2"
+subtitle: "Bayesova statistika"
+author: "Alen Kahteran"
+date: "30. 12. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(gridExtra)
+library(coda)
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+source("podatki_sole.R")
+```
+
+```{r message=FALSE, warning=FALSE}
+pod.sole <- pod %>%
+    group_by(school) %>%
+    summarise(povprecje = mean(mathscore), n=length(mathscore), varianca = var(mathscore))
+```
+
+# 1. Popravljen algoritem
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+### Parametri (hiper)apriornih porazdelitev
+sigma20 <- 100
+nu0 <- 1
+eta20 <- 100
+kappa0 <- 1
+mu0 <- 50
+tau20 <- 25
+
+# novo dodane vrednosti iz navodil
+a <- 1
+b <- 1/100
+alpha <- 1
+k.max <- 1000
+
+### Pripravimo si kolicine, ki jih bomo potrebovali iz podatkov
+x       <- pod
+m       <- length(pod.sole$school)
+n       <- pod.sole$n
+x.povpr <- pod.sole$povprecje
+# dodana varianca za vsako skupino posebej
+x.var   <- pod.sole$varianca
+
+### Dolocimo si zacetne vrednosti
+muGroups     <- x.povpr
+sigma2Groups <- x.var # tu dolocimo sigme za vsako skupino posebej
+mu           <- mean(muGroups)
+eta2         <- var(muGroups)
+
+### Pripravimo si prostor za shranjevanje
+n.iter <- 5000
+
+muGroups.all         <- matrix(nrow=n.iter, ncol=m)
+sigma2Groups.all     <- matrix(nrow=n.iter, ncol=m) # novo dodano
+sigma20.all          <- rep(NA, n.iter) # novo dodano
+mu.all               <- rep(NA, n.iter)
+eta2.all             <- rep(NA, n.iter)
+nu0.all              <- rep(NA, n.iter) # novo dodano
+### Dolocimo si zacetne vrednosti
+muGroups.all[1,]     <- muGroups
+sigma2Groups.all[1,] <- sigma2Groups # novo dodano
+sigma20.all[1]       <- sigma20 # novo dodano
+mu.all[1]            <- mu
+eta2.all[1]          <- eta2
+nu0.all[1]           <- nu0 # novo dodano
+ 
+# seme za ponovljivost
+set.seed(8)
+### Pozenemo Gibbsov vzorcevalnik
+for(s in 1:n.iter){
+    
+    # Vzorčimo muGroups
+    # Vzorčimo mu kjer ni več sigma2 ampak sigma2Groups[j] v enačbi
+    for(j in 1:m){
+    muGroups[j] <- rnorm(1,
+                         mean = (x.povpr[j]*n[j]/sigma2Groups[j] + mu/eta2) / 
+                             (n[j]/sigma2Groups[j] + 1/eta2),
+                         sd=sqrt(1/(n[j]/sigma2Groups[j] + 1/eta2)))
+    }
+    
+    # Vzorčimo sigma2Groups tokrat, namesto sigma2.
+    # po skupinah (po navodilih)
+    for(j in 1:m){
+        sigma2Groups[j] <- 1/rgamma(1,
+                                    (nu0+n[j])/2,
+                                    (nu0*sigma20 + sum((x[x[, 1] == j, 2] - 
+                                                            muGroups[j])^2))/2)
+    }
+    
+    # Vzorčimo sigma20
+    # to je dodano po navodilih
+    sigma20 <- rgamma(1,
+                      a + m*nu0/2,
+                      b + nu0*sum(1/sigma2Groups)/2)
+    
+    # Vzorčimo mu
+    # ostane nespremenjeno
+    mu <- rnorm(1,
+                mean=(mean(muGroups)*m/eta2 + mu0/tau20) /
+                    (m/eta2 + 1/tau20),
+                sd=sqrt(1/(m/eta2 + 1/tau20)))
+    
+    # Vzorčimo eta2
+    # ostane nespremenjeno
+    ss   <- kappa0*eta20 + sum((muGroups-mu)^2)
+    eta2 <- 1/rgamma(1, (kappa0+m)/2, ss/2)
+    
+    # Vzorčimo nu0
+    # dodano iz navodil
+    k <- 1:k.max
+    logp.nu0 <- m * (0.5 * k * log(k*sigma20/2) - lgamma(k/2)) +
+        (k/2 - 1) * sum(log(1/sigma2Groups)) -
+        k*(alpha + 0.5*sigma20*sum(1/sigma2Groups))
+    nu0 <- sample(k, 1, prob=exp(logp.nu0 - max(logp.nu0)))
+    
+    # Shranimo nove parametre
+    muGroups.all[s,]     <- muGroups
+    sigma2Groups.all[s,] <- sigma2Groups
+    sigma20.all[s]       <- sigma20
+    mu.all[s]            <- mu
+    eta2.all[s]          <- eta2
+    nu0.all[s]           <- nu0
+}
+
+```
+
+# 2. Preučevanje rezultatov
+
+mu po skupinah
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+mu2  <- cbind(muGroups.all[, 2],  2,  1:n.iter)
+mu8  <- cbind(muGroups.all[, 8],  8,  1:n.iter)
+mu9  <- cbind(muGroups.all[, 9],  9,  1:n.iter)
+mu42 <- cbind(muGroups.all[, 42], 42, 1:n.iter)
+
+mu_data <- rbind(mu2, mu8, mu9, mu42)
+
+mu_data <- data.frame(mu_data)
+
+colnames(mu_data) <- c("mu", "group", "x")
+
+ggplot(mu_data, aes(x=x, y=mu)) +
+    geom_line() +
+    facet_wrap(vars(group), ncol=2) +
+    labs(x="Indeks",
+         y=expression(mu[j]),
+         title=expression(paste("Trace plots za ", mu[j])),
+         subtitle="j = 2, 8, 9, 42")
+```
+
+sigma po skupinah
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+sig2  <- cbind(sigma2Groups.all[, 2],  2,  1:n.iter)
+sig8  <- cbind(sigma2Groups.all[, 8],  8,  1:n.iter)
+sig9  <- cbind(sigma2Groups.all[, 9],  9,  1:n.iter)
+sig42 <- cbind(sigma2Groups.all[, 42], 42, 1:n.iter)
+
+sig_data <- rbind(sig2, sig8, sig9, sig42)
+
+sig_data <- data.frame(sig_data)
+
+colnames(sig_data) <- c("sigma", "group", "x")
+
+ggplot(sig_data, aes(x=x, y=sigma)) +
+    geom_line() +
+    facet_wrap(vars(group), ncol=2) +
+    labs(x="Indeks",
+         y=expression(sigma[j]^2),
+         title=expression(paste("Trace plots za ", sigma[j]^2)),
+         subtitle="j = 2, 8, 9, 42")
+
+```
+
+ostalo
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+
+mu      <- cbind(mu.all,      1, 1:n.iter)
+sigma20 <- cbind(sigma20.all, 2, 1:n.iter)
+eta2    <- cbind(eta2.all,    3, 1:n.iter)
+nu0     <- cbind(nu0.all,     4, 1:n.iter)
+
+hyper_data <- rbind(mu, sigma20, eta2, nu0)
+
+hyper_data <- data.frame(hyper_data)
+
+colnames(hyper_data) <- c("value", "vars_", "x")
+
+facet_names <- c(
+    `1` = expression(mu),
+    `2` = expression(sigma[0]^2),
+    `3` = expression(eta^2),
+    `4` = expression(nu[0])
+)
+
+hyper_data <- as_tibble(hyper_data %>% mutate_at(vars(c("value", "x")), as.double))
+hyper_data <- mutate_at(hyper_data, 
+                        .vars="vars_", 
+                        .funs=factor,
+                        labels = facet_names)
+
+ggplot(hyper_data, aes(x=x, y=value)) + 
+    geom_line() + 
+    facet_wrap(~vars_,
+               scales="free_y",
+               ncol=2,
+               labeller=label_parsed) +
+    labs(x="Indeks",
+         y="Vrednost parametra",
+         title="Trace plots za ostale parametre")
+    
+```
+
+pol podobno kot zgoraj sam prvih 500. 
+
+mu 500
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+mu2  <- cbind(muGroups.all[1:500, 2],  2,  1:500)
+mu8  <- cbind(muGroups.all[1:500, 8],  8,  1:500)
+mu9  <- cbind(muGroups.all[1:500, 9],  9,  1:500)
+mu42 <- cbind(muGroups.all[1:500, 42], 42, 1:500)
+
+mu_data_500 <- rbind(mu2, mu8, mu9, mu42)
+
+mu_data_500 <- data.frame(mu_data_500)
+
+colnames(mu_data_500) <- c("mu", "group", "x")
+
+ggplot(mu_data_500, aes(x=x, y=mu)) +
+    geom_line() +
+    facet_wrap(vars(group), ncol=2) +
+    labs(x="Indeks",
+         y=expression(mu[j]),
+         title=expression(paste("Trace plots za ", mu[j])),
+         subtitle="j = 2, 8, 9, 42; Prvih 500 členov")
+```
+
+sigma po skupinah 500
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+sig2  <- cbind(sigma2Groups.all[1:500, 2],  2,  1:500)
+sig8  <- cbind(sigma2Groups.all[1:500, 8],  8,  1:500)
+sig9  <- cbind(sigma2Groups.all[1:500, 9],  9,  1:500)
+sig42 <- cbind(sigma2Groups.all[1:500, 42], 42, 1:500)
+
+sig_data_500 <- rbind(sig2, sig8, sig9, sig42)
+
+sig_data_500 <- data.frame(sig_data_500)
+
+colnames(sig_data_500) <- c("sigma", "group", "x")
+
+ggplot(sig_data_500, aes(x=x, y=sigma)) +
+    geom_line() +
+    facet_wrap(vars(group), ncol=2) +
+    labs(x="Indeks",
+         y=expression(sigma[j]^2),
+         title=expression(paste("Trace plots za ", sigma[j]^2)),
+         subtitle="j = 2, 8, 9, 42; Prvih 500 členov")
+
+```
+
+ostalo 500
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+
+mu      <- cbind(mu.all[1:500],      1, 1:500)
+sigma20 <- cbind(sigma20.all[1:500], 2, 1:500)
+eta2    <- cbind(eta2.all[1:500],    3, 1:500)
+nu0     <- cbind(nu0.all[1:500],     4, 1:500)
+
+hyper_data_500 <- rbind(mu, sigma20, eta2, nu0)
+
+hyper_data_500 <- data.frame(hyper_data_500)
+
+colnames(hyper_data_500) <- c("value", "vars_", "x")
+
+facet_names <- c(
+    `1` = expression(mu),
+    `2` = expression(sigma[0]^2),
+    `3` = expression(eta^2),
+    `4` = expression(nu[0])
+)
+
+hyper_data_500 <- as_tibble(hyper_data_500 %>% mutate_at(vars(c("value", "x")), as.double))
+hyper_data_500 <- mutate_at(hyper_data_500, 
+                        .vars="vars_", 
+                        .funs=factor,
+                        labels=facet_names)
+
+ggplot(hyper_data_500, aes(x=x, y=value)) + 
+    geom_line() + 
+    facet_wrap(~vars_,
+               scales="free_y",
+               ncol=2,
+               labeller=label_parsed) +
+    labs(x="Indeks",
+         y="Vrednost parametra",
+         title="Trace plots za ostale parametre",
+         subtitle="Prvih 500 členov")
+```
+
+
+pol tisti boxploti podvzorcev
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+
+hyper_data <- mutate(hyper_data, podvzorec=factor(rep(1:10, 4*n.iter/10)))
+mu_data <- mutate(mu_data, podvzorec=factor(rep(1:10, 4*n.iter/10)))
+sig_data <- mutate(sig_data, podvzorec=factor(rep(1:10, 4*n.iter/10)))
+
+ggplot(mu_data, aes(x=podvzorec, y=mu)) +
+    geom_boxplot() +
+    facet_wrap(vars(group), ncol=2) +
+    labs(x="podvzorec",
+         y=expression(mu[j]),
+         title=expression(paste("Porazdelitve podvzorcev za ", mu[j])),
+         subtitle="j = 2, 8, 9, 42")
+
+ggplot(sig_data, aes(x=podvzorec, y=sigma)) +
+    geom_boxplot() +
+    facet_wrap(vars(group), ncol=2) +
+    labs(x="podvzorec",
+         y=expression(sigma[j]^2),
+         title=expression(paste("Porazdelitve podvzorcev za ", sigma[j]^2)),
+         subtitle="j = 2, 8, 9, 42")
+
+ggplot(hyper_data, aes(x=podvzorec, y=value)) + 
+    geom_boxplot() + 
+    facet_wrap(~vars_,
+               scales="free_y",
+               ncol=2,
+               labeller=label_parsed) +
+    labs(x="podvzorec",
+         y="Vrednost parametra",
+         title="Porazdelitve podvzorcev")
+
+```
+
+avtokorelacije
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+
+acfmu2   <- acf(muGroups.all[, 2],      plot=FALSE)
+acfmu8   <- acf(muGroups.all[, 8],      plot=FALSE)
+acfmu9   <- acf(muGroups.all[, 9],      plot=FALSE)
+acfmu42  <- acf(muGroups.all[, 42],     plot=FALSE)
+
+acfsig2  <- acf(sigma2Groups.all[, 2],  plot=FALSE)
+acfsig8  <- acf(sigma2Groups.all[, 8],  plot=FALSE)
+acfsig9  <- acf(sigma2Groups.all[, 9],  plot=FALSE)
+acfsig42 <- acf(sigma2Groups.all[, 42], plot=FALSE)
+
+acfmu_   <- acf(mu.all,                 plot=FALSE)
+acfsig_  <- acf(sigma20.all,            plot=FALSE)
+acfeta   <- acf(eta2.all,               plot=FALSE)
+acfnu    <- acf(nu0.all,                plot=FALSE)
+
+acfmu2  <- as_tibble(with(acfmu2,  data.frame(lag, acf))) %>% mutate(group=2)
+acfmu8  <- as_tibble(with(acfmu8,  data.frame(lag, acf))) %>% mutate(group=8)
+acfmu9  <- as_tibble(with(acfmu9,  data.frame(lag, acf))) %>% mutate(group=9)
+acfmu42 <- as_tibble(with(acfmu42, data.frame(lag, acf))) %>% mutate(group=42)
+acfmu <- rbind(acfmu2, acfmu8, acfmu9, acfmu42)
+
+acfsig2  <- as_tibble(with(acfsig2,  data.frame(lag, acf))) %>% mutate(group=2)
+acfsig8  <- as_tibble(with(acfsig8,  data.frame(lag, acf))) %>% mutate(group=8)
+acfsig9  <- as_tibble(with(acfsig9,  data.frame(lag, acf))) %>% mutate(group=9)
+acfsig42 <- as_tibble(with(acfsig42, data.frame(lag, acf))) %>% mutate(group=42)
+acfsig <- rbind(acfsig2, acfsig8, acfsig9, acfsig42)
+
+acfmu_   <- as_tibble(with(acfmu_,  data.frame(lag, acf))) %>% mutate(group=1)
+acfsig_  <- as_tibble(with(acfsig_, data.frame(lag, acf))) %>% mutate(group=2)
+acfeta   <- as_tibble(with(acfeta,  data.frame(lag, acf))) %>% mutate(group=3)
+acfnu    <- as_tibble(with(acfnu,   data.frame(lag, acf))) %>% mutate(group=4)
+acfhyper <- rbind(acfmu_, acfsig_, acfeta, acfnu)
+
+acfhyper <- mutate_at(acfhyper,
+                      .vars="group",
+                      .funs=factor,
+                      labels=facet_names)
+
+ggplot(acfmu, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(n.iter)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(n.iter)), 
+               linetype=2, 
+               color="blue") +
+    facet_wrap(vars(group),
+               ncol=2) +
+    labs(x="Zamik",
+         y="Korelacija",
+         title=expression(paste("Prikazi avtokorelacije za ", mu[j])),
+         subtitle="j = 2, 8, 9, 42")
+
+ggplot(acfsig, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(n.iter)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(n.iter)), 
+               linetype=2, 
+               color="blue") +
+    facet_wrap(vars(group),
+               ncol=2) +
+    labs(x="Zamik",
+         y="Korelacija",
+         title=expression(paste("Prikazi avtokorelacije za ", sigma[j]^2)),
+         subtitle="j = 2, 8, 9, 42")
+
+ggplot(acfhyper, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(n.iter)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(n.iter)), 
+               linetype=2, 
+               color="blue") +
+    facet_wrap(vars(group),
+               ncol=2,
+               labeller=label_parsed) +
+    labs(x="Zamik",
+         y="Korelacija",
+         title="Prikazi avtokorelacije za ostale parametre")
+
+```
+
+
+effective sample size
+
+```{r, echo=FALSE, eval=TRUE, results="markup"}
+
+eff.smpl.size <- rbind(
+    effectiveSize(muGroups.all[, 2])[[1]],
+    effectiveSize(muGroups.all[, 8])[[1]],
+    effectiveSize(muGroups.all[, 9])[[1]],
+    effectiveSize(muGroups.all[, 42])[[1]],
+    effectiveSize(sigma2Groups.all[, 2])[[1]],
+    effectiveSize(sigma2Groups.all[, 8])[[1]],
+    effectiveSize(sigma2Groups.all[, 9])[[1]],
+    effectiveSize(sigma2Groups.all[, 42])[[1]],
+    effectiveSize(mu.all)[[1]],
+    effectiveSize(sigma20.all)[[1]],
+    effectiveSize(eta2.all)[[1]],
+    effectiveSize(nu0.all)[[1]]
+)
+
+eff.smpl.param <- rbind(
+    "$\\mu_2$",
+    "$\\mu_8$",
+    "$\\mu_9$",
+    "$\\mu_{42}$",
+    "$\\sigma^2_2$",
+    "$\\sigma^2_8$",
+    "$\\sigma^2_9$",
+    "$\\sigma^2_{42}$",
+    "$\\mu$",
+    "$\\sigma^2_0$",
+    "$\\eta^2$",
+    "$\\nu_0$"
+)
+
+eff.smpl.data <- cbind(eff.smpl.param, eff.smpl.size)
+
+colnames(eff.smpl.data) <- c("(hiper)parameter", "Effective sample size")
+
+eff.smpl.data <- as_tibble(eff.smpl.data) %>% mutate_at("Effective sample size", as.double)
+
+kable(eff.smpl.data, align="c", digits=2) %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+3. robne/marginalne aposteriorne porazdelitve in 95% intervali zaupanja in interpretacija rezultatov
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.width=10, fig.align="center"}
+
+lwr_upr_mu <- mu_data %>% 
+    group_by(group) %>% 
+    nest() %>% 
+    mutate(
+        ret = map(data, ~quantile(.$mu, probs=c(0.025, 0.975))),
+        ret = invoke_map(tibble, ret)
+        ) %>%
+    unnest(ret)
+
+mean_mu <- mu_data %>% 
+    group_by(group) %>% 
+    summarise(mean_mu_value=mean(mu),
+              med_mu_value=median(mu))
+
+lwr_upr_sig <- sig_data %>% 
+    group_by(group) %>% 
+    nest() %>% 
+    mutate(
+        ret = map(data, ~quantile(.$sigma, probs=c(0.025, 0.975))),
+        ret = invoke_map(tibble, ret)
+        ) %>%
+    unnest(ret)
+
+mean_sig <- sig_data %>% 
+    group_by(group) %>% 
+    summarise(mean_sig_value=mean(sigma),
+              med_sig_value=median(sigma))
+
+lwr_upr_hyp <- hyper_data %>% 
+    group_by(vars_) %>% 
+    nest() %>% 
+    mutate(
+        ret = map(data, ~quantile(.$value, probs=c(0.025, 0.975))),
+        ret = invoke_map(tibble, ret)
+        ) %>%
+    unnest(ret)
+
+mean_hyp <- hyper_data %>% 
+    group_by(vars_) %>% 
+    summarise(mean_hyp_value=mean(value),
+              med_hyp_value=median(value))
+
+
+ggplot(mu_data, aes(x=mu)) +
+    geom_density() +
+    geom_vline(data=lwr_upr_mu, 
+               aes(xintercept=`2.5%`, color="red"), # somehow setting to default blue
+               linetype="longdash") +
+    geom_vline(data=lwr_upr_mu, 
+               aes(xintercept=`97.5%`, color="red"), 
+               linetype="longdash") +
+    geom_vline(data=mean_mu,
+               aes(xintercept=med_mu_value, color="blue")) + # as this is second it's red
+    facet_wrap(vars(group),
+               ncol=2,
+               scales="fixed") +
+    labs(x=expression(mu[j]),
+         y="Gostota",
+         title=expression(paste("Grafi gostote za ", 
+                                mu[j], 
+                                " s 95% intervalom zaupanja")),
+         subtitle="j = 2, 8, 9, 42;
+Modri črti - interval zaupanja;
+Rdeča črta - Mediana") + 
+    theme(legend.position="none")
+
+ggplot(sig_data, aes(x=sigma)) +
+    geom_density() +
+    geom_vline(data=lwr_upr_sig, 
+               aes(xintercept=`2.5%`, color="red"), # somehow setting to default blue
+               linetype="longdash") +
+    geom_vline(data=lwr_upr_sig, 
+               aes(xintercept=`97.5%`, color="red"), 
+               linetype="longdash") +
+    geom_vline(data=mean_sig,
+               aes(xintercept=med_sig_value, color="blue")) + # as this is second it's red
+    facet_wrap(vars(group),
+               ncol=2,
+               scales="fixed") +
+    labs(x=expression(sig[j]^2),
+         y="Gostota",
+         title=expression(paste("Grafi gostote za ", 
+                                sig[j]^2, 
+                                " s 95% intervalom zaupanja")),
+         subtitle="j = 2, 8, 9, 42;
+Modri črti - interval zaupanja;
+Rdeča črta - mediana") + 
+    theme(legend.position="none")
+
+
+
+ggplot(hyper_data, aes(x=value)) +
+    geom_density() +
+    geom_vline(data=lwr_upr_hyp, 
+               aes(xintercept=`2.5%`, color="red"), # somehow setting to default blue
+               linetype="longdash") +
+    geom_vline(data=lwr_upr_hyp, 
+               aes(xintercept=`97.5%`, color="red"), 
+               linetype="longdash") +
+    geom_vline(data=mean_hyp,
+               aes(xintercept=med_hyp_value, color="blue")) + # as this is second it's red
+    facet_wrap(~vars_,
+               scales="free",
+               ncol=2,
+               labeller=label_parsed) +
+    geom_bar(data = subset(hyper_data, vars_=="nu[0]"),
+             width=0.3) +
+    labs(x="Vrednost parametra",
+         y="Gostota",
+         title=expression(paste("Grafi gostote za preostale parametre s 95% intervalom zaupanja")),
+         subtitle="Modri črti - interval zaupanja;
+Rdeča črta - povprečje") + 
+    theme(legend.position="none")
+
+lwr_upr_mu <- lwr_upr_mu %>% 
+    ungroup() %>%
+    mutate("(hiper)parameter"=paste0("$\\mu_{", group, "}$")) %>%
+    select(`(hiper)parameter`, `2.5%`, `97.5%`)
+lwr_upr_sig <- lwr_upr_sig %>% 
+    ungroup() %>%
+    mutate("(hiper)parameter"=paste0("$\\sigma_{", group, "}^2$")) %>%
+    select(`(hiper)parameter`, `2.5%`, `97.5%`)
+lwr_upr_hyp <- lwr_upr_hyp %>%
+    ungroup() %>%
+    select(vars_, `2.5%`, `97.5%`) %>%
+    rename(`(hiper)parameter`=vars_)
+mean_mu <- mean_mu %>% 
+    ungroup() %>%
+    mutate("(hiper)parameter"=paste0("$\\mu_{", group, "}$")) %>%
+    select(`(hiper)parameter`, med_mu_value) %>%
+    rename(Mediana=med_mu_value)
+mean_sig <- mean_sig %>% 
+    ungroup() %>%
+    mutate("(hiper)parameter"=paste0("$\\sigma_{", group, "}^2$")) %>%
+    select(`(hiper)parameter`, med_sig_value) %>%
+    rename(Mediana=med_sig_value)
+mean_hyp <- mean_hyp %>%
+    ungroup() %>%
+    select(vars_, med_hyp_value) %>%
+    rename(`(hiper)parameter`=vars_,
+           Mediana=med_hyp_value)
+
+mu_tbl <- left_join(lwr_upr_mu, mean_mu, by=c("(hiper)parameter")) %>%
+    select(`(hiper)parameter`, `2.5%`, Mediana, `97.5%`)
+sig_tbl <- left_join(lwr_upr_sig, mean_sig, by=c("(hiper)parameter")) %>%
+    select(`(hiper)parameter`, `2.5%`, Mediana, `97.5%`)
+hyp_tbl <- left_join(lwr_upr_hyp, mean_hyp, by=c("(hiper)parameter")) %>%
+    select(`(hiper)parameter`, `2.5%`, Mediana, `97.5%`)
+
+hyp_tbl$`(hiper)parameter` <- c("$\\mu$", "$\\sigma_0^2$", "$\\eta^2$", "$\\nu_0$")
+
+kable(rbind(mu_tbl, sig_tbl, hyp_tbl), 
+      align="c",
+      digits=2) %>%
+    kable_styling(full_width = FALSE)
+
+```
+
+4. shrinkage povprecja in varianco kot v 3.3.1 iz navodil. kratki komentarji
+
+5. Primerjajte rezultate obeh hierarhicnih modelov. Ali so rezultati za (hiper)parametre,
+ki opisujejo povprecja podobni? Razmislite, ali je uporaba splosnejsega hierarhicnega
+modela z razlicnimi variancami skupin potrebna pri teh podatkih? Oziroma, kdaj bi
+bila bolj potrebna in kdaj manj?
