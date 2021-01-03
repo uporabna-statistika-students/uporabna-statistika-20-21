@@ -141,7 +141,7 @@ for(s in 1:n.iter){
 
 # 2. Preučevanje rezultatov
 
-mu po skupinah
+Najprej si poglejmo celotne _trace plot_-e za $\mu_j$ kjer sem za $j$ izbral vrednosti $2, 8, 9$ in $42$.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 mu2  <- cbind(muGroups.all[, 2],  2,  1:n.iter)
@@ -164,7 +164,31 @@ ggplot(mu_data, aes(x=x, y=mu)) +
          subtitle="j = 2, 8, 9, 42")
 ```
 
-sigma po skupinah
+Izgleda da smo dosegli konvergenco. Lepo je videti primerjavo med šolo $9$ in $42$, kako se konvergenca dogaja okrog različne vrednosti $\mu$. _Burn-in_ ni opazen v nobenem izmed izbranih primerov, kar je za pričakovati saj smo za začetno vrednost izbrali vzorčno povprečje posamezne skupine. Mogoče bo _Burn-in_ bolj opazen na grafih z manj členi zaporedja. Poglejmo si torej enake slike le s $500$ členi zaporedja.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+mu2  <- cbind(muGroups.all[1:500, 2],  2,  1:500)
+mu8  <- cbind(muGroups.all[1:500, 8],  8,  1:500)
+mu9  <- cbind(muGroups.all[1:500, 9],  9,  1:500)
+mu42 <- cbind(muGroups.all[1:500, 42], 42, 1:500)
+
+mu_data_500 <- rbind(mu2, mu8, mu9, mu42)
+
+mu_data_500 <- data.frame(mu_data_500)
+
+colnames(mu_data_500) <- c("mu", "group", "x")
+
+ggplot(mu_data_500, aes(x=x, y=mu)) +
+    geom_line() +
+    facet_wrap(vars(group), ncol=2) +
+    labs(x="Indeks",
+         y=expression(mu[j]),
+         title=expression(paste("Trace plots za ", mu[j])),
+         subtitle="j = 2, 8, 9, 42;
+Prvih 500 členov")
+```
+
+Podobno kot prej, za izbrane $\mu_j$ vrednosti, ne vidimo _Burn-in_ dela. Za $\mu_j$ izgledajo verige v redu. Poglejmo si še podobne grafe za $\sigma_j^2$.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 sig2  <- cbind(sigma2Groups.all[, 2],  2,  1:n.iter)
@@ -188,7 +212,32 @@ ggplot(sig_data, aes(x=x, y=sigma)) +
 
 ```
 
-ostalo
+Podobno kot za $\mu_j$, zgleda da smo dosegli konvergenco. _Burn-in_ ravno tako ni opazen v nobenem izmed izbranih primerov in ravno tako kot pri $\mu_j$, smo tudi tu določili začetne vrednosti variance, kar vzorčne variance posameznih skupin. Največ kar opazimo je to da je varianca v skupinah $2$ in $8$ večja kot v skupinah $9$ in $42$ (Večja razpršenost pri enaki $y$-skali). Zopet si poglejmo če bomo _burn-in_ opazili pri prvih 500 členih zaporedja.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
+sig2  <- cbind(sigma2Groups.all[1:500, 2],  2,  1:500)
+sig8  <- cbind(sigma2Groups.all[1:500, 8],  8,  1:500)
+sig9  <- cbind(sigma2Groups.all[1:500, 9],  9,  1:500)
+sig42 <- cbind(sigma2Groups.all[1:500, 42], 42, 1:500)
+
+sig_data_500 <- rbind(sig2, sig8, sig9, sig42)
+
+sig_data_500 <- data.frame(sig_data_500)
+
+colnames(sig_data_500) <- c("sigma", "group", "x")
+
+ggplot(sig_data_500, aes(x=x, y=sigma)) +
+    geom_line() +
+    facet_wrap(vars(group), ncol=2) +
+    labs(x="Indeks",
+         y=expression(sigma[j]^2),
+         title=expression(paste("Trace plots za ", sigma[j]^2)),
+         subtitle="j = 2, 8, 9, 42;
+Prvih 500 členov")
+
+```
+
+Zopet ne vidimo _burn-in_ dela tako da lahko rečemo da so tudi tu verige v redu. Poglejmo si podobne grafe še za hiperparametre.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 
@@ -228,56 +277,7 @@ ggplot(hyper_data, aes(x=x, y=value)) +
     
 ```
 
-pol podobno kot zgoraj sam prvih 500. 
-
-mu 500
-
-```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
-mu2  <- cbind(muGroups.all[1:500, 2],  2,  1:500)
-mu8  <- cbind(muGroups.all[1:500, 8],  8,  1:500)
-mu9  <- cbind(muGroups.all[1:500, 9],  9,  1:500)
-mu42 <- cbind(muGroups.all[1:500, 42], 42, 1:500)
-
-mu_data_500 <- rbind(mu2, mu8, mu9, mu42)
-
-mu_data_500 <- data.frame(mu_data_500)
-
-colnames(mu_data_500) <- c("mu", "group", "x")
-
-ggplot(mu_data_500, aes(x=x, y=mu)) +
-    geom_line() +
-    facet_wrap(vars(group), ncol=2) +
-    labs(x="Indeks",
-         y=expression(mu[j]),
-         title=expression(paste("Trace plots za ", mu[j])),
-         subtitle="j = 2, 8, 9, 42; Prvih 500 členov")
-```
-
-sigma po skupinah 500
-
-```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
-sig2  <- cbind(sigma2Groups.all[1:500, 2],  2,  1:500)
-sig8  <- cbind(sigma2Groups.all[1:500, 8],  8,  1:500)
-sig9  <- cbind(sigma2Groups.all[1:500, 9],  9,  1:500)
-sig42 <- cbind(sigma2Groups.all[1:500, 42], 42, 1:500)
-
-sig_data_500 <- rbind(sig2, sig8, sig9, sig42)
-
-sig_data_500 <- data.frame(sig_data_500)
-
-colnames(sig_data_500) <- c("sigma", "group", "x")
-
-ggplot(sig_data_500, aes(x=x, y=sigma)) +
-    geom_line() +
-    facet_wrap(vars(group), ncol=2) +
-    labs(x="Indeks",
-         y=expression(sigma[j]^2),
-         title=expression(paste("Trace plots za ", sigma[j]^2)),
-         subtitle="j = 2, 8, 9, 42; Prvih 500 členov")
-
-```
-
-ostalo 500
+Pri hiperparametrih ravno tako zgleda da smo dosegli konvergenco. Zopet ne vidimo _burn-in_ dela. Največ kar je opazno je diskretnost hiperparametra $\nu_0$. Ponovno si poglejmo še grafe prvih $500$ členov zaporedja.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 
@@ -317,14 +317,15 @@ ggplot(hyper_data_500, aes(x=x, y=value)) +
          subtitle="Prvih 500 členov")
 ```
 
+Ponovno ni videti _burn-in_ dela verig, zato bomo ohranili celotne verige.
 
-pol tisti boxploti podvzorcev
+Poglejmo si še "stabilnost" naših verig. Verige razdelimo na 10 enako velikih delov. Podvzorec določimo kot $\frac{1}{10}$ zaporednih členov celotne verige. Za tem primerjamo njihove porazdelitve. Najprej si poglejmo slike za $\mu_j$.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 
-hyper_data <- mutate(hyper_data, podvzorec=factor(rep(1:10, 4*n.iter/10)))
-mu_data <- mutate(mu_data, podvzorec=factor(rep(1:10, 4*n.iter/10)))
-sig_data <- mutate(sig_data, podvzorec=factor(rep(1:10, 4*n.iter/10)))
+mu_data <- mutate(mu_data, podvzorec=rep(factor(sort(rep(1:10, n.iter/10))), 4))
+sig_data <- mutate(sig_data, podvzorec=rep(factor(sort(rep(1:10, n.iter/10))), 4))
+hyper_data <- mutate(hyper_data, podvzorec=rep(factor(sort(rep(1:10, n.iter/10))), 4))
 
 ggplot(mu_data, aes(x=podvzorec, y=mu)) +
     geom_boxplot() +
@@ -333,7 +334,11 @@ ggplot(mu_data, aes(x=podvzorec, y=mu)) +
          y=expression(mu[j]),
          title=expression(paste("Porazdelitve podvzorcev za ", mu[j])),
          subtitle="j = 2, 8, 9, 42")
+```
 
+Podobno kot prej, vidimo razlike med posameznimi skupinami, medtem ko so podvzorci znotraj skupine "stabilni". Poglejmo si podobno sliko še za $\sigma_j^2$.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 ggplot(sig_data, aes(x=podvzorec, y=sigma)) +
     geom_boxplot() +
     facet_wrap(vars(group), ncol=2) +
@@ -341,7 +346,11 @@ ggplot(sig_data, aes(x=podvzorec, y=sigma)) +
          y=expression(sigma[j]^2),
          title=expression(paste("Porazdelitve podvzorcev za ", sigma[j]^2)),
          subtitle="j = 2, 8, 9, 42")
+```
 
+Ravno tako opazimo razlike med posameznimi skupinami. Če mogoče ni bilo opazno na _trace plot_-ih je tu precej bolje videti da so porazdelitve nekoliko asimetrične. To je tudi smiselno saj jih vzorčimo z inverzno gamma porazdelitvijo, ki je ravno tako asimetrična. Poglejmo si še podvzorce za hiperparametre.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 ggplot(hyper_data, aes(x=podvzorec, y=value)) + 
     geom_boxplot() + 
     facet_wrap(~vars_,
@@ -354,7 +363,9 @@ ggplot(hyper_data, aes(x=podvzorec, y=value)) +
 
 ```
 
-avtokorelacije
+Kar se "stabilnosti" tiče ravno tako ne vidimo težav. Na prvi pogled izgleda, da bi lahko težavo predstavljali podvzorci za $\nu_0$, vendar se "poskakovanje" mediane dogaja zaradi diskretnosti.
+
+Poglejmo si še prikaze avtokorelacij za vse naše (hiper)parametre.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 
@@ -411,6 +422,10 @@ ggplot(acfmu, aes(x=lag, y=acf)) +
          y="Korelacija",
          title=expression(paste("Prikazi avtokorelacije za ", mu[j])),
          subtitle="j = 2, 8, 9, 42")
+```
+
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 
 ggplot(acfsig, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
@@ -427,6 +442,10 @@ ggplot(acfsig, aes(x=lag, y=acf)) +
          y="Korelacija",
          title=expression(paste("Prikazi avtokorelacije za ", sigma[j]^2)),
          subtitle="j = 2, 8, 9, 42")
+```
+
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 
 ggplot(acfhyper, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
@@ -446,8 +465,7 @@ ggplot(acfhyper, aes(x=lag, y=acf)) +
 
 ```
 
-
-effective sample size
+Večjih težav z avtokorelacijo pri $\mu_j$ in $\sigma_j^2$, ni videti. Pri hiperparametrih vidimo da gre pri vseh parametrih korelacija kasneje k $0$, kot bi si želeli. Smiselno si je pogledati še _effective sample size_ vseh parametrov. Zraven je dodana še "standardna napaka" (MCSE - Monte Carlo Standard Error).
 
 ```{r, echo=FALSE, eval=TRUE, results="markup"}
 
@@ -481,18 +499,33 @@ eff.smpl.param <- rbind(
     "$\\nu_0$"
 )
 
-eff.smpl.data <- cbind(eff.smpl.param, eff.smpl.size)
+MCSE <- rbind(
+    sd(muGroups.all[, 2])/sqrt(effectiveSize(muGroups.all[, 2])[[1]]),
+    sd(muGroups.all[, 8])/sqrt(effectiveSize(muGroups.all[, 8])[[1]]),
+    sd(muGroups.all[, 9])/sqrt(effectiveSize(muGroups.all[, 9])[[1]]),
+    sd(muGroups.all[, 42])/sqrt(effectiveSize(muGroups.all[, 42])[[1]]),
+    sd(sigma2Groups.all[, 2])/sqrt(effectiveSize(sigma2Groups.all[, 2])[[1]]),
+    sd(sigma2Groups.all[, 8])/sqrt(effectiveSize(sigma2Groups.all[, 8])[[1]]),
+    sd(sigma2Groups.all[, 9])/sqrt(effectiveSize(sigma2Groups.all[, 9])[[1]]),
+    sd(sigma2Groups.all[, 42])/sqrt(effectiveSize(sigma2Groups.all[, 42])[[1]]),
+    sd(mu.all)/sqrt(effectiveSize(mu.all)[[1]]),
+    sd(sigma20.all)/sqrt(effectiveSize(sigma20.all)[[1]]),
+    sd(eta2.all)/sqrt(effectiveSize(eta2.all)[[1]]),
+    sd(nu0.all)/sqrt(effectiveSize(nu0.all)[[1]])
+)
 
-colnames(eff.smpl.data) <- c("(hiper)parameter", "Effective sample size")
+eff.smpl.data <- cbind(eff.smpl.param, eff.smpl.size, MCSE)
 
-eff.smpl.data <- as_tibble(eff.smpl.data) %>% mutate_at("Effective sample size", as.double)
+colnames(eff.smpl.data) <- c("(hiper)parameter", "Effective sample size", "MCSE")
 
-kable(eff.smpl.data, align="c", digits=2) %>%
+eff.smpl.data <- as_tibble(eff.smpl.data) %>% mutate_at(c("Effective sample size", "MCSE"), as.double)
+
+kable(eff.smpl.data, align="c", digits=c(0, 2, 4)) %>%
     kable_styling(full_width=FALSE)
 
 ```
 
-3. robne/marginalne aposteriorne porazdelitve in 95% intervali zaupanja in interpretacija rezultatov
+# 3. Robne aposteriorne porazdelitve
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.width=10, fig.align="center"}
 
@@ -578,7 +611,7 @@ ggplot(sig_data, aes(x=sigma)) +
     labs(x=expression(sig[j]^2),
          y="Gostota",
          title=expression(paste("Grafi gostote za ", 
-                                sig[j]^2, 
+                                sigma[j]^2, 
                                 " s 95% intervalom zaupanja")),
          subtitle="j = 2, 8, 9, 42;
 Modri črti - interval zaupanja;
@@ -654,7 +687,42 @@ kable(rbind(mu_tbl, sig_tbl, hyp_tbl),
 
 ```
 
-4. shrinkage povprecja in varianco kot v 3.3.1 iz navodil. kratki komentarji
+# 4. shrinkage povprecja in varianco kot v 3.3.1 iz navodil. kratki komentarji
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.width=10, fig.align="center"}
+
+pod.sole$EmuGroups <- colMeans(muGroups.all)
+pod.sole$Esigma2Groups <- colMeans(sigma2Groups.all)
+
+smu1 <- ggplot(NULL, aes(x=pod.sole$povprecje, y=pod.sole$EmuGroups)) +
+    geom_point() +
+    geom_abline(intercept=0, slope=1) +
+    labs(x=expression(bar(x)),
+         y=expression(E(mu[j])))
+
+ssig1 <- ggplot(NULL, aes(x=pod.sole$varianca, y=pod.sole$Esigma2Groups)) +
+    geom_point() +
+    geom_abline(intercept=0, slope=1) +
+    labs(x=expression(s^2),
+         y=expression(E(sigma[j]^2)))
+
+
+smu2 <- ggplot(NULL, aes(x=pod.sole$n, y=pod.sole$povprecje-pod.sole$EmuGroups)) +
+    geom_point() +
+    geom_hline(yintercept=0) +
+    labs(x="Velikost vzorca šole",
+         y=expression(bar(x)-E(mu[j])))
+
+ssig2 <- ggplot(NULL, aes(x=pod.sole$n, y=pod.sole$varianca-pod.sole$Esigma2Groups)) +
+    geom_point() +
+    geom_hline(yintercept=0) +
+    labs(x="Velikost vzorca šole",
+         y=expression(s^2-E(sigma[j]^2)))
+
+grid.arrange(smu1, smu2, ncol=2)
+grid.arrange(ssig1, ssig2, ncol=2)
+
+```
 
 5. Primerjajte rezultate obeh hierarhicnih modelov. Ali so rezultati za (hiper)parametre,
 ki opisujejo povprecja podobni? Razmislite, ali je uporaba splosnejsega hierarhicnega
