@@ -1,0 +1,153 @@
+---
+title: "Domača naloga 3"
+subtitle: "Osnove teoretične statistike"
+author: "Alen Kahteran"
+date: "06. 01. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+```
+
+### 1. 
+
+$$
+\sum_{i=1}^n\left(X_i - \overline{X}\right)^2 = \sum_{i=1}^n\left(X_i^2 - 2X_i\overline{X} + \overline{X}^2\right) \,.
+$$
+
+Razširimo kvadrat
+
+$$
+\sum_{i=1}^n\left(X_i^2 - 2X_i\overline{X} + \overline{X}^2\right) = \sum_{i=1}^nX_i^2 - \sum_{i=1}^n2X_i\overline{X} + \sum_{i=1}^n\overline{X}^2 \,.
+$$
+
+Razdelimo na posamezne vsote
+
+$$
+\sum_{i=1}^nX_i^2 - \sum_{i=1}^n2X_i\overline{X} + \sum_{i=1}^n\overline{X}^2 = \sum_{i=1}^nX_i^2 - 2\overline{X}\sum_{i=1}^nX_i + \overline{X}^2\sum_{i=1}^n1 \,.
+$$
+
+Nekoliko preoblikujemo in dobimo
+
+$$
+\sum_{i=1}^nX_i^2 - 2\overline{X}\sum_{i=1}^nX_i + \overline{X}^2\sum_{i=1}^n1 = n\frac{1}{n}\sum_{i=1}^nX_i^2 - n\frac{1}{n}2\overline{X}\sum_{i=1}^nX_i + n\overline{X}^2 \,.
+$$
+
+Za zadnjo vsoto vemo da je enaka $n$, medtem ko za prvi dve naredimo naslednje
+
+$$
+n\frac{1}{n}\sum_{i=1}^nX_i^2 - n\frac{1}{n}2\overline{X}\sum_{i=1}^nX_i + n\overline{X}^2 = n\overline{X^2} - 2n\overline{X}^2 + n\overline{X}^2 \,.
+$$
+
+Sedaj lahko poračunamo tudi preostali dve vsoti.
+
+$$
+n\overline{X^2} - 2n\overline{X}^2 + n\overline{X}^2 = n\overline{X^2} - n\overline{X}^2\,.
+$$
+To lahko zapišemo tudi kot 
+
+$$
+n\overline{X^2} - n\overline{X}^2 = n\left(\overline{X^2} - \overline{X}^2\right)\,.
+$$
+
+za kar pa vemo da velja
+
+$$
+n\left(\overline{X^2} - \overline{X}^2\right) = n\left(\mu_2-\mu_1^2\right)\,.
+$$
+
+### 2.
+
+Varianco izračunamo na naslednji način
+
+$$
+Var\left(X\right)=E[X^2]-E[X]^2 \,.
+$$
+Poleg tega vemo da velja naslednje
+
+$$
+\mu_k = E[X^k] \,.
+$$
+Se pravi lahko varianco zapišemo tudi kot
+
+$$
+Var\left(X\right) = \mu_2 - \mu_1^2 \,.
+$$
+
+Se pravi cenilko $\hat{\sigma^2}$ lahko zapišemo kot
+
+$$
+\hat{\sigma^2} = \hat{\mu_2} - \hat{\mu_1}^2 \,,
+$$
+za $\hat{\mu_k}$ pa vemo da velja
+
+$$
+\hat{\mu_k} = \frac{1}{n}\sum_{i=1}^nX_i^k \,.
+$$
+### 3.
+
+Da pokažemo da je cenilka nepristranska mora veljati
+
+$$
+E\left[\hat{\sigma^2}\right] = \sigma^2 \,.
+$$
+Torej $E[\hat{\sigma^2}]$ lahko zapišemo kot
+
+$$
+E\left[\hat{\sigma^2}\right] = E\left[\hat{\mu_2} - \hat{\mu_1}^2\right]
+$$
+
+Podobno smo dobili že pri prvi točki in če to pravilno pripeljemo v enačbo dobimo
+
+$$
+E\left[\hat{\mu_2} - \hat{\mu_1}^2\right] = E\left[\frac{1}{n}\sum_{i=1}^n(X_i-\overline{X})^2\right] \,.
+$$
+
+
+V oklepaju vse skupaj pomnožimo z $\frac{n-1}{n-1}$
+
+$$
+E\left[\frac{1}{n}\sum_{i=1}^n(X_i-\overline{X})^2\right] = E\left[\frac{n-1}{n-1}\frac{1}{n}\sum_{i=1}^n(X_i-\overline{X})^2\right] \,,
+$$
+kar je enako
+$$
+E\left[\frac{n-1}{n-1}\frac{1}{n}\sum_{i=1}^n(X_i-\overline{X})^2\right] = E\left[\frac{n-1}{n}\frac{1}{n-1}\sum_{i=1}^n(X_i-\overline{X})^2\right] \,.
+$$
+
+Iz pričakovane vrednosti lahko "potegnemo" konstanto $\frac{n-1}{n}$
+
+$$
+E\left[\frac{n-1}{n}\frac{1}{n-1}\sum_{i=1}^n(X_i-\overline{X})^2\right] = \frac{n-1}{n}E\left[\frac{1}{n-1}\sum_{i=1}^n(X_i-\overline{X})^2\right] \,.
+$$
+Za slednje vemo da velja
+$$
+E\left[\frac{1}{n-1}\sum_{i=1}^n(X_i-\overline{X})^2\right] = \sigma^2 \,.
+$$
+Torej dobili smo naslednje
+
+$$
+\frac{n-1}{n}E\left[\frac{1}{n-1}\sum_{i=1}^n(X_i-\overline{X})^2\right] = \frac{n-1}{n}\sigma^2 \,.
+$$
+Se pravi za $E\left[\hat{\sigma^2}\right]$ lahko trdimo
+
+$$
+E\left[\hat{\sigma^2}\right] = \frac{n-1}{n}\sigma^2 \,.
+$$
+
+kar pa ni enako $\sigma^2$, in posledično vidimo da je cenilka pristranska.
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+```

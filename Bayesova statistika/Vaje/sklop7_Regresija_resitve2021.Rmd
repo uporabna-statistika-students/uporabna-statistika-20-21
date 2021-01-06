@@ -1,0 +1,816 @@
+---
+title: '7. sklop: (Hierarhicni) regresijski modeli'
+author: "Nina Ruzic Gorenjec"
+fontsize: 12pt
+output:
+  pdf_document:
+    number_sections: yes
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+!!! POZOR !!! Raje ne delajte porocila, ker bo trajalo zelo dolgo casa (veliko modelov, veliko iteracij).
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = T, fig.width = 8, fig.height = 5, out.width = "0.8\\textwidth")
+```
+
+# Primer ocenjevanja povprecja
+
+Na preteklih vajah smo za naslednji vzorec visin (metri) studentov moskega spola ocenjevali povprecje.
+
+```{r}
+x <- c(1.91, 1.94, 1.68, 1.75, 1.81, 1.83, 1.91, 1.95, 1.77, 1.98, 
+       1.81, 1.75, 1.89, 1.89, 1.83, 1.89, 1.99, 1.65, 1.82, 1.65, 
+       1.73, 1.73, 1.88, 1.81, 1.84, 1.83, 1.84, 1.72, 1.91, 1.63)
+```
+
+To smo naredili na naslednje nacine:
+
+1. Znana varianca, eksaktno s konjugirano apriorno porazdelitvijo, vzeli smo sibko informativno
+2. Znana varianca, preko Metropolis-Hastings algoritma s konjugirano apriorno porazdelitvijo, vzeli smo sibko informativno (enaka kakor pri 1.)
+3. Dvoparametricni model, eksaktno s konjugirano apriorno porazdelitvijo, vzeli smo sibko informativno
+4. Dvoparametricni model, preko Metropolis-Hastings algoritma s sibko informativno apriorno porazdelitvijo
+
+Kaj vse smo morali pri teh pristopih dolociti?
+
+Sedaj povprecje ocenimo s pomocjo paketov v R.
+
+Ocenjevanje povprecja je poseben primer linearne regresije, ki vsebuje le konstanten clen (brez drugih neodvisnih/pojasnjevalnih spremenljivk).
+
+Standardne oznake v regresiji (izid y):
+```{r}
+y <- x
+```
+
+## BayesX
+
+**Bistvo:** Spoznamo knjiznico BayesX.
+
+```{r}
+#install.packages("R2BayesX")
+library(R2BayesX)
+
+bayesx.norm <- bayesx(y ~ 1, family = "gaussian", method = "MCMC")
+```
+
+Kaj vse smo morali dolociti? Potrebno dolociti le formulo, ostalo prednastavljeno (default).
+
+Kaj lahko spremenimo?
+
+Poglejte si pomoc za bayesx in bayesx.control (parametri iterations, burnin, step, hyp.prior).
+
+Povzetek rezultatov:
+```{r}
+summary(bayesx.norm)
+```
+
+Takole dobimo vzorce:
+```{r}
+bayesx.mu <- attr(bayesx.norm$fixed.effects, "sample")[,1]
+bayesx.sigma2 <- attr(bayesx.norm$variance, "sample")
+```
+
+Narisemo vzorce:
+```{r}
+par(mfrow = c(2, 2))
+plot(bayesx.mu, type = "l", main = "Povprecje,\nveriga", xlab = "")
+plot(bayesx.sigma2, type = "l", main = "Varianca,\nveriga", xlab = "")
+hist(bayesx.mu, prob = T, main = "Povprecje,\nrobna aposteriorna porazdelitev")
+lines(density(bayesx.mu), col = "red", lwd = 2)
+hist(bayesx.sigma2, prob = T, main = "Varianca, \nrobna aposteriorna porazdelitev")
+lines(density(bayesx.sigma2), col = "red", lwd = 2)
+```
+
+## Nimble
+
+**Bistvo:** Spoznamo knjiznico Nimble.
+
+```{r}
+library(nimble)
+```
+
+Stirje osnovni gradniki:
+```{r}
+# 1. Dolocimo model in apriorne porazdelitve parametrov:
+code <- nimbleCode({
+  mu ~ dnorm(0, 0.00001) #default za drugi parameter je precision
+  sigma2 ~ dunif(0, 10000)
+  for (i in 1:n) {
+    y[i] ~ dnorm(mu, var = sigma2)
+  }
+})
+
+code #nic ne naredi, le shrani si predstavitev modela
+```
+
+```{r}
+# 2. Dolocimo konstante v modelu:
+constants <- list(n = length(y))
+```
+
+```{r}
+# 3. Dolocimo podatke:
+data <- list(y=y)
+```
+
+```{r}
+# 4. Dolocimo zacetne vrednosti za verige parametrov:
+inits <- list(mu = 0,
+              sigma2 = 1)
+```
+
+```{r}
+Rmodel <- nimbleModel(code, constants, data, inits) #le model zgradis
+
+Rmodel$initializeInfo() #preverimo, da je vse ok
+```
+
+```{r}
+conf <- configureMCMC(Rmodel) #zacetek inference
+conf$printSamplers() #izves, kaj so samplerji
+
+conf$printMonitors() #izves, kaj si belezi
+#default monitors so natanko:
+Rmodel$getNodeNames(topOnly = T,stochOnly = T)
+```
+
+```{r}
+Rmcmc <- buildMCMC(conf)
+```
+
+S spodnjim pozenemo verigo, vendar v R-u in zato je zelo pocasno (spodaj le 100 iteracij)! Ne uporabljati tega!!!
+```{r}
+samples <- runMCMC(Rmcmc, 100)
+```
+
+Do sedaj smo delali v R. Prevedemo v C++:
+```{r}
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Cmodel)
+samples <- runMCMC(Cmcmc, 100)   #ekspres
+samples <- runMCMC(Cmcmc, 1000)  #ekspres
+samples <- runMCMC(Cmcmc, 10000) #tudi zelo hitro
+```
+
+Bliznjica od stirih osnovnih gradnikov do koncnih rezultatov (brez vmesnih korakov):
+```{r}
+samples <- nimbleMCMC(code, constants, data, inits, niter=10000)
+```
+
+Oglejmo si rezultate:
+```{r}
+dim(samples)
+head(samples)
+
+samplesSummary(samples) #funkcija za povzetek rezultatov
+
+summary(bayesx.norm) #primerjava z BayesX - seveda zelo podobno
+
+mean(y) #vzorcno povprecje
+var(y)  #vzorcna varianca
+#BTW: y je bil generiran iz N(mean=1.85, sigma2=0.01)
+#Oba prava (populacijska) parametra sta vsebovana v credible interval.
+```
+
+# (Multiple) linearna regresija
+
+Podane imamo podatke o slovenskih ekipnih sportnicah (kosarkasice, odbojkasice in rokometasice), stare od 10 do 30 let. Preucevali so poskodbe kolen.
+
+Podatki so bili podlaga za clanek R. Vauhnik et al., *Rate and risk of anterior cruciate ligament injury among sportswomen in Slovenia* (2011).
+
+```{r}
+source("sportnice.R")
+str(sportnice)
+```
+
+## Ali je kolicina treninga povezana z jemanjem kontracepcijskih tablet?
+
+**Bistvo:** 
+
+* Lastnosti linearne regresije v splosnem (ni specificno za Bayesovo analizo) - kljucna razlika med enostavno in multiplo regresijo. Ker sta tako trening kot jemanje kontracepcijskih tablet povezana s starostjo (razpon 11-29 let), lahko pravi efekt jemanja kontracepcije opazimo sele, ko sportnice izenacimo glede na starost, tj. v model dodamo neodvisno spremenljivko starost.
+* Specifikacija linearnega modela s paketom nimble.
+
+Frekventisticni pristop:
+```{r}
+fit.lm <- lm(trening ~ kontrace, data = sportnice)
+summary(fit.lm)
+
+fit2.lm <- lm(trening ~ kontrace + starost, data = sportnice)
+summary(fit2.lm)
+```
+
+Bayesovski pristop s paketom BayesX:
+```{r}
+fit.bayesx <- bayesx(trening ~ kontrace, data = sportnice, family = "gaussian", method = "MCMC")
+summary(fit.bayesx)
+
+fit2.bayesx <- bayesx(trening ~ kontrace + starost, data = sportnice, family = "gaussian", method = "MCMC")
+summary(fit2.bayesx)
+
+b.kontrace <- attr(fit2.bayesx$fixed.effects, "sample")[,2]
+b.starost <- attr(fit2.bayesx$fixed.effects, "sample")[,3]
+```
+
+```{r}
+par(mfrow = c(2, 2))
+plot(b.kontrace, type = "l", main = "Koeficient za kontracepcijo,\nveriga",
+     xlab = "")
+plot(b.starost, type = "l", main = "Koeficient za starost,\nveriga",
+     xlab = "")
+hist(b.kontrace, prob = T, main = "Koeficient za kontracepcijo,\nrobna aposteriorna porazdelitev")
+lines(density(b.kontrace), col = "red", lwd = 2)
+hist(b.starost, prob = T, main = "Koeficient za starost, \nrobna aposteriorna porazdelitev")
+lines(density(b.starost), col = "red", lwd = 2)
+```
+
+Bayesovski pristop s paketom nimble:
+```{r}
+code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 100) #tipicno vzamemo taksen neinformativen prior
+  beta1 ~ dnorm(0, sd = 100)
+  beta2 ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100)
+  for(i in 1:n) {
+    y[i] ~ dnorm(beta0 + beta1*x1[i] + beta2*x2[i], sd = sigma)
+  }
+})
+
+constants <- list(n = length(sportnice$trening),
+                  x1 = sportnice$kontrace,
+                  x2 = sportnice$starost)
+
+data <- list(y = sportnice$trening)
+
+inits <- list(beta0 = mean(sportnice$trening),
+              beta1 = 0,
+              beta2 = 0,
+              sigma = 1)
+```
+
+```{r}
+Rmodel <- nimbleModel(code, constants, data, inits)
+
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$printMonitors()
+
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Cmodel)
+samples <- runMCMC(Cmcmc, niter = 1000)
+samples <- runMCMC(Cmcmc, niter = 12000, nburnin = 2000)
+
+dim(samples)
+head(samples)
+
+samplesSummary(samples)
+```
+
+Primerjamo z BayesX:
+```{r}
+summary(fit2.bayesx)
+```
+
+## Ali je kolicina treninga ob neki starosti povezana s sportom?
+
+**Bistvo:** 
+
+* Lastnosti linearne regresije v splosnem (ni specificno za Bayesovo analizo) - obravnava opisnih spremenljivk z vec kot dvema kategorijama (tj. uvedba slamnatih spremenljivk oz. *dummy variables*) in interkacija med spremenljivkami.
+* Bolj ucinkonita specifikacija linearnega modela s paketom nimble.
+* Kako preprosto generiramo vec verig in graficno preucimo konvergenco.
+
+Frekventisticni pristop:
+```{r}
+# Model brez interakcije
+fit.lm <- lm(trening ~ sport + starost, data = sportnice)
+summary(fit.lm)
+
+library(ggplot2)
+ggplot(sportnice, aes(x = starost, y = trening, color = sport)) +
+  geom_point()
+
+ggplot(sportnice, aes(x = starost, y = trening, color = sport)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+# Za vsak sport posebej smo naredili linearno regresijo in vrisali premico.
+# Ker premice niso vzporedne (to je implicitna predpostavka modela trening ~ starost + sport), se nakazuje potreba po interakciji.
+# Pozor, interakcije se dodajajo zaradi vsebinskih premislekov in ne s poskusanjem vseh moznih variant, pri cemer bi obdrzali le statisticno znacilne.
+
+fit2.lm <- lm(trening ~ sport * starost, data = sportnice) 
+#fit2.lm <- lm(trening ~ sport + starost + sport:starost, data = sportnice) ### ekvivalentno
+summary(fit2.lm)
+```
+
+Bayesovski pristop s paketom nimble:
+```{r}
+code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 100)
+  for(k in 1:p) { #lahko uporabimo for zanko za definicijo vseh apriornih porazdelitev
+    beta[k] ~ dnorm(0, sd = 100)
+  }
+  sigma ~ dunif(0, 100)
+  for(i in 1:n) {
+    y[i] ~ dnorm(beta0 + inprod(beta[1:p], x[i, 1:p]), sd = sigma) #uporabimo funkcijo inprod
+  }
+})
+
+sportnice$odbojka <- ifelse(sportnice$sport=="odbojka", 1, 0) #naredimo slamnate spremenljivke
+sportnice$rokomet <- ifelse(sportnice$sport=="rokomet", 1, 0)
+sportnice$odbojkaStarost <- sportnice$odbojka * sportnice$starost #spremenljivke za interakcijo
+sportnice$rokometStarost <- sportnice$rokomet * sportnice$starost
+X <- subset(sportnice, select = c("odbojka", 
+                                  "rokomet", 
+                                  "starost", 
+                                  "odbojkaStarost", 
+                                  "rokometStarost"))
+p <- ncol(X)
+constants <- list(n = length(sportnice$trening),
+                  p = p,
+                  x = X)
+
+data <- list(y = sportnice$trening)
+
+inits <- list(beta0 = mean(sportnice$trening),
+              beta = rep(0, p),
+              sigma = 1)
+```
+
+```{r}
+Rmodel <- nimbleModel(code, constants, data, inits)
+
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$printMonitors()
+
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Cmodel)
+samples <- runMCMC(Cmcmc, niter = 1000)
+samples <- runMCMC(Cmcmc, niter = 12000, nburnin = 2000)
+
+dim(samples)
+head(samples)
+
+samplesSummary(samples)
+```
+
+Primerjamo z frekventisticnim pristopom:
+```{r}
+summary(fit2.lm)
+```
+
+Graficno predstavimo rezultate:
+```{r}
+library(basicMCMCplots)
+samplesPlot(samples)
+
+samplesPlot(samples, var = "beta[1]")
+samplesPlot(samples, var = "beta[2]")
+samplesPlot(samples, var = "beta[3]")
+samplesPlot(samples, var = "beta[4]")
+samplesPlot(samples, var = "beta[5]")
+```
+
+Vec verig z nakljucnimi zacetnimi vrednostmi:
+```{r}
+initsFunction <- function(){
+  list(beta0 = rnorm(1),
+       beta = rnorm(5),
+       sigma = runif(1, min = 0, max = 10))
+}
+
+initsFunction()
+
+# Z dodatnim parametrom v runMCMC dolocimo stevilo verig:
+samplesList <- runMCMC(Cmcmc, niter = 12000, nburnin = 0,
+                       nchains = 3, inits = initsFunction)
+
+str(samplesList)
+str(samplesList$chain1) #dobimo eno verigo
+str(samplesList[[1]])   #ekvivalentno
+
+samplesPlot(samplesList[[1]], var = "beta[2]") #si narisemo 1 parameter iz 1 verige
+# Namesto, da bi ze zgoraj dolocili burnin, ga lahko tule:
+samplesPlot(samplesList[[1]], var = "beta[2]", burnin = 2000)
+```
+
+Ukaza za graficna prikaza vecih verig:
+```{r}
+chainsPlot(samplesList) #dobimo trace plots in gostote aposteriornih porazdelitev
+# Preprosto vzamemo nek burnin:
+chainsPlot(samplesList, burnin = 2000)
+
+chainsSummary(samplesList) #dobimo mediane in credible intervals
+chainsSummary(samplesList, scale = TRUE) #normaliziramo, tako da vse na isti skali
+
+# V tem ukazu ni parametra burnin, zato to naredimo rocno:
+samplesList2 <- samplesList
+for (i in 1:3) samplesList2[[i]] <- samplesList2[[i]][2001:12000,]
+chainsSummary(samplesList2, scale = TRUE)
+```
+
+## Poglejmo si se enkrat model za povezanost kolicine treninga z jemanjem kontracepcijskih tablet neodvisno od starosti
+
+**Bistvo:**
+
+* Centriranje in effective sample size - centriranje spremenljivk (odstejemo povprecje) nujno pri nimble.
+* Centriranje spremenljivk (odstejemo povprecje pri vsaki neodvisni) ne spremeni regresijskih koeficientov, le regresijsko konstanto, zato interpretacija ostane enaka :)
+* Standardizacija spremenljivk (odstejemo povprecje in delimo s standardnim odklonom pri vsaki neodvisni) pa bi spremenila vse regresijske koeficiente.
+* Prednosti/slabosti bayesx in nimble.
+
+Ob uporabi paketa BayesX:
+```{r}
+fit2.bayesx <- bayesx(trening ~ kontrace + starost, data = sportnice, family = "gaussian", method = "MCMC")
+summary(fit2.bayesx)
+
+b.kontrace <- attr(fit2.bayesx$fixed.effects, "sample")[,2]
+b.starost <- attr(fit2.bayesx$fixed.effects, "sample")[,3]
+```
+
+```{r}
+par(mfrow = c(2, 2))
+plot(b.kontrace, type = "l", main = "Koeficient za kontracepcijo,\nveriga",
+     xlab = "")
+plot(b.starost, type = "l", main = "Koeficient za starost,\nveriga",
+     xlab = "")
+hist(b.kontrace, prob = T, main = "Koeficient za kontracepcijo,\nrobna aposteriorna porazdelitev")
+lines(density(b.kontrace), col = "red", lwd = 2)
+hist(b.starost, prob = T, main = "Koeficient za starost, \nrobna aposteriorna porazdelitev")
+lines(density(b.starost), col = "red", lwd = 2)
+par(mfrow = c(1, 1))
+```
+
+```{r}
+library(coda)
+effectiveSize(b.kontrace) #1000
+effectiveSize(b.starost)  #1000
+
+?bayesx
+?bayesx.control
+# Torej je bil step=10 (thinning), burnin=2000, iterations=12000
+# Dobili smo najvecji mozen effective sample size.
+
+# Poskusimo, kaj se zgodi brez thinninga:
+fit2.bayesx <- bayesx(trening ~ kontrace + starost, data = sportnice, family = "gaussian", method = "MCMC",
+                      step = 1)
+b.kontrace <- attr(fit2.bayesx$fixed.effects, "sample")[,2]
+b.starost <- attr(fit2.bayesx$fixed.effects, "sample")[,3]
+
+effectiveSize(b.kontrace) #10000, kar je najvecje mozno
+effectiveSize(b.starost)  #10000, kar je najvecje mozno
+
+#Prednost bayesx: odlicno implementirani in izbrani samplerji, prilagojeno "obicajnim" regresijskim modelom
+#Slabost bayesx: ne moremo spreminjati apriornih, specificirati kaksne drugacne modele, ni veliko svobode
+```
+
+Bayesovski pristop s paketom nimble:
+```{r}
+code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 100)
+  beta1 ~ dnorm(0, sd = 100)
+  beta2 ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100)
+  for(i in 1:n) {
+    y[i] ~ dnorm(beta0 + beta1*x1[i] + beta2*x2[i], sd = sigma)
+  }
+})
+
+constants <- list(n = length(sportnice$trening),
+                  x1 = as.numeric(sportnice$kontrace),
+                  x2 = sportnice$starost)
+
+data <- list(y = sportnice$trening)
+
+inits <- list(beta0 = mean(sportnice$trening),
+              beta1 = 0,
+              beta2 = 0,
+              sigma = 1)
+```
+
+```{r}
+Rmodel <- nimbleModel(code, constants, data, inits)
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Cmodel)
+samples <- runMCMC(Cmcmc, niter = 12000, nburnin = 2000)
+
+samplesSummary(samples)
+
+samplesPlot(samples)
+
+effectiveSize(samples) #obupno majhni
+
+cor(samples) #razlog je koreliranost koeficientov, resitev je centriranje
+```
+
+```{r}
+# Pozenemo isti model na centriranih podatkih:
+constants.centr <- list(n = length(sportnice$trening),
+                        x1 = as.numeric(sportnice$kontrace)-mean(as.numeric(sportnice$kontrace)),
+                        x2 = sportnice$starost-mean(sportnice$starost))
+
+Rmodel.centr <- nimbleModel(code, constants.centr, data, inits)
+conf.centr <- configureMCMC(Rmodel.centr)
+Rmcmc.centr <- buildMCMC(conf.centr)
+Cmodel.centr <- compileNimble(Rmodel.centr)
+Cmcmc.centr <- compileNimble(Rmcmc.centr, project = Cmodel.centr)
+samples.centr <- runMCMC(Cmcmc.centr, niter = 12000, nburnin = 2000)
+
+samplesPlot(samples)       #pred centriranjem
+samplesPlot(samples.centr) #po centriranju
+
+effectiveSize(samples.centr) #zelo dobro
+
+cor(samples.centr) #veliko manjse kot prej
+
+#Prednost nimble: popolna svoboda (model, apriorne, samplerji)
+#Slabost nimble: potrebujemo nekaj znanja, da dobro izberemo
+```
+
+## Model za povezanost kolicine treninga s tezo, visino in bmi
+
+**Bistvo:** Zaradi multikolinearnosti model ni dobro definiran (splosno, ni specificno za Bayesovo), vidimo v nenavadnem obnasanju verig in effective sample size. Tu imamo ekstremen primer multikolinearnosti, saj je bmi s formulo izracunan iz teze in visine - sprasujemo se nemogoce vprasanje: Kaksna je razlika v kolicini treninga za dve sportnici, ki sta enako visoki in tezki ter imata razlicen bmi? Ker taksne sportnice v nasih podatkih ne obstajajo, tega ne moremo oceniti.
+
+```{r}
+code <- nimbleCode({
+  beta0 ~ dnorm(0, sd = 100)
+  beta1 ~ dnorm(0, sd = 100)
+  beta2 ~ dnorm(0, sd = 100)
+  beta3 ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100)
+  for(i in 1:n) {
+    y[i] ~ dnorm(beta0 + beta1*x1[i] + beta2*x2[i] + beta3*x3[i], sd = sigma)
+  }
+})
+
+constants <- list(n = length(sportnice$trening),
+                  x1 = as.numeric(sportnice$teza)-mean(as.numeric(sportnice$teza)), ### jih centriramo
+                  x2 = sportnice$visina-mean(sportnice$visina),
+                  x3 = sportnice$bmi-mean(sportnice$bmi))
+
+data <- list(y = sportnice$trening)
+
+inits <- list(beta0 = mean(sportnice$trening),
+              beta1 = 0,
+              beta2 = 0,
+              beta3 = 0,
+              sigma = 1)
+
+Rmodel <- nimbleModel(code, constants, data, inits)
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Cmodel)
+samples <- runMCMC(Cmcmc, niter = 12000, nburnin = 2000)
+
+samplesSummary(samples)
+
+samplesPlot(samples)
+
+effectiveSize(samples) #zelo majhni
+
+cor(samples) #zelo velike
+```
+
+# Hierarhicna linearna regresija
+
+## Hierarhicni normalni model z enakimi variancami - sole se enkrat
+
+Na primer s solami lahko gledamo tudi kakor na 100 regresijskih modelov (za vsako solo eden) rezultatMatTesta~1 (tj. ocenjujemo le regresijsko konstanto), ki so skupaj povezani s hiperparametri.
+
+```{r}
+library(dplyr)
+library(reshape2)
+source("podatki_sole.R")
+str(pod)
+
+pod.sole = pod %>%
+  group_by(school) %>%
+  summarise(povprecje = mean(mathscore), n=length(mathscore), varianca = var(mathscore))
+str(pod.sole)
+
+# Rezultate vsake sole v svoj stolpec.
+# Ker imamo po solah razlicno velike vzorce, bodo imeli nekateri stolpci na koncu NA (bo delovalo v redu).
+m <- length(pod.sole$school)
+n <- pod.sole$n
+yMatrix <- matrix(NA, ncol = m, nrow = max(n))
+for (j in 1:m) {
+  yMatrix[1:n[j],j] <- pod[pod$school==j,]$mathscore
+}
+```
+
+```{r}
+code <- nimbleCode({
+  mu ~ dnorm(0, sd = 100); #apriorna za hiperparameter
+  eta ~ dunif(0, 100)      #apriorna za hiperparameter
+  sigma ~ dunif(0, 100)    #apriorna za parameter
+  #za vse (hiper)apriorne smo izbrali nekaj zelo neinformativnega
+  #pozor, nismo se obremenjevali s primernostjo druzine porazdelitve (npr. inverzna gama), saj ne bomo nic teroreticno izracunali
+  
+  for (j in 1:m) {
+    muGroups[j] ~ dnorm(mu, sd = eta) #porazdelitve parametrov
+    for (i in 1:n[j]) {
+      y[i, j] ~ dnorm(muGroups[j], sd = sigma); #model
+    }
+  }
+})
+
+constants <- list(m = m, n = n)
+
+inits <- list(mu = mean(pod.sole$povprecje), #tako kot pri sklopu z Gibbsovim vzorcevalnikom
+              eta = sd(pod.sole$povprecje),
+              sigma = mean(sqrt(pod.sole$varianca)),
+              muGroups = pod.sole$povprecje)
+
+data <- list(y = yMatrix)
+```
+
+```{r}
+Rmodel <- nimbleModel(code = code, constants = constants,
+                      inits = inits, data = data)
+Rmodel$initializeInfo() #smo dobili opozorilo zaradi NA v podatkih, bo vseeno v redu
+
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$printMonitors() #vzorcenj za parametre mu_i si ne bo zapomnil, zato to spodaj dodamo
+conf$addMonitors('muGroups') #dodamo shranjevanje muGroups
+conf$printMonitors() #je dodano
+
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Cmodel)
+samples <- runMCMC(Cmcmc, niter = 12000, nburnin = 2000)
+
+# Si ogledamo nekatere (hiper)parametre
+samplesSummary(samples)[c(2, 3), ]
+samplesPlot(samples, var = c("mu","muGroups[1]"))
+
+samplesSummary(samples)[c(1, 103), ]
+samplesPlot(samples, var = c("eta","sigma"))
+
+# Preko spodnje slike opazimo, da so nasi rezultati enaki/podobni kakor v 6. sklopu z Gibbsovim vzorcevalnikom:
+par(mfrow=c(2, 2))
+plot(density(samples[ , 2]), type = "l", main = "mu")
+abline(v = quantile(samples[ , 2], prob=c(0.025, 0.5, 0.975)), lty = 2)
+plot(density(samples[ , 1]**2), type = "l", main = "eta2")
+abline(v = quantile(samples[ , 1]**2, prob=c(0.025, 0.5, 0.975)), lty = 2)
+plot(density(samples[ , 3]), type = "l", main = "mu_1")
+abline(v = quantile(samples[ , 3], prob=c(0.025, 0.5, 0.975)), lty = 2)
+plot(density(samples[ , 103]**2), type = "l", main = "sigma2")
+abline(v = quantile(samples[ , 103]**2, prob=c(0.025, 0.5, 0.975)), lty = 2)
+par(mfrow = c(1, 1))
+
+effectiveSize(samples)
+min(effectiveSize(samples)) #najmanjsi izmed effective sample size - v redu
+
+max(abs( cor(samples)[cor(samples)!=1] )) #najvecja izmed korelacij - v redu
+
+# Pogledamo se vec verig:
+initsFunction <- function(){
+  list(mu = rnorm(1, mean = mean(pod.sole$povprecje), sd = 10),
+       eta = runif(1, min = 0, max = 10),
+       sigma = runif(1, min = 0, max = 10),
+       muGroups = rnorm(m, mean = pod.sole$povprecje, sd = 10))
+}
+
+samplesList <- runMCMC(Cmcmc, niter = 12000, nburnin = 2000,
+                          nchains = 3, inits = initsFunction)
+
+chainsPlot(samplesList, var = c("mu", "muGroups[1]", "eta", "sigma")) #dobro
+
+chainsSummary(samplesList, buffer.left = 1, buffer.right = 1, scale = TRUE, #dobro
+              var = c("mu", "muGroups[1]", "eta", "sigma"))
+```
+
+**Bistvo:** Dobili smo zelo podobne rezultate kakor z Gibbsovim vzorcevalnikom, vendar nismo potrebovali nobenih teoreticnih izpeljav. Konvergenca je bila dobra, pri cemer se nam ni bilo treba ukvarjati z izborom samplerjev. Ni pa nujno, da je vedno tako (kaksna koreliranost parametrov nas lahko prisili v drugacen izbor samplerjev).
+
+## Hierarhicni regresijski model (z enakimi variancami) - podatki o solah z dodatno spremenljivko
+
+V novih podatkih imamo dodano spremenljivko SES, tj. socio-ekonomski status. Ta je bila izracunana iz dohodka starsev in izobrazbe.
+
+Zanima nas povezanost rezultata matematicnega testa s SES.
+
+Naredimo po eno linearno regresijo rezultatMatTesta~SES za vsako solo - dobimo mu_j (regresijska konstanta) in beta_j za vsako solo j. Nato vse mu_j povezemo hierarhicno (kot prej), enako pa naredimo tudi za beta_j.
+
+```{r}
+source("podatki_sole2.R")
+pod <- pod2
+```
+
+```{r}
+# Tako kot smo prej shranili rezultat matematicnega testa v yMatrix, naredimo sedaj se za SES:
+xMatrix <- matrix(NA, ncol = m, nrow = max(n))
+for (j in 1:m) {
+  xMatrix[1:n[j],j] <- pod[pod$school==j,]$ses - mean(pod[pod$school==j,]$ses) ### centriramo
+}
+```
+
+```{r}
+code <- nimbleCode({
+  mu ~ dnorm(0, sd = 100) #hiperparameter za mu_j (kot prej)
+  eta ~ dunif(0, 100)     #hiperparameter za mu_j (kot prej)
+  sigma ~ dunif(0, 100)   #parameter za varianco ostankov pri linearni regresiji bo enak za vsako solo (kot prej)
+  
+  beta ~ dnorm(0, sd = 100) #novo - hiperparameter za beta_j
+  etaBeta ~ dunif(0, 100)   #novo - hiperparameter za beta_j
+  
+  for (j in 1:m) {
+    muGroups[j] ~ dnorm(mu, sd = eta)
+    betaGroups[j] ~ dnorm(beta, sd = etaBeta) #novo - povezava beta_j s hiperparametri
+    for (i in 1:n[j]) {
+      y[i, j] ~ dnorm(muGroups[j] + betaGroups[j] * x[i, j], sd = sigma); #v model smo dodali ses preko x
+    }
+  }
+})
+
+constants <- list(m = m, n = n)
+
+inits <- list(mu = mean(pod.sole$povprecje),
+              eta = sd(pod.sole$povprecje),
+              sigma = mean(sqrt(pod.sole$varianca)),
+              muGroups = pod.sole$povprecje,
+              betaGroups = rep(0, m), #nekaj vzamemo, ni pomembno (oz. ne sme biti)
+              beta = 0,
+              etaBeta = 1)
+
+data <- list(y = yMatrix, x = xMatrix) #dodamo se xMatrix
+```
+
+```{r}
+Rmodel <- nimbleModel(code = code, constants = constants,
+                      inits = inits, data = data)
+Rmodel$initializeInfo() #opozorilo za NA (bo v redu)
+
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$printMonitors()
+conf$addMonitors('muGroups')   #dodamo shranjevanje mu_j
+conf$addMonitors('betaGroups') #dodamo shranjevanje beta_j
+
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Cmodel)
+samples <- runMCMC(Cmcmc, niter = 12000, nburnin = 2000)
+
+samplesSummary(samples)[c(1, 104),]
+samplesPlot(samples, var = c("beta","betaGroups[1]"))
+samplesPlot(samples, var = c("mu","muGroups[1]"))
+
+samplesPlot(samples, var = c("eta","sigma","etaBeta"))
+
+effectiveSize(samples)
+min(effectiveSize(samples)) #najmanjsi izmed effective sample size - ni idealno, naj bo
+sort(effectiveSize(samples)) #najbolj problematicen etaBeta
+
+max(abs( cor(samples)[cor(samples)!=1] )) #najvecja izmed korelacij - ni idealno, naj bo
+
+# Pogledamo se vec verig:
+initsFunction <- function(){
+  list(mu = rnorm(1, mean = mean(pod.sole$povprecje), sd = 10),
+       eta = runif(1, min = 0, max = 10),
+       sigma = runif(1, min = 0, max = 10),
+       muGroups = rnorm(m, mean = pod.sole$povprecje, sd = 10),
+       betaGroups = rnorm(m),
+       beta = rnorm(1),
+       etaBeta = runif(1, min = 0, max = 10))
+}
+
+samplesList <- runMCMC(Cmcmc, niter = 12000, nburnin = 2000,
+                          nchains = 3, inits = initsFunction)
+
+chainsPlot(samplesList, var = c("beta", "betaGroups[1]",
+                                "mu", "muGroups[1]", "eta", "sigma",
+                                "etaBeta")) #ok - nekoliko problematicen etaBeta
+
+chainsSummary(samplesList, buffer.left = 1, buffer.right = 1, scale = TRUE,
+              var = c("beta", "betaGroups[1]",
+                      "mu", "muGroups[1]", "eta", "sigma",
+                      "etaBeta")) #ok
+
+### Graficno prestavimo se, kaj smo pravzaprav ocenjevali, tj.
+### regresijsko premico za vsako solo (mu_j + beta_j * x) in "regresijsko premico, iz katere so te izhajale" (mu + beta * x)
+x = c(min(pod$ses), max(pod$ses)) #razpon x na podatkih
+y = samplesSummary(samples)[104, 1] + samplesSummary(samples)[1, 1] * x #mu + beta * x
+
+### Do not run or be patient :)
+plot(x, y, type="l", xlab = "ses", ylab = "mathscore", ylim = c(20,80))
+for (i in 1:m) {
+  y1 <- samplesSummary(samples)[104+i, 1] + samplesSummary(samples)[1+i, 1] * x #mu_j + beta_j * x
+  lines(x, y1, col = "grey")
+}
+lines(x, y, col = "black", lwd=2)
+```
+
+**Bistvo:** Model lahko hitro spremenimo, brez teoreticnih izpeljav.
+
+**Zelo zazeljeno (seminarska naloga, 2. naloga):** Potrudite se z interpretacijo vecine parametrov (na tem primeru bi si lahko poleg hiperparametrov npr. lahko pogledali soli, v katerih ima SES najvecji oz. najmanjsi efekt), poleg ocene je seveda bistven credible interval in statisticna znacilnost.

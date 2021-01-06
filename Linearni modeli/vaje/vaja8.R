@@ -175,4 +175,74 @@ formule<-sapply(id, function(i) paste("Poraba~", paste(nap.sprem[i], collapse="+
 formule[1:10]
 (length(formule))
 
+mod.nul.avti <- lm(Poraba ~ 1, data=avti)
+step <- stepAIC(mod.nul.avti, scope= ~Masa + Prostornina + Moc + Poreklo + Tip, direction="forward")
+
+mod.polni.avti <- lm(Poraba ~ Masa + Prostornina + Moc + Poreklo + Tip, data=avti)
+step <- stepAIC(mod.polni.avti, direction="backward")
+
+mod.prvi.avti <- lm(Poraba ~ Masa, data=avti)
+step <- stepAIC(mod.prvi.avti, scope=~Masa+Prostornina+Moc+Poreklo+Tip, direction="both")
+
+AIC<-numeric()
+for (i in (1:length(formule))){
+    mod<-lm(formule[i], data=avti)
+    AIC[i]<-AIC(mod)
+}
+
+library(magrittr)
+library(dplyr)
+
+# vrne isto kot back, forward pa both sekvencni nacin
+data.frame(formule, AIC=round(AIC,1)) %>% filter(AIC == min(AIC))
+
+# vrne enako kot AIC
+# primerjava PRESS statistik po vseh možnih modelih
+PRESS<-numeric()
+nap.sprem <- names(avti)
+nap.sprem <- nap.sprem[! nap.sprem %in% "Taste"]
+n <- length(nap.sprem)
+for (i in (1:length(formule))){
+    mod<-lm(formule[i], data=avti)
+    h<-lm.influence(mod)$hat
+    press.ost<-residuals(mod)/(1-h)
+    PRESS[i]<-sum(press.ost^2)
+}
+rez <- data.frame(formule, PRESS)
+rez[order(PRESS),]
+
+n <- dim(avti)[1]
+n.u <- n.t <- n/2
+tabela<-data.frame(formule)
+for (j in 1:5) {
+    izbor<-rep(c(TRUE, FALSE), each=n.u)
+    set.seed(j*10)
+    izbor<-sample(izbor)
+    avti.ucni<-avti[izbor,]
+    avti.test<-avti[!izbor,]
+    CVC<-numeric()
+    for (i in (1:length(formule))){
+        mod<-lm(formule[i], data=avti.ucni)
+        y.nap<-predict(mod, avti.test)
+        CVC[i]<-sum((avti.test$Poraba-y.nap)^2)
+    }
+    # za primerjavo v nadaljevanju izračunamo tudi RMSE
+    tabela<-data.frame(tabela, round(CVC, 1), round(sqrt(CVC/n.t),1))
+}
+
+names(tabela)<-c("formula", "CVC1", "RMSE1","CVC2", "RMSE2", "CVC3",
+                 "RMSE3", "CVC4", "RMSE4", "CVC5", "RMSE5")
+tabela[, c(1:2,4,6,8,10)]
+
+tabela %>% rowwise() %>% mutate(mean_CVC = mean(c(CVC1, CVC2, CVC3, CVC4, CVC5))) %>% arrange(mean_CVC)
+
+library(olsrr)
+polni_model <- lm(Taste~.,data=cheese)
+Cp<-numeric()
+for (i in (1:length(formule))){
+    mod<-lm(formule[i], data=cheese)
+    Cp[i] <-ols_mallows_cp(mod, polni_model)
+}
+izpis<-data.frame(formule, Cp)
+izpis<-izpis[order(Cp),]; izpis[1:5,]
 

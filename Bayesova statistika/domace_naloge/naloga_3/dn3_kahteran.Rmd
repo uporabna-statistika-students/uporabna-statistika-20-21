@@ -212,7 +212,7 @@ ggplot(sig_data, aes(x=x, y=sigma)) +
 
 ```
 
-Podobno kot za $\mu_j$, zgleda da smo dosegli konvergenco. _Burn-in_ ravno tako ni opazen v nobenem izmed izbranih primerov in ravno tako kot pri $\mu_j$, smo tudi tu določili začetne vrednosti variance, kar vzorčne variance posameznih skupin. Največ kar opazimo je to da je varianca v skupinah $2$ in $8$ večja kot v skupinah $9$ in $42$ (Večja razpršenost pri enaki $y$-skali). Zopet si poglejmo če bomo _burn-in_ opazili pri prvih 500 členih zaporedja.
+Podobno kot za $\mu_j$, zgleda da smo dosegli konvergenco. _Burn-in_ ravno tako ni opazen v nobenem izmed izbranih primerov in ravno tako kot pri $\mu_j$, smo tudi tu določili začetne vrednosti variance, kar vzorčne variance posameznih skupin. Največ kar opazimo je to da je varianca v skupinah $2$ in $8$ večja kot v skupinah $9$ in $42$ (vrednosti so nekoliko višje). Zopet si poglejmo če bomo opazili _burn-in_ pri prvih 500 členih zaporedja.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 sig2  <- cbind(sigma2Groups.all[1:500, 2],  2,  1:500)
@@ -319,7 +319,7 @@ ggplot(hyper_data_500, aes(x=x, y=value)) +
 
 Ponovno ni videti _burn-in_ dela verig, zato bomo ohranili celotne verige.
 
-Poglejmo si še "stabilnost" naših verig. Verige razdelimo na 10 enako velikih delov. Podvzorec določimo kot $\frac{1}{10}$ zaporednih členov celotne verige. Za tem primerjamo njihove porazdelitve. Najprej si poglejmo slike za $\mu_j$.
+Poglejmo si še "stabilnost" naših verig. Verige razdelimo na $10$ enako velikih delov. Podvzorec določimo kot $\frac{1}{10}$ zaporednih členov celotne verige. Za tem primerjamo njihove porazdelitve. Najprej si poglejmo slike za $\mu_j$.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 
@@ -348,7 +348,7 @@ ggplot(sig_data, aes(x=podvzorec, y=sigma)) +
          subtitle="j = 2, 8, 9, 42")
 ```
 
-Ravno tako opazimo razlike med posameznimi skupinami. Če mogoče ni bilo opazno na _trace plot_-ih je tu precej bolje videti da so porazdelitve nekoliko asimetrične. To je tudi smiselno saj jih vzorčimo z inverzno gamma porazdelitvijo, ki je ravno tako asimetrična. Poglejmo si še podvzorce za hiperparametre.
+Ravno tako opazimo razlike med posameznimi skupinami. Če mogoče ni bilo opazno na _trace plot_-ih je tu precej bolje videti da so porazdelitve nekoliko asimetrične. To je tudi smiselno saj jih vzorčimo iz inverzne gamma porazdelitve, ki je asimetrična. Poglejmo si še podvzorce za hiperparametre.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.width=10}
 ggplot(hyper_data, aes(x=podvzorec, y=value)) + 
@@ -465,7 +465,7 @@ ggplot(acfhyper, aes(x=lag, y=acf)) +
 
 ```
 
-Večjih težav z avtokorelacijo pri $\mu_j$ in $\sigma_j^2$, ni videti. Pri hiperparametrih vidimo da gre pri vseh parametrih korelacija kasneje k $0$, kot bi si želeli. Smiselno si je pogledati še _effective sample size_ vseh parametrov. Zraven je dodana še "standardna napaka" (MCSE - Monte Carlo Standard Error).
+Večjih težav z avtokorelacijo pri $\mu_j$ in $\sigma_j^2$, ni videti. Pri hiperparametrih vidimo da gre pri vseh parametrih korelacija z manjšo zakasnitvijo k $0$. Smiselno si je pogledati še _effective sample size_ vseh parametrov. Zraven je dodana še "standardna napaka" (MCSE - Monte Carlo Standard Error).
 
 ```{r, echo=FALSE, eval=TRUE, results="markup"}
 
@@ -525,7 +525,11 @@ kable(eff.smpl.data, align="c", digits=c(0, 2, 4)) %>%
 
 ```
 
+Vidimo da je _effective sample size_ višji pri že vidno boljših prikazih avtokorelacije. Pri hiperparametrih kjer smo že videli težavo je tudi _effective sample size_ nižji. Velikost _MCSE_ je smiselno interpretirati v sklopu dejanskih vrednosti (hiper)parametrov, kar si bomo pogledali v naslednjem poglavju.
+
 # 3. Robne aposteriorne porazdelitve
+
+Poglejmo si torej najprej robne aposteriorne porazdelitve za $\mu_j$ in $\sigma_j^2$.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.width=10, fig.align="center"}
 
@@ -617,8 +621,13 @@ ggplot(sig_data, aes(x=sigma)) +
 Modri črti - interval zaupanja;
 Rdeča črta - mediana") + 
     theme(legend.position="none")
+```
 
+Pričakovano, so $\mu_j$ porazdelitve normalne, saj jih vzorčimo iz normalne porazdelitve. Podobno velja za $\sigma_j^2$ saj vzorčimo iz inverzne gamma porazdelitve. Te krivulje predstavljajo gostote za povprečje oz. za varianco ocen iz matematike posamezne šole.
 
+Hiperparametri so nekoliko težji za razumeti, in nisem niti ravno prepričan če si jih pravilno interpretiram. Poglejmo si najprej porazdelitve hiperparametrov.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.width=10, fig.align="center"}
 
 ggplot(hyper_data, aes(x=value)) +
     geom_density() +
@@ -642,6 +651,19 @@ ggplot(hyper_data, aes(x=value)) +
          subtitle="Modri črti - interval zaupanja;
 Rdeča črta - povprečje") + 
     theme(legend.position="none")
+```
+
+$\mu$ je lepo simetrično normalno porazdeljen, kar je lepo razvidno iz slike. $\mu$ predpostavljam da si lahko razlagamo kot povprečje vseh šol (oz. skupin).
+
+$\sigma_0^2$ je tudi lepo porazdeljen, bi skoraj rekel da normalno, vendar glede na navodila vemo da je porazdeljen po gama porazdelitvi. Gama porazdelitev se pri dovolj velikih parametrih lahko aproksimira z normalno porazdelitvijo vendar to ni bistvo te naloge. $\sigma_0^2$ si predstavljam kot porazdelitev povprečij varianc skupin. Torej kot nekakšno skupno varianco vsem skupinam.
+
+$\eta^2$ je že vizualno asimetrična, tudi smiselno saj izhaja iz inverzne gama porazdelitve. Razlagam si ga kot varianco povprečij skupin (oz. šol v našem primeru).
+
+$\nu_0$ je diskretne oblike poleg tega pa še asimetričen. Razlagam si ga kot nekakšen povezovalni faktor, ki pove koliko informacij (zdi se mi da variance) se "deli" med skupinami.
+
+Poglejmo si še $95\%$ intervale zaupanja za vse izbrane parametre in hiperparametre. Dodana je še mediana kot izbrana središčna vrednost zaradi asimetričnosti nekaterih porazdelitev, ter ti. MCSE, ki smo ga že izračunali višje.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.width=10, fig.align="center"}
 
 lwr_upr_mu <- lwr_upr_mu %>% 
     ungroup() %>%
@@ -680,14 +702,20 @@ hyp_tbl <- left_join(lwr_upr_hyp, mean_hyp, by=c("(hiper)parameter")) %>%
 
 hyp_tbl$`(hiper)parameter` <- c("$\\mu$", "$\\sigma_0^2$", "$\\eta^2$", "$\\nu_0$")
 
-kable(rbind(mu_tbl, sig_tbl, hyp_tbl), 
+colnames(MCSE) <- "MCSE"
+
+kable(cbind(rbind(mu_tbl, sig_tbl, hyp_tbl), MCSE), 
       align="c",
       digits=2) %>%
     kable_styling(full_width = FALSE)
 
 ```
 
-# 4. shrinkage povprecja in varianco kot v 3.3.1 iz navodil. kratki komentarji
+MCSE je, glede na vrednosti (hiper)parametrov, majhen. Mediane oz. variance se razlikujejo glede na skupine, kar je pričakovano.
+
+# 4. Shrinkage
+
+Podobno kot na vajah si poglejmo _shrinkage_ za povprečja.
 
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.width=10, fig.align="center"}
 
@@ -720,11 +748,23 @@ ssig2 <- ggplot(NULL, aes(x=pod.sole$n, y=pod.sole$varianca-pod.sole$Esigma2Grou
          y=expression(s^2-E(sigma[j]^2)))
 
 grid.arrange(smu1, smu2, ncol=2)
+```
+
+Velikih razlik v primerjavi s prvotnim modelom pravzaprav ni videti. Je pa lepo videti _shrinkage_ efekt, ki pokaže kako skupine ki bolj odstopajo od povprečja, jih bolj "popravimo" s skupinskim povprečjem $\mu$. Podobno je videti na sosednji sliki kako skupine z manjšim številom zapisov bolj "popravimo" (ker jim manj verjamemo) medtem ko večje skupine pa manj.
+
+Poglejmo si še podobne slike za variance skupin.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.width=10, fig.align="center"}
 grid.arrange(ssig1, ssig2, ncol=2)
 
 ```
 
-5. Primerjajte rezultate obeh hierarhicnih modelov. Ali so rezultati za (hiper)parametre,
-ki opisujejo povprecja podobni? Razmislite, ali je uporaba splosnejsega hierarhicnega
-modela z razlicnimi variancami skupin potrebna pri teh podatkih? Oziroma, kdaj bi
-bila bolj potrebna in kdaj manj?
+Na prvi sliki je videti podobno stvar kot v prejšnjem primeru, da bolj "ekstremne" primere bolj "skrčimo" k pričakovani vrednosti skupne variance. Zdi se mi da velikost skupine v temu primeru veliko manj vpliva na to koliko "skrčimo" varianco, je pa to še vedno opaziti.
+
+# 5. Primerjajava
+
+Če primerjamo rezultate modela iz vaj in trenutnega modela, vidimo da pri rezultatih za povprečja ($\mu$ in $\eta^2$) večjih razlik pravzaprav ni. Torej ko smo dodali varianco za posamezne skupine, nismo veliko prispevali k tem porazdelitvam. Smo pa z upeljavo varianc posameznih šol pridobili dodatno informacijo o šoli, medtem ko smo prej predpostavili da so variance za vse šole enake. 
+
+Model z različnimi variancami je, po mojem mnenju, smiselno uporabiti v primerih ko nas zanimajo tudi parametri o variancah. V temu primeru (o šolah), bi rekel da ne vidim razloga da ne bi uporabili modela z različnimi variancami. Računsko se mi ne zdi veliko bolj potraten, da bi lahko upravičili neuporabo modela z različnimi variancami. Če nas pa zanimajo samo povprečja, in če je tudi podatkov precej več, in je potrebnih več iteracij, je pa smiselno razmisliti o temu da uporabimo prvotno različico modela, saj ne bi storili velike napake pri izračunavanju parametrov za povprečja.
+
+<!-- a obstaja kak način kako bi "zmanjšali" podatke, če so preveliki, da bi videli če z vpeljavo različnih varianc precej vplivamo na povprečja? vprašaj na vajah -->
