@@ -147,7 +147,81 @@ $$
 
 kar pa ni enako $\sigma^2$, in posledično vidimo da je cenilka pristranska.
 
+### 4.
+
+a.) Izbral sem si tri različne porazdelitve, z namenom da bo videti kako je cenilka pristranska ne glede na porazdelitev. Izbral sem si Poissonovo porazdelitev (diskretna), $\chi^2$ porazdelitev z $3$ stopinjami prostosti (zvezna asimetrična) ter normalno porazdelitev (zvezna simetrična).
+
+b.) Ker analitično vemo kakšne so variance teh porazdelitev, jih lahko določimo da bodo vse enake (v našem primeru sem si izbral $4$).
+
+Variance in parametri so sledeči
+$$
+Var_{pois}(X) = \lambda = 4 \,,
+$$
+
+$$
+Var_{\chi^2}(X) = 2k = 4 \,,
+$$
+
+
+$$
+Var_{norm}(X) = \sigma^2 = 4 \,,
+$$
+kjer $k$ predstavlja število stopinj prostosti in je v našem primeru $2$. $\sigma$ je ravno tako enaka $2$, da bodo vse variance enake.
+
+
+c.) Za preverjanje pristranosti je pomembno da je vzorec porazdelitve majhen, saj je tu bolje videti pristranost. Če je vzorec prevelik se že preveč "spuščamo" v doslednost cenilke. Vzorec za simulacije bo torej velikosti $10^4$.
+
 
 ```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+sim_n <- 10^4
+n <- 10
+k <- 2
+sig <- 2
+lambda <- 4
+
+
+var_estimator <- function(smpl, n){
+    estimate <- 1/n*sum(smpl^2) - (1/n*sum(smpl))^2
+    return(estimate)
+}
+
+# reproducibilnost
+set.seed(8)
+
+# diskretna
+pois_var <- replicate(sim_n, var_estimator(rpois(n, lambda=lambda), n))
+
+# zvezna nesimetricna
+chsq_var <- replicate(sim_n, var_estimator(rchisq(n, df=k), n))
+
+# zvezna simetricna
+norm_var <- replicate(sim_n, var_estimator(rnorm(n, sd=sig), n))
+
+mean(pois_var)
+mean(chsq_var)
+mean(norm_var)
+
+```
+
+Če stvar ponovimo z veliko večjim vzorcem bomo pa videli da je cenilka dosledna.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# spremenimo vzorec za varianco
+n <- 1000
+
+# diskretna
+pois_var <- replicate(sim_n, var_estimator(rpois(n, lambda=lambda), n))
+
+# zvezna nesimetricna
+chsq_var <- replicate(sim_n, var_estimator(rchisq(n, df=k), n))
+
+# zvezna simetricna
+norm_var <- replicate(sim_n, var_estimator(rnorm(n, sd=sig), n))
+
+mean(pois_var)
+mean(chsq_var)
+mean(norm_var)
 
 ```

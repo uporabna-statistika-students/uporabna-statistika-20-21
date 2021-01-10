@@ -145,7 +145,7 @@ Rmcmc <- buildMCMC(conf)
 
 S spodnjim pozenemo verigo, vendar v R-u in zato je zelo pocasno (spodaj le 100 iteracij)! Ne uporabljati tega!!!
 ```{r}
-samples <- runMCMC(Rmcmc, 100)
+# samples <- runMCMC(Rmcmc, 100)
 ```
 
 Do sedaj smo delali v R. Prevedemo v C++:
