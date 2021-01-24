@@ -1,0 +1,172 @@
+---
+title: "Domača naloga 6"
+subtitle: "Linearni modeli"
+author: "Alen Kahteran"
+date: "21. 01. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(car)
+library(ggplot2)
+library(nlme)
+library(astsa)
+library(ggfortify)
+
+leska<-read.table("LESKA.txt", header=T)
+```
+
+## Leska
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+# linear model
+mod.lm <- lm(cvet.dan~temp, data=leska)
+
+# get residuals
+residuals_LM <- resid(mod.lm)
+
+# remove names
+names(residuals_LM) <- NULL
+
+# calculated lag correlations
+autocor <- acf(residuals(mod.lm), plot=FALSE)
+
+corr1 <- autocor[1]$acf[1]
+corr2 <- autocor[2]$acf[1]
+corr3 <- autocor[3]$acf[1]
+
+# testing
+# cor(residuals_LM, dplyr::lag(residuals_LM, 1), use="pairwise.complete.obs")
+# cor(residuals_LM, dplyr::lag(residuals_LM, 2), use="pairwise.complete.obs")
+# cor(residuals_LM, dplyr::lag(residuals_LM, 3), use="pairwise.complete.obs")
+# 
+# lm(dplyr::lag(residuals_LM, 1) ~ residuals_LM)
+# lm(dplyr::lag(residuals_LM, 2) ~ residuals_LM)
+# lm(dplyr::lag(residuals_LM, 3) ~ residuals_LM)
+
+g <- ggplot(mapping=aes(x=residuals_LM))
+
+g + geom_point(aes(y=dplyr::lag(residuals_LM, 1))) +
+    geom_abline(slope = corr1) +
+    labs(x="ostanki",
+         y="Ostanki z odlogom 1",
+         title="Odlog 1",
+         subtitle=paste("Koeficient avtokorelacije =", round(corr1, 3)))
+
+g + geom_point(aes(y=dplyr::lag(residuals_LM, 2))) +
+    geom_abline(slope = corr2) +
+    labs(x="ostanki",
+         y="Ostanki z odlogom 2",
+         title="Odlog 2",
+         subtitle=paste("Koeficient avtokorelacije =", round(corr2, 3)))
+
+g + geom_point(aes(y=dplyr::lag(residuals_LM, 3))) +
+    geom_abline(slope = corr3) +
+    labs(x="Ostanki",
+         y="Ostanki z odlogom 3",
+         title="Odlog 3",
+         subtitle=paste("Koeficient avtokorelacije =", round(corr3, 3)))
+
+```
+
+Iz teh grafov bi lahko rekli da odlog 1 predstavlja nekaj težave, kar smo videli tudi že na vajah z Durbin-Watson testom.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+(DWT1<-durbinWatsonTest(mod.lm, max.lag=5))
+```
+
+## Kardiovaskularna smrtnost
+
+Najprej ustrezno pripravimo čas.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+data_cardio <- lap
+time_ <- (time(cmort) - 1970)*52
+
+data_cardio <- cbind(data_cardio, time_)
+```
+
+Zanima nas kako na kardiovaskularno smrtnost (`cmort`) vplivata tmpratura zraka (`tempr`) in onesnaženost s prašnimi delci (`part`). Zato ustvarimo primeren linearni model in si poglejmo če so izpolnjene predpostavke linearnega modela.
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+mod_lm <- lm(data_cardio.cmort ~ data_cardio.tempr + data_cardio.part, data=data_cardio)
+
+autoplot(mod_lm, which=1:4)
+```
+
+Večjih težav ni videti, mogoče le nekoliko pri repih na Q-Q prikazu, vendar nič hujšega. Če si pogledamo še časovno vrsto ostankov, bomo videli če imamo težavo z avtokorelacijo.
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+ggplot(mapping=aes(x=time_, y=resid(mod_lm))) + 
+    geom_point() + 
+    geom_line() +
+    geom_hline(yintercept = 0, col="gray") +
+    labs(title = "Časovna vrsta ostankov",
+         x="Teden",
+         y="Ostanki")
+```
+
+Videti je da imamo več zaporednih točk pozitivnih nato negativnih, kar lahko predstavlja težave z avtokorelacijo. Preverimo rezultate Durbin-Watson testa
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+durbinWatsonTest(mod_lm, max.lag=5)
+```
+
+Vidimo da je prvih 5 odlogov statistično značilnih, ker nam to ne pove veliko si poglejmo ACF in PACF grafe.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+acf(residuals(mod_lm), main="")
+pacf(residuals(mod_lm), main="")
+```
+
+Vidimo da imamo težave z avtokorelacijo. Iz PACF grafa je videti da bi model z odlogom 3 ali pa celo 4 bil bolj primeren model. Pripravimo si oba modela.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+mod_GLS_3<-gls(data_cardio.cmort ~ data_cardio.tempr + data_cardio.part, 
+               correlation=corARMA(p=3), 
+               data=data_cardio, 
+               method="ML")
+
+mod_GLS_4<-gls(data_cardio.cmort ~ data_cardio.tempr + data_cardio.part, 
+               correlation=corARMA(p=4), 
+               data=data_cardio, 
+               method="ML")
+```
+
+Poglejmo si če sta modela različna od osnovnega modela.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+anova(mod_GLS_3, mod_lm)
+anova(mod_GLS_4, mod_lm)
+```
+
+Vidimo da se v obeh primerih statistično značilno razlikujeta od osnovnega modela. Primerjajmo ju še med seboj.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+anova(mod_GLS_3, mod_GLS_4)
+```
+
+Ne moremo trditi da sta statistično značilno drugačna modela. Sicer ima model z odlogom 3 malenkost boljši AIC in BIC vrednosti, vendar očitno premalo da bi bilo statistično značilno. Torej nadaljujmo z modelom z odlogom 3.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+summary(mod_GLS_3)
+```
+
+Torej če še interpretiramo koeficiente
+
+* Vidimo da je kardiovaskularna smrtnost statistično značilno odvisna od prašnih delcev (ob upoštevanju temperature) - $p<0.0001$. Če se v povprečju vrednost prašnih delcev poveča za 1 enoto (ob upoštevanju temperature), se kardiovaskularna smrtnost poveča za $0.137$.
+
+* Ne moremo trditi da je kardiovaskularna smrtnost odvisna od temperature (ob upoštevanju prašnih delcev) - $p<0.4962$.  Če se v povprečju temperatura poveča za 1 stopinjo Fahrenheita (ob upoštevanju prašnih delcev), se kardiovaskularna smrtnost poveča za $0.031$.
+
+* $\beta_0$ bi, v primeru ko bi imelu podatke blizu 0 Fahrenheit in 0 prašnih delcev, lahko interpretirali kot da je smrtnost v povprečju enaka $79.96$.

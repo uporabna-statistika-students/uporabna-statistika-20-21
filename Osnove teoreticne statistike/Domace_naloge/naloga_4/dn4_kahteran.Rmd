@@ -1,0 +1,340 @@
+---
+title: "Domača naloga 4"
+subtitle: "Osnove teoretične statistike"
+author: "Alen Kahteran"
+date: "24. 01. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(tidyverse)
+
+```
+
+# Točka 1
+
+## a)
+
+Vemo za naslednje stvari
+
+$$
+f_X(x) = \frac{\beta^\alpha}{\Gamma(\alpha)}x^{\alpha-1}e^{-\beta x}\ \ \ \ \ \mathrm{za}\ \ x>0 
+$$
+$$
+Y = \frac{1}{X}\ \ \ \ \ \mathrm{oz.}\ \ Y=g(x) = 1/x
+$$
+
+$$
+f_Y(y)=f_X(g^{-1}(y))\left\lvert\frac{d}{dy}g^{-1}(y)\right\rvert
+$$
+
+Potrebujemo torej $g^{-1}(y)$.
+
+$$
+g(x) = \frac{1}{x} 
+$$
+$$
+y=\frac{1}{x}
+$$
+nekoliko obrnemo
+
+$$
+x=\frac{1}{y}
+$$
+
+se pravi
+
+$$
+g^{-1}(y) = \frac{1}{y}
+$$
+
+Ustavimo v enačbo za $f_y(y)$
+
+$$
+f_Y(y)=f_X\left(\frac{1}{y}\right)\left\lvert\frac{d}{dy}\frac{1}{y}\right\rvert
+$$
+Odvod $\frac{1}{y}$ po $y$ je enak $\frac{-1}{y^2}$ medtem ko je $f_X(1/y)$ enako
+
+$$
+f_X\left(\frac{1}{y}\right) = \frac{\beta^\alpha}{\Gamma(\alpha)}\frac{1}{y^{\alpha-1}}e^{\frac{-\beta}{y}}
+$$
+
+Torej dobimo
+
+$$
+f_Y(y)=\frac{\beta^\alpha}{\Gamma(\alpha)}\frac{1}{y^{\alpha-1}}e^{\frac{-\beta}{y}}\left\lvert\frac{-1}{y^2}\right\rvert
+$$
+če nekoliko stvari pokrajšamo dobimo
+
+$$
+f_Y(y)=\frac{\beta^\alpha}{\Gamma(\alpha)}\frac{1}{y^{\alpha+1}}e^{\frac{-\beta}{y}}
+$$
+
+
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+# setting seed for reproducibility
+set.seed(8)
+
+# selectin alpha and beta for drawing purposes
+alpha <- 2
+beta <- 8
+
+# generating y value
+y <- seq(from=0, to=10, by=0.001)
+
+# calculating fy (NaN at y=0)
+fy <- ((beta^alpha) / gamma(alpha)) * (1/(y^(alpha + 1))) * exp(-beta/y)
+
+ggplot(mapping=aes(x=y, y=fy)) + 
+    geom_line() +
+    labs(x="y",
+         y=expression(f[Y](y)))
+
+```
+
+Definicijsko območje je $D_{f_Y} = (0,\infty)$ (ko govorimo o gostoti, seveda). Da je zvezna funkcija lahko gostota zvezne spremenljivke mora veljati da je njen integral po definicijskem območju enak $1$.
+
+## b)
+
+$$
+E[Y] = \int_{-\infty}^{\infty}y\cdot f_Y(y)\ dy
+$$
+
+ker je ta definirana le na območju $(0,\infty)$ lahko zapišemo tudi kot
+
+$$
+E[Y] = \int_{0}^{\infty}y\cdot f_Y(y)\ dy
+$$
+Če ustavimo še $f_Y(y)$ dobimo
+
+$$
+E[Y] = \int_{0}^{\infty}y\cdot \frac{\beta^\alpha}{\Gamma(\alpha)}\frac{1}{y^{\alpha+1}}e^{\frac{-\beta}{y}}\ dy
+$$
+Najprej pokrajšajmo $y$
+
+$$
+E[Y] = \int_{0}^{\infty}\frac{\beta^\alpha}{\Gamma(\alpha)}\frac{1}{y^{\alpha}}e^{\frac{-\beta}{y}}\ dy
+$$
+Nekoliko preoblikujmo, da dobimo inverzno gamma funkcijo za katero vemo da je integral enak $1$.
+
+$$
+E[Y] = \int_{0}^{\infty}\frac{\beta}{\alpha - 1}\frac{\beta^{\alpha-1}}{\Gamma(\alpha -1)}\frac{1}{y^{\alpha}}e^{\frac{-\beta}{y}}\ dy
+$$
+
+$\frac{\beta}{\alpha - 1}$ nesemo ven iz integrala ker je konstanta.
+
+$$
+E[Y] = \frac{\beta}{\alpha - 1} \int_{0}^{\infty}\frac{\beta^{\alpha-1}}{\Gamma(\alpha -1)}\frac{1}{y^{\alpha}}e^{\frac{-\beta}{y}}\ dy
+$$
+za ta integral pa vemo da je enak inverzni gamma funkciji katere integral je enak $1$ (z različnimi koeficienti lahko vidimo že v prejšnjem delu naloge). Torej pričakovana vrednost $Y$ je
+
+$$
+E[Y] = \frac{\beta}{\alpha - 1} \cdot 1 = \frac{\beta}{\alpha - 1}
+$$
+
+# Točka 2
+
+## a)
+
+Poznamo $\alpha=2$, vemo da $\Gamma(2) = 1$ in če stvari ustavimo in polepšamo lahko gostoto za Y zapišemo kot
+
+$$
+f_Y(y)=\frac{\beta^2}{y^{3}}e^{\frac{-\beta}{y}}
+$$
+
+Z metodo največjega verjetja ocenjujemo $\beta$. Vstavimo v enačbo torej
+
+$$
+L(y,\alpha=2, \beta) = \prod_{i=1}^n\frac{\beta^2}{y_i^{3}}e^{\frac{-\beta}{y_i}}
+$$
+
+Preden logaritmiramo, dajmo to enačbo zapisati v obliki s katero je lažje računati
+
+$$
+L(y,\alpha=2, \beta) = \prod_{i=1}^n\beta^2 y_i^{-3}e^{\frac{-\beta}{y_i}}
+$$
+Sedaj logaritmirajmo
+
+$$
+\ln(L(y,\alpha=2, \beta)) = \sum_{i=1}^n \ln(\beta^2)+\ln(y_i^{-3})-\frac{\beta}{y_i}
+$$
+Potence nesemo ven iz logaritmov
+
+$$
+\ln(L(y,\alpha=2, \beta)) = \sum_{i=1}^n\left( 2\ln(\beta)-3\ln(y_i)-\frac{\beta}{y_i}\right)
+$$
+
+Glede na to da nas zanima cenilka za $\beta$ parcialno odvajajmo po $\beta$
+
+$$
+\frac{\partial\ln(L(y,\alpha=2, \beta))}{\partial\beta} = \sum_{i=1}^n\left( \frac{2}{\beta}-\frac{1}{y_i}\right)
+$$
+$\frac{2}{\beta}$ lahko nesemo ven iz vsote (pomnoženo z $n$)
+
+$$
+\frac{\partial\ln(L(y,\alpha=2, \beta))}{\partial\beta} = \frac{2}{\beta}n-\sum_{i=1}^n\frac{1}{y_i}
+$$
+Najboljša cenilka za $\beta$ je takrat ko je ta odvod enak 0 tj.
+
+$$
+\frac{\partial\ln(L(y,\alpha=2, \beta))}{\partial\beta} = 0
+$$
+Oz.
+
+$$
+0 = \frac{2n}{\hat{\beta}}-\sum_{i=1}^n\frac{1}{y_i}
+$$
+ali pa še lepše
+
+$$
+\frac{2n}{\hat{\beta}} = \sum_{i=1}^n\frac{1}{y_i}
+$$
+Obrnimo še enačbo in dobimo
+
+$$
+\hat{\beta} = \frac{2n}{\sum_{i=1}^n\frac{1}{y_i}}
+$$
+
+## b)
+
+Zanima nas ali je cenilka nepristranska. Zapišimo torej našo cenilko.
+
+$$
+E[\hat{\beta}] = E\left[\frac{2n}{\sum_{i=1}^n\frac{1}{y_i}}\right] 
+$$
+
+Prek Jensenove neenakosti lahko zapišemo naslednje (funkcija je $1/x$, ki je konveksna funkcija za $x>0$)
+
+$$
+E\left[\frac{2n}{\sum_{i=1}^n\frac{1}{y_i}}\right] > \frac{2n}{E\left[\sum_{i=1}^n\frac{1}{y_i}\right]}
+$$
+
+desni del enačbe lahko zapišemo kot
+
+$$
+\frac{2n}{E\left[\sum_{i=1}^n\frac{1}{y_i}\right]} = \frac{2n}{E\left[n\cdot\frac{1}{n}\sum_{i=1}^n\frac{1}{y_i}\right]}
+$$
+za $\frac{1}{n}\sum_{i=1}^n\frac{1}{y_i}$ pa vemo da je porazdeljena po gama porazdelitvi ki ima pričakovano vrednost $\alpha/\beta$. Torej, če nesemo najprej $n$ ven iz pričakovane vrednosti, in potem upoštevamo omenjeno prej, dobimo naslednje
+
+$$
+E\left[\frac{2n}{\sum_{i=1}^n\frac{1}{y_i}}\right] > \frac{2n}{n\cdot\frac{\alpha}{\beta}}
+$$
+
+Če upoštevamo da $\alpha=2$ in nato nekoliko obrnemo enačbo dobimo
+
+$$
+E\left[\frac{2n}{\sum_{i=1}^n\frac{1}{y_i}}\right] > \frac{2n\cdot\beta}{2n}
+$$
+in posledično
+
+$$
+E\left[\frac{2n}{\sum_{i=1}^n\frac{1}{y_i}}\right] > \beta
+$$
+oz.
+
+$$
+E\left[\hat{\beta}\right] > \beta
+$$
+
+Torej cenilka je nepristranska in jo precenjuje. Preverimo še s simulacijami.
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+n <- 9
+
+beta_hats <- replicate(10000, 2*n / (sum(1/(rgamma(n=n, alpha, beta)^-1))))
+
+mean(beta_hats)
+```
+
+## c)
+
+Vemo da
+
+$$
+Var(\beta) = \frac{1}{n}I^{-1}(\beta)
+$$
+in
+
+$$
+I(\beta) = - E\left[\frac{\partial^2\ln(f_Y(y))}{\partial\beta^2}\right]
+$$
+za $\alpha=2$ vemo da je $f_Y(y)$ enak
+
+$$
+f_Y(y) = \frac{\beta^2}{y^{3}}e^{\frac{-\beta}{y}}
+$$
+naravni logaritem tega pa
+
+$$
+\ln(f_Y(y))=2\ln(\beta)-3\ln(y)-\frac{\beta}{y}
+$$
+
+Prvi in drugi odvod tega logaritma po $\beta$ sta
+
+$$
+\frac{\partial\ln(f_Y(y))}{\partial\beta} = \frac{2}{\beta} - \frac{1}{y}
+$$
+
+$$
+\frac{\partial^2\ln(f_Y(y))}{\partial\beta^2} = -\frac{2}{\beta^2}
+$$
+
+Če sedaj vse skupaj damo v prvotno enačbo dobimo
+
+$$
+Var(\hat{\beta}) = \frac{\beta^2}{2n}
+$$
+
+Interval zaupanja za $\beta$ je pa
+
+$$
+\frac{2n}{\sum_{i=1}^n\frac{1}{y_i}} \pm z_{\alpha/2}\cdot \sqrt{\frac{\hat{\beta}^2}{2n}}
+$$
+
+## d)
+
+Vemo da je asimptotska porazdelitev $\sqrt{n}(\hat{\beta} - \beta_0)$ enaka $N(0, I^{-1}(\beta_0))$. Predkratkim smo izračunali nekaj podobnega in zato vemo da je
+
+$$
+I^{-1}(\beta_0) = \frac{\beta_0^2}{2}
+$$
+in potemtakem velja da je asimptotska porazdelitev enaka
+
+$$
+N\left(0, \frac{\beta_0^2}{2}\right)
+$$
+
+Za $n$ sem si izbral vrednost $100000$ (mora biti dovolj velika da velja asimptotsko), za št. ponovitev pa $1000$. Parametra gama funkcije ostaneta enaka kot v prejšnjih primerih ($\alpha = 2$ in $\beta$ oz. $\beta_0 = 8$). Poleg je dodana še normalna porazdelitev ($N\left(0, \frac{\beta_0^2}{2}\right)$ oz. $N\left(0, 32\right)$).
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+n <- 100000
+iter <- 1000
+alpha <- 2
+beta <- 8
+
+set.seed(9)
+tmp <- sqrt(n) * (replicate(iter, 2*n / (sum(1/(rgamma(n=n, alpha, beta)^-1)))) - beta)
+
+var(tmp)
+
+ggplot(data.frame(x=tmp, funx=seq(-49.9, 50, 0.1))) +
+    geom_density(aes(x=x, color="simulacije")) +
+    stat_function(fun=dnorm,
+                  geom="line",
+                  args=list(mean=0, sd=sqrt(32)),
+                  aes(x=funx, color="teoretična"))
+```
+
+Vidimo da se variance približno ujemata (razumljivo da je nekaj odstopanja zaradi le $1000$ ponovitev), ravno tako je vizualno videti na sliki da drži.
