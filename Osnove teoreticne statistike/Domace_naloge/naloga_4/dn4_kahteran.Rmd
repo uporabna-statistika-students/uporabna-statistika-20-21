@@ -338,3 +338,61 @@ ggplot(data.frame(x=tmp, funx=seq(-49.9, 50, 0.1))) +
 ```
 
 Vidimo da se variance približno ujemata (razumljivo da je nekaj odstopanja zaradi le $1000$ ponovitev), ravno tako je vizualno videti na sliki da drži.
+
+## d)
+
+Za metodo delta velja
+
+$$
+Var(g(\hat{\theta})) = g'(\theta_0)^2\ Var(\hat{\theta})
+$$
+
+$\hat{\theta}$ v našem primeru predstavlja
+
+$$
+\hat{\theta} = \frac{1}{n} \sum_{i=1}^n\frac{1}{y_i}=\frac{1}{n} \sum_{i=1}^ngamma(2,\beta)
+$$
+
+$Var(\hat{\theta})$ pa
+
+$$
+Var(\hat{\theta}) = \frac{1}{n}\ Var(gamma(2,\beta))
+$$
+kjer vemo da $Var(gamma(2,\beta))$ je enako
+
+$$
+Var(gamma(2,\beta) = \frac{2}{\beta^2}
+$$
+
+Torej lahko zapišemo $Var(\hat{\theta})$ kot
+
+$$
+Var(\hat{\theta}) = \frac{1}{n}\cdot \frac{2}{\beta^2} = \frac{2}{n\beta^2}
+$$
+
+Veljajo še naslednje enačbe
+
+$$
+g(\theta) = \frac{2}{\theta}
+$$
+
+$$
+g'(\theta) = -\frac{2}{\theta^2}
+$$
+
+$$
+(g'(\theta))^2 = \frac{4}{\theta^4}
+$$
+
+S tem lahko zapišmo da je $Var(\hat{\beta})$ enak
+
+$$
+Var(\hat{\beta}) = \frac{4}{\beta^4} \cdot \frac{2}{n\beta^2} = \frac{8}{n\beta^6}
+$$
+
+
+
+
+
+
+
