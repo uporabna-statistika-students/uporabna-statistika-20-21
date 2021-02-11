@@ -1,0 +1,3 @@
+5/7
+
+Za prvi nalogo ste dobili vse točke, pri drugi pa ste spregledali nelinearnost odvisnosti smrtnosti od temperature in nekonstantno varianco. Poglejte avPlots in crPLots.
