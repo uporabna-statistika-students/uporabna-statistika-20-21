@@ -1,0 +1,28 @@
+---
+title: "Domača naloga 1"
+subtitle: "Viri podatkov"
+author: "Alen Kahteran"
+date: "21. 02. 2020"
+output:
+  pdf_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+```
+
+# asdf
+
+asdfasdf
+
+## asdfasdfasdf
+
+asdfasdfasdfasdf
