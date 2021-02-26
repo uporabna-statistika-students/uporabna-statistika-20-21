@@ -1,0 +1,211 @@
+---
+title: "Domača naloga 5"
+subtitle: "Osnove teoretične statistike"
+author: "Alen Kahteran"
+date: "24. 02. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+```
+
+# 1.
+
+Enostavno domnevo uporabimo, saj ne vemo da je delež družin z otroki v Pomurju nižji. To sumimo, vendar nismo v to prepričani. Na ta način, bomo pravzaprav videli v katero "smer" odstopa Pomurje.
+
+# 2.
+
+$$
+H_a: \pi\ne\pi_0
+$$
+
+kjer je $\pi_0=0.74$. Domneva je dvostranska.
+
+# 3.
+
+Prostor možnih vrednosti za $\pi$ je $[0,1]$.\newline
+Podprostor za $H_0$ je $\{0.74\}$.\newline
+Podprostor za $H_a$ je $[0, 0.74) \cup (0.74, 1]$.
+
+# 4.
+
+Testna statistika je št. družin z otroki v vzorcu.
+
+$$
+T = \sum_{i=1}^nX_i
+$$
+Porazdelitev $T$ je binomska, saj je vsota Bernoullijevk $X_i$ porazdeljena binomsko. Torej porazdelitev je sledeča
+
+$$
+T \sim Bin(n, \pi_0)\,,
+$$
+kjer je v našem primeru $n=80$ in $\pi_0=0.74$. Torej
+
+$$
+T \sim Bin(80, 0.74)\,.
+$$
+
+# 5.
+
+Prva predpostavka je da $X_i$ so $iid$, kar drži, ker je vzorec reprezentativen (razberemo iz navodil, pa tudi to je lastnost reprezentativnega vzorca).
+
+Druga predpostavka je da $\pi_0 = 0.74$, kar smo pridobili iz podatkov od SURS-a. To ni nobena težava, glede na to da podatki iz SURS-a predstavljajo celotno populacijo.
+
+Tretja predpostavka je bila da je $X_i \sim Bern(\pi)$. Kar je ravno tako OK, saj posamezna družina lahko ali ima ali nima otrok. Ker želimo določiti delež vseh družin ki imajo ali nimajo otroka, je ta predpostavka smiselna, saj ko jih seštejemo dobimo št. družin z otroki. $\pi$ v temu primeru predstavlja deleš otrok z družinami (oz. verjetnost da bo družina imela otroka).
+
+# 6.
+
+S `qbinom()` funkcijo preverimo kje se nahaja zgornja in spodnja meja za zavrnitev.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+# lower
+qbinom(0.025, 80, 0.74)
+
+# upper
+qbinom(1-0.025, 80, 0.74)
+
+```
+
+Kolikor se spomnim, nam `qbinom()` vrne prvo višjo vrednost, kot je meja. Preverimo še z `pbinom()` (iščemo prvo vrednost kjer je $p$ manjši od $0.025$ za spodnjo oz. večji od  $0.975$ za zgornjo mejo)
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+# lower
+pbinom(51, 80, 0.74)
+pbinom(50, 80, 0.74)
+
+# upper
+pbinom(67, 80, 0.74)
+pbinom(66, 80, 0.74)
+
+```
+
+Torej vidimo da spodnja meja za zavrnitev je $50$ zgornja meja za zavrnitev je pa $67$.
+
+Se pravi območje zavrnitve $H_0$ je $[0, 50] \cup [67, 80]$
+
+# 7.
+
+Velikost testa je verjetnost napake 1. vrste tj. da zavrnemo $H_0$ medtem ko $H_0$ drži. Torej seštejemo verjetnosti da zavrnemo ničelno hipotezo.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+pbinom(50, 80, 0.74) + pbinom(66, 80, 0.74, lower.tail = FALSE)
+
+```
+
+Mogoče še vedno izgleda nekoliko nizko v primerjavi z $\alpha=0.05$, vendar več ne more biti saj mora biti posamična verjetnost manjša od $0.025$.
+
+# 8.
+
+Vrednost testne statistike $T$ je v našem primeru $62$.
+
+$$
+T = \sum_{i=1}^{80}X_i = 62
+$$
+$T$ v temu primeru ni v območju zavrnitve in zato ne moremo zavrniti ničelne hipoteze.
+
+Pri stopnji značilnosti $\alpha=0.05$ ne moremo trditi, da delež družin z otroki v Pomurju odstopa od povprečja družin z otroki v Sloveniji.
+
+# 9.
+
+## a.
+
+Glede na rezultate 8. naloge bi pričakoval da bo št. vzorcev zavrnjeno v približno 43-ih primerih ($0.04280412 \cdot 1000 = 42.80412$).
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+# for reproducibility
+set.seed(8)
+
+# setting variables
+n <- 80
+x <- 1000
+pi_0 <- 0.74
+pi_1 <- 0.65
+
+tmp <- rbinom(x, n, pi_0)
+
+sum(tmp <= 50) + sum(tmp >= 67)
+
+```
+
+Se pravi v $40$ od $1000$ primerov, zavrnemo ničelno hipotezo. To je blizu $43$, kar je pričakovano zaradi variabilnosti. Če stvar poženemo večkrat, ter nato pogledamo povprečje, bi lahko dobili točnejšo številko.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+tmp_func <- function(x, n, pi_){
+    tmp <- rbinom(x, n, pi_)
+    
+    return(sum(tmp <= 50) + sum(tmp >= 67))
+}
+
+mean(replicate(1000, tmp_func(x=x, n=n, pi_=pi_0)))
+
+```
+
+## b.
+
+Vajo ponovimo za drugačen $\pi$.
+
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+tmp <- rbinom(x, n, pi_1)
+
+sum(tmp <= 50) + sum(tmp >= 67)
+
+mean(replicate(1000, tmp_func(x=x, n=n, pi_=pi_1)))
+
+```
+
+Ničelno domnevo zavrnemo v približno $35.8\%$ primerov.
+
+# 10.
+
+Podobno kot smo delali v enem izmed prejšnjih primerov.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+pbinom(50, 80, 0.65) + pbinom(66, 80, 0.65, lower.tail=FALSE)
+
+```
+
+# 11.
+
+Torej zanima nas velikost vzorca pri $\pi=0.65$, da bo delež zavrnjenih ničelnih hipotez $0.8$
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+x <- 1000
+n <- 80:200
+pi_1 <- 0.65
+
+
+tmp_func2 <- function(x, n, pi_){
+    tmp <- rbinom(x, n, pi_)
+    sum(tmp <= 50) + sum(tmp >= 67)
+}
+
+storage <- rep(NA, length(n))
+
+for (n_ in n) {
+    storage[n_-79] <- mean(replicate(1000, tmp_func2(x, n_, pi_1)))
+}
+
+min(which(storage > 799)) + 79
+
+```
+
+Se pravi, da bo delež zavrnitev vsaj $0.8$, pri $\pi=0.65$, mora biti velikost vzorca vsaj $109$.

@@ -2,7 +2,7 @@
 title: "Domača naloga 1"
 subtitle: "Viri podatkov"
 author: "Alen Kahteran"
-date: "21. 02. 2020"
+date: "24. 02. 2020"
 output:
   pdf_document:
     fig_caption: no
@@ -19,10 +19,35 @@ editor_options:
 knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
 ```
 
-# asdf
+# Kodeks ravnanja evropske statistike
 
-asdfasdf
+Kodeks ravnanja evropske statistike je dokument, ki predvsem opisuje načela za zagotavljanje korektnega dela, poročanja, ustrezne kakovosti, itd.
 
-## asdfasdfasdf
+Vsebuje 16 načel, ki se navezujejo na institucionalno okolje, statistične procese in statistične rezultate.
 
-asdfasdfasdfasdf
+Prvih 7ih načel, ki spadajo pod del institucionalnega okolje, opisujejo strokovno neodvisnost (predvsem od politike), usklajevanje in sodelovanje med različnimi statističnimi uradi, pooblastilo za zbiranje podatkov in dostop do podatkov (pravno/zakonsko omogoča statističnim organom dostop do informacij iz različnih podatkovnih virov - Upravni organi, podjetja, gospodinjstva in širša javnost), ustreznost virov, zavezanost kakovosti, statistično zaupnost in varstvo podatkov, nepristranskost in objektivnost
+
+Naslednja 4 načela so vezana na statistične procese z namenom zagotavljanja dobre metodologije, ustreznih statističnih postopkov, razumne obremenitve dajalcev podatkov ter stroškovne učinkovitosti.
+
+Zadnjih 5 načel se navezuje na statistične rezultate. Govorijo o ustreznosti, točnosti in zanesljivosti, pravočasnosti in točnosti objavljanja, skladnosti in primerljivosti ter dostopnosti in jasnosti.
+
+\noindent
+1. "a-ha" moment, ki sem vesel da sem ga izvedel je, da lahko do "vseh" podatkov, ki jih zbirajo organi kot so EUROSTAT in SURS, dostopamo vsi za raziskovalne namene (s posebnimi pravili ali protokoli)
+
+# O neodvisnosti in ugledu uradne statistike
+
+Članek v sobotni prilogi opisuje problem razrešitve direktorja statističnega urada republike Slovenije. Opiše nekoliko pravno podlago, ki naj bi vladi dala možnost razrešitve direktorja, medtem ko se hitro pojavi težava v nepristranskosti in neodvisnosti institucije. Poleg tega se avtor še ustavi na temu, da kako zaradi potrebe dveh ekonometrikov (ki bi pravno morala počakati na objavo podatkov, saj institucija ne sme prednostno izkazovati rezultatov) je sedaj vsak podatek ki pride ven iz te institucije vprašljiv.
+
+\noindent
+2. "a-ha" moment, se je pojavil ob tem, da se lahko zakoni "povozijo" kot opisujejo v sobotni prilogi Dela. Kar se mi zdi v temu primeru, ko je potrebno zagotovaljati neodvisnost in nepristranskost, milo rečeno, neumno.
+
+# The Economist - Don't even ask!
+
+Članek v The Economist-u opisuje težavo neodgovarjanja na ankete za namene zbiranja podatkov za statistične analize. Težava se hitro pojavi v pristranskosti vzorca, saj zajamemo le tiste ki odgovorijo na ankete, ne pa tistih ki iz različnih razlogov ne. Pokazalo se je, da veliko tistih ki ne odgovorijo na ankete so bodisi iz revnejših bodisi iz bogatejših družin, medtem ko "srednji sloj" največkrat odgovarja na ankete. Podobno težavo so našli tudi v tem, da ljudje v stanovanjih redkeje odgovarjajo na ankete kot ljudje v hišah. Zato hitro naletimo na težavo. Te težave so poskusili rešiti na način da pridobijo podatke, ki se že zbirajo v drugih državnih uradih. Na manjšo težavo se naleti tudi tu, saj ni mogoče pridobiti vseh podatkov ki bi jih želeli imeti (npr. davčni podatki so podatki o tistih ki so zaposleni). Posledično se bo za nekatere podatke potrebno zanašati tudi na vedno manj zanesljive podatke iz anket.
+
+\noindent
+3. "a-ha" moment, ki se ga nisem zavedal, je to da delež anketirancev, ki odgovarjajo na ankete pada. Sam si nisem predstavljal da je temu tako, vendar me po drugi strani ne preseneča, saj se mi zdi da ljudje postajamo vedno bolj ozaveščeni glede svojih podatkov.
+
+Vprašanje za debato se navezuje na načelo 1.8 iz kodeksa ravnanja evropske statistike oz. celoten članek v sobotni prilogi.
+
+Kako bi posledično lahko zagotovili primerno pravno in zakonsko neodvisnost in nepristranskost SURSa?

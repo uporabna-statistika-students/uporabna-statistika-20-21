@@ -1,0 +1,785 @@
+---
+title: "Predavanje 1 - Urejanje podatkov"
+author: "Lara Lusa"
+params:
+  printcode: no
+  printresults: hide
+  figshow: hide
+  displaywarnings : FALSE
+  evalForSol: FALSE
+  d: !r Sys.Date() 
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, fig.show = params$figshow, warning = params$displaywarnings, eval=params$evalForSol)
+```
+
+```{r, message = FALSE, warning = FALSE}
+#nalozimo knjiznice, ki jih bomo uporabili
+require(ggplot2)
+require(lubridate)
+require(Hmisc)
+require(magrittr)
+require(dplyr)
+require(naniar)
+require(summarytools)
+
+``` 
+
+
+Hitra povezava na dokument z navodili za pripravo dokumentov z [R Markdown (cheat sheet)](https://github.com/rstudio/cheatsheets/raw/master/rmarkdown-2.0.pdf)
+
+
+Pripravimo dokument, ki vsebuje besedilo in kodo (.Rmd)  -> tvorimo ponovljivo porocilo (html, pdf, MS
+Word, RTF dokumenti). Uporabili bomo knjiznico `rmarkdown` za pretvorbo dokumentov. (Pretvorimo dokumente z uporabo menijev v RStudiu, ali z ukazom `rmarkdown::render`).
+
+
+Povezava na tecaj o uporabi [R markdown dokumentov - R Markdown from R Studio](https://rmarkdown.rstudio.com/lesson-1.html). 
+
+
+
+Dokument pripravljen z verzijo R-a `r getRversion()`. Danasnji datum je `r params$d`.
+
+
+
+### 1. Uvoz podatkov
+
+Zbrali smo podatke o studentih, ki so obiskovali predmet biostatistika. Uporabili smo spletno anketo, ki je objavljena [tukaj](https://goo.gl/forms/toE03ePl3IrZQ6fD2). Oglejte si obliko odgovorov [tukaj](https://docs.google.com/viewer?a=v&pid=sites&srcid=ZGVmYXVsdGRvbWFpbnxsYXJhc2ZpbGVzfGd4OjM3YmI2ZDJhZDExNTU0ZTk).
+
+Podatki, ki so bili prevedeni v anglescino in shranjeni v tekstovno datoteko, se nahajajo na spletni strani: 
+https://sites.google.com/site/larasfiles/Home/WhoAreYou.txt?attredirects=0&d=1
+
++ Podatke uvozite v R. Ce ima racunalnik dostop do interneta, podatkov ne shranjujte lokalno. (Namig: Morali boste vedeti, kako so locene spremenljivke, v tem primeru smo uporabili tabulator kot locilo.)
+
+
+```{r, eval=TRUE}
+my.data=read.delim("https://sites.google.com/site/larasfiles/Home/WhoAreYou.txt?attredirects=0&d=1")
+```
+
+
+
+### 2. Ogled podatkov (... transformacije, ciscenje,... )
+
+
+
++ Oglejte si podatke v R-u. 
+
++ Koliko spremenljivk je v datoteki? 
+
+```{r }
+ncol(my.data)
+```
++ Koliko studentov je odgovorilo na anketo?
+
+```{r}
+nrow(my.data)
+```
+
++  Oglejte si podatke in (na hitro) dolocite pri katerih spremeljivk je lahko prislo do napak pri uvozu podatkov. (Namig: uporabite funkcijo `str()` ali `head()`)
+
+```{r, echo=FALSE, results="hide"}
+str(my.data)
+head(my.data)
+```
+
+
+
++ Osredotocite se na spremenljivko **Starost (Age)**.  (Namig: do vrednosti te spremenljivke lahko dostopate z razicnimi ukazi: `my.data$"Age"`, `my.data[,2]`, `my.data["Age"]`, `my.data[,"Age"]`. S katerim od teh ukazov dobite `vector`? S katerim `data.frame`? Preverite s funkcijo `class`).
+
+
+
++ Katere vrste (`class`) je spremenljivka Age? (V shranjeni obliki podatkov)
+
+```{r}
+class(my.data$Age)
+```
+
++ Zakaj mislite, da je bila spremenljivka shranjena tako (s tem razredom)?
+
++ Koliko problematcnih podatkov je v datoteki? 
+
+```{r}
+table(my.data$Age)
+```
+
+
+#### 2.1 Odpraviti napake, urediti podatke (delo s faktorji)
+
++ Pretvorite spremenljivko **Age** v stevilsko spremenljivko (brez novega uvoza podatkov)
+(Namig: kaj dobite, ce uporabite ukaz `as.numeric(my.data$Age)`? Kako si razlozite rezultat?)
+
+
+
+```{r, warning=FALSE}
+
+table(my.data$Age, exclude=NULL)
+table(as.numeric(my.data$Age), exclude=NULL)
+
+#my.data$Age <- as.double(my.data$Age)
+
+#opazimo, da je bila problematicna vrednost (ki ni stevilka) pretvorjena v manjkajoco vrednost
+
+```
+
+
+
+
+
++ Kaj povzroca tezave pri spremenljivki Visina (**Height**)? 
+
++ Podajte seznam problematicvnih vrednosti in indeksov (stevilke vrstice, kjer se nahajajo problematicni podatki v datoteki).
+
+
+```{r, warning=FALSE}
+tmp.var=as.numeric(my.data$Height)
+#problematicne vrednosti
+my.data$Heigh[is.na(tmp.var)]
+
+#indeksi problematicnih vrednosti
+which(is.na(tmp.var))
+
+
+```
+
+
++ Napisite kodo, ki pretvori problematicne podatke v stevilke (kodiranje popravkov je zelo pomembno v praksi, ker na tak nacin ponovljivo precistimo podatke. Izognite se rocnim popravkom!)
+
+```{r, warning=FALSE}
+
+#odstranitev " cm" - obdrzimo samo vsebino pred predsledkom
+my.data$Height <- sapply(strsplit(my.data$Height, split=" "), function(x) x[1])
+
+
+#pretvorba "," v ".", uporabimo funkcijo chartr() ali gsub() 
+my.data$Height <- as.numeric(chartr(",", ".", my.data$Height))
+
+
+my.data$Height[is.na(tmp.var)]
+
+
+```
+
+In uporabimo podobni popravek tudi za problematicno vrednost za starost.
+
+```{r, warning=FALSE}
+
+#odstranitev " cm" - obdrzimo samo vsebino pred predsledkom
+my.data$Age <- as.numeric(sapply(strsplit(my.data$Age, split=" "), function(x) x[1]))
+``` 
+
+
++ Zakaj je `options(stringsAsFactors = FALSE)` sedaj privzeta vrednost v R-u in je bila tudi prej tako popularna izbira?). Kako bi lahko resili problem, ce bi uporabili opcijo `stringsAsFactors=TRUE` v funkciji `read.delim`?
+Uporabite `stringsAsFactors = TRUE` in oglejte si razlike pri vnesenih podatkih. 
+
+
+
+```{r, warning=FALSE}
+my.data2 <- read.delim("https://sites.google.com/site/larasfiles/Home/WhoAreYou.txt?attredirects=0&d=1", stringsAsFactors = TRUE)
+
+my.data2$Age <- as.numeric(as.character(my.data2$Age)) #moramo najprej pretvoriti faktor v character
+#ustvarimo spremenljivko, ki pretvori faktor najprej v character in potem v stevilsko spremenljivko. Problematicne vrednosti postanejo manjkajoce vrednosti NA
+
+table(my.data2$Age, exclude=NULL)
+#opazimo, da je bila problematicna vrednost (ki ni stevilka) pretvorjena v manjkajoco vrednost
+
+
+
+
+```
+
+
++ [Tukaj](http://simplystatistics.org/2015/07/24/stringsasfactors-an-unauthorized-biography/
+) lahko preberete zakaj je bilo v R-u privzeto stringsAsFactors=TRUE. [Tweet](https://twitter.com/sasantorico/status/649419012548395008)
+
+
+
+
+
+
+
++ Preciscena verzija podatkov je shranjena [tukaj](https://sites.google.com/site/larasfiles/Home/WhoAreYou_Clean.txt?attredirects=0&d=1). Povezava: https://sites.google.com/site/larasfiles/Home/WhoAreYou_Clean.txt?attredirects=0&d=1
+
+
+Uvozite novo verzijo podatkov in delajte s to verzijo.
+
+
+
+```{r}
+my.data <- read.delim("https://sites.google.com/site/larasfiles/Home/WhoAreYou_Clean.txt?attredirects=0&d=1", stringsAsFactors = TRUE)
+```
+
+
++ Oglejte si spremenljivko **Pet** (oglejte si tudi spletno anketo).  Zakaj bi bilo tezko analizati to spremenljivko? 
+
+
+```{r}
+table(my.data$Pet)
+```
+
++ Uredite nivoje faktorja **Pet** tako, da bo ma?ka (Cat) prvi nivo.
+
+```{r}
+my.data$Pet <- relevel(my.data$Pet, ref="Cat")
+```
+
+
+
++ Uredite nivoje faktorja **Pet** po frekvenci  (naj bo najpogostejsi nivo 1., 2. najpogostesi 2., itd)
+
+```{r}
+
+my.data$Pet <- factor(my.data$Pet, levels=names(sort(table(my.data$Pet), decreasing=TRUE)))
+
+```
+
+
+
+
+
+
+
+
+
++ Kako bi pretvorili spremenljivko **Pet** (v R-u), ce bi jo zeleli analizirati (na primer, ce bi zeleli vedeti, koliko studentov ima posamezno zival ali oceniti povezanost med zivaljo in visino lastnika, itd)?
+
+```{r}
+#pretvorimo od factor v character
+tmp.var <- as.character(my.data$Pet)
+#locimo razlicne odgovore
+tmp.list <- strsplit(tmp.var, split=", ")
+
+#levels
+levels(as.factor(unlist(tmp.list)))
+
+#pretvorimo Ne v "no", vemo, da je "Ne" "sam" 
+tmp.list <- lapply(tmp.list, function(x) {
+  which.no <- which(x=="Ne")
+  if(length(which.no)>0)
+    x[which.no]="no"
+  return(x)
+    }
+)
+
+#levels
+my.levels <- levels(as.factor(unlist(tmp.list)))
+num.old.var=ncol(my.data)
+
+
+
+#tvorimo nove spremenljivke, ena za vsak nivo, za vsak "level" preverimo, ali je vkljucen
+for(i in 1: length(my.levels)){
+#determining if the level is included
+  my.data[,ncol(my.data)+1] <- sapply(tmp.list, function(l) my.levels[i] %in% l)
+  #assigning yes/no labels and storing as factors
+  my.data[,ncol(my.data)] <-factor(my.data[, ncol(my.data)], labels=c("No", "Yes"))
+  }
+
+dimnames(my.data)[[2]] <- c(dimnames(my.data)[[2]][1:num.old.var],
+  #ADDING THE NEW VAR NAMES
+  paste0("Pet", my.levels)
+  )
+
+
+```
+
+
++ Katera je najpogostejsa zival? Napisite (ponovljiv) ukaz, ki bo izpisal vrsto zivali.
+
+
+```{r}
+
+#stevilo studentov s posamezno zivaljo, od najpogostejse do najmanj pogoste
+my.counts <- sort(apply(my.data[,c(num.old.var+1):ncol(my.data)], 2, function(x) sum(x=="Yes")), decreasing=TRUE)
+
+names(my.counts[1])
+
+```
+
+
+
+
+
+
+
++ Koliko studentov ima macko in psa?
+
+```{r}
+sum(my.data$PetCat=="Yes" & my.data$PetDog=="Yes")
+```
+
+
+
+
+
+### 3 Delo s podskupino podatkov (subsetting)
+
+
++ Ustvarite novo datoteko, kjer so vsebovane samo studentke veterinarske fakultete. Uporabite ukaze, ki so vkljuceni v osnovnem R-u (base R) in ukaz `filter` iz knjiznice `dplyr`.
+
+```{r}
+#funkcije iz osnovnega R-ja
+my.data.vet <- subset(my.data, my.data[ ,"Faculty"]=="Veterinary" & Sex=="female")
+
+
+#dplyr, tidyverse
+my.data.vet.2 <- dplyr::filter(my.data, Faculty=="Veterinary", Sex=="female")
+
+#preverite, da smo izbrali iste podatke, z razlicnimi ukazi
+
+#in da so rezultati isti tudi z naslednjim ukazom
+my.data.vet.3 <- dplyr::filter(my.data, Faculty=="Veterinary" & Sex=="female")
+
+
+```
+
++ Koliko jih je?
+```{r}
+nrow(my.data.vet)
+```
+
+
++ Oglejte si spremenljivko **Pet** za to podskupino. Koliko nivojev ima spremenljivka?
+
+```{r}
+nlevels(my.data.vet$Pet)
+```
+
++ Odstranite nivoje, ki imajo frekvenco 0 (prazne nivoje).
+
+```{r}
+my.data.vet$Pet <- droplevels(my.data.vet$Pet)
+
+#alternative 1
+#my.data.vet$Pet <-my.data.vet$Pet[, drop=TRUE] 
+
+#alternative 2
+#my.data.vet$Pet <-as.character(my.data.vet$Pet)
+#my.data.vet$Pet <-factor(my.data.vet$Pet)
+
+
+
+```
+
+
+
+
+
++ Ustvarite podskupino podatkov, kjer so vkljuceni studentje, ki imajo vsaj 1 prijatelja na Facebook-u (spremenljivka Friends.on.Facebook) ali ki niso odgovorili na vprasanje. Bodite pozorni, da ne bosti izkljucili studente, ki niso odgovorili na vprasanje!
+
+
+```{r}
+
+#z osnovim R-om
+my.data.FB <- my.data[is.na(my.data$Friends.on.Facebook) | my.data$Friends.on.Facebook>0,]
+
+#z dplyr-jem
+my.data.FB1 <- dplyr::filter(my.data, is.na(Friends.on.Facebook) | Friends.on.Facebook>0)
+
+#primerjajte z rezultatom naslednjega ukaza
+my.data.FB2 <- dplyr::filter(my.data, Friends.on.Facebook>0)
+
+
+```
+
+
+
++ Ustvarite matriko `x`, ki vsebuje vrednosti od 1 od 9, ima 3 vrstice, v prvi vrstici so vrednosti 1, 2, 3, v drugi 4, 5, 6, v tretji 7, 8 in 9. Naj bodo stolpci poimenovani "A", "B" in "C". Ustvarite novo **matriko** `x.new`, ki vsebuje samo vrstice, kjer je vrednost za A enaka 1. Preverite, da je razred (class) novega predmeta matrika.
+
+```{r}
+x <- matrix(c(1:9), ncol=3, nrow=3, byrow=TRUE)
+dimnames(x)[[2]] <- c("A", "B", "C")
+
+x.new <- x[x[, "A"] == 1, , drop=FALSE]
+class(x.new)
+
+
+#primerjajte z
+x.new <- x[x[, "A"] == 1, ]
+class(x.new)
+
+
+
+
+
+```
+
+
+
++ Ustvarite datoteko studentk veterine, ki vsebuje samo studentke visoke 152 cm. Koliko je takih studentk? Ali je nova datoteka se vedno `data.frame`, ce uporabimo ukaz 
+
+`my.data.vet2 <- my.data.vet[my.data.vet$Height==152, ]`
+
+
+
+
+
+```{r}
+
+#stevilo studentk
+sum(my.data.vet$Height==152)
+
+#opcija drop=TRUE!
+my.data.vet2 <- my.data.vet[my.data.vet$Height==152,, drop=T]
+
+
+
+#deluje pravilno
+my.data.vet2 <- subset(my.data.vet, Height==152)
+
+#deluje pravilno
+my.data.vet2 <- my.data.vet[my.data.vet$Height==152,]
+
+
+```
+
+
+
+### 4 Delo s podatki s pomocjo funkcij v knjiznici dplyr in z osnovnim R-jem
+
+
++ Uredite gornje podatke glede na stevilo prijateljev na FB (od najvec do najmanj); ce je stevilo prijateljev enako, glede na visino (od najmanjse do najvisje).
+
+```{r}
+
+
+my.data.FB.ordered <- dplyr::arrange(my.data.FB, desc(Friends.on.Facebook),  Height )
+#ali enakovredno
+
+my.data.FB.ordered2 <- dplyr::arrange(my.data.FB, -Friends.on.Facebook,  Height )
+
+```
+
+
++ Izberite samo spremenljivke, ki se nanasajo na domace zivali.
+
+
+```{r}
+
+my.data.Pet <- dplyr::select(my.data, starts_with("Pet"))
+
+```
+
+
++ Ustvarite spremenljivko o telesni masi, poimenujte jo BMI in jo dodajte datoteki
+
+
+```{r}
+my.data <- dplyr::mutate(my.data, BMI = Weight/(Height/100)^2)
+
+#enakovredno z osnovnim R-jem
+my.data$BMI <-my.data$Weight/(my.data$Height/100)^2
+
+```
+
+
++ Izracunajte povprecni BMI za zenske in moske 
+
+
+```{r}
+#osnovni R
+mean.BMI <- tapply(my.data$BMI, INDEX=my.data$Sex, mean, na.rm=TRUE)
+
+#dplyr
+tmp.data <- my.data %>% dplyr::group_by(Sex) 
+mean.BMI2 <- dplyr::summarise(tmp.data, mean(BMI, na.rm = TRUE))
+
+
+```
+
+
++ Izracunajte povprecni BMI za zenske in moske znotraj vsake fakultete in porocajte tudi standardni odklon in stevilo studentov v vsaki skupini. Rezultate uredite glede stevilo studentov v vsaki skupini.
+
+
+```{r}
+#dplyr
+tmp.data <- my.data %>% dplyr::group_by(Sex, Faculty) 
+ dplyr::summarise(tmp.data, 
+                  count=n(),
+                  MeanBMI = mean(BMI, na.rm = TRUE),
+                  SdBMI =  sd(BMI, na.rm = TRUE)) %>% 
+                        arrange(-count)
+
+
+```
+
+
+
+#### Datumi
+
++ Dolocite, koliko casa je potekalo med oddajo prvega in zadnjega odgovora na anketo (NAMIG: pretvorite spremenljivko **TIMESTAMP** v datum, uporabite funkcijo `strptime`).
+
+
+
+```{r}
+
+#pretvorba datumov
+my.data$Timestamp <- strptime(as.character(my.data$Timestamp), "%m.%d.%Y %H:%M:%S")
+
+#prvi odgovor
+my.data$Timestamp[1]
+
+
+#razlika
+
+diff <- my.data$Timestamp[2] - my.data$Timestamp[1]
+  
+
+diff
+```
+
+
+
++ Narisite graficno porazdelitev datumov izpolnjevanja anket
+
+```{r}
+
+hist(my.data$Timestamp, breaks="quarters", freq=TRUE, xlab="Datum", ylab="Frekvenca")
+
+#R ne uporabi navadnega ukaza za histogram, temvec hist.POSIXt 
+
+
+``` 
+
+
++ Narisite porazdelitev tudi s pomocjo funkcij, ki so vkljucene v ggplot2
+
+```{r, message = FALSE, warning = FALSE}
+
+#library(ggplot2)
+#library(lubridate)
+
+#moramo pretvoriti 
+ggplot(my.data, aes(lubridate::as_date(Timestamp))) +  geom_histogram(binwidth = 15) + labs( x= "Datum", y = "Frekvenca", title="Porazdelitev datumov izpolnjevanja anket")
+
+
+``` 
+
+
+
++ Dolocite, koliko casa je potekalo med oddajo prvega in drugega odgovora na anketo (NAMIG: pretvorite spremenljivko **TIMESTAMP** v datum). Primerjajte izpis s prejsnjim rezultatom. Dolocite razliko v istih enotah za obe primerjavi. 
+
+```{r}
+
+#razlika
+
+diff <- strptime(as.character(my.data$Timestamp[2]), "%m.%d.%Y %H:%M:%S") -
+  strptime(as.character(my.data$Timestamp[1]), "%m.%d.%Y %H:%M:%S")
+
+
+#razlika je izracunana v urah! 
+diff
+
+
+
+#razliko izrazimo v letih 
+as.numeric(diff, units = "days")
+
+```
+
+
+
+### 5 Graficna predstavitev podatkov - nekaj primerov z osnovnim R-om in z ggplot2
+
+
++ Graficno predstavite tezo studentk veterine glede na njihovo visino. Oznacite osi v slovenskem jeziku in dodajte naslov. Premislite, kako bi lahko narisali podatke, da bi se izognili problema prekrivanja podatkov studentk, z natanko isto (samoporocano) tezo in visino. Vrisite tudi regresijsko premico in vpisite enacbo v grafikon (uporabite eno decimalno stevilko za koeficiente).
+
+```{r}
+with(my.data.vet, plot( jitter(Height), jitter(Weight),
+                       ylab="Teza (kg)", xlab="Visina (cm)", main="Studentke veterinarske fakultete"))
+
+my.coef=with(my.data.vet, lm(Weight~Height)$coef)
+
+abline(with(my.data.vet, my.coef), lty=2)
+
+text(x=min(my.data.vet$Height, na.rm=TRUE), y=max(my.data.vet$Weight, na.rm=TRUE),
+     adj =0 , 
+     labels= paste("Teza =", round(my.coef[1],1), "+",  sprintf("%.1f", my.coef[2]), "Visina")
+)
+```
+
+
++ Graficno predstavite podatke o zivalih (v enem grafikonu).
+
+```{r}
+
+#stevilo studentov s posamezno zivaljo, od najpogostejse do najmanj pogoste
+my.counts <- sort(apply(my.data[,c(num.old.var+1):ncol(my.data)], 2, function(x) sum(x=="Yes")), decreasing=TRUE)
+
+#imena, ki bodo uporabljena za barplot, locimo Pet od ostalega dela imena
+names.forbarplot=unlist(strsplit(names(my.counts), split="Pet"))
+names.forbarplot=subset(names.forbarplot, names.forbarplot!="")
+
+barplot(my.counts, names=names.forbarplot)
+```
+
+
++ Graficno predstavite podatke o tezi. Uporabite graficni prikaz za preucevanje, ali je mozno, da so studentje zaokrozili svojo tezo in pogosteje porocali nekatere vrednosti ("digit-preference").
+
+```{r}
+
+#uporabimo histogram, kjer je sirina razreda 1 kg, na tak nacin lahko dolocimo, ali je kaksna posamezna vrednost prisotna bolj pogosto, kot bi pricakovali ("spikes")
+hist(my.data$Weight, breaks = seq(0, max(my.data$Weight, na.rm = TRUE), by=1))
+
+
+#ukaz za ggplot2
+
+ggplot(my.data, aes(Weight)) + geom_histogram(binwidth=1)
+
+```
+
++ Graficno predstavite podatke o tezi za vsak spol posebej, s histogrami in s skatli z brki
+
+```{r}
+#najlazje to naredimo z uporabo ggplot
+ggplot(my.data, aes(Weight)) + geom_histogram(binwidth=2.5) + facet_grid(Sex~.) +  labs(y="Teza (kg)")
+ggplot(my.data, aes(Sex, Weight)) + geom_boxplot() + theme_bw()
+
+with(my.data, boxplot(Weight ~ Sex))
+grid()
+
+```
+
+
+
+#### Standardizacija spremenljivk in preverjanje enakosti
+
++ Standardizirajte tezo in visino  v datoteki, ki vsebuje vse studente (povprecje standardizirane spremenljivke je 0 in standardni odklon je 1). Ustvarite dve novi spremenljivki.
+
+
+```{r}
+
+my.data$WeightStand <- scale(my.data$Weight, center=TRUE, scale=TRUE)
+my.data$HeightStand <- scale(my.data$Height, center=TRUE, scale=TRUE)
+  
+  
+###### alternativno
+
+mean.attr <- apply(my.data[c("Weight", "Height")], 2, mean, na.rm=TRUE)
+sd.attr <- apply(my.data[c("Weight", "Height")], 2, sd, na.rm=TRUE)
+tmp1 <- sweep(my.data[c("Weight", "Height")], 2, mean.attr)
+tmp2 <- sweep(tmp1, 2, sd.attr, FUN="/")
+
+my.data$WeightStand=tmp2[,1]
+my.data$HeightStand=tmp2[,2]
+
+#verify
+apply(tmp2, 2, mean, na.rm=TRUE)
+
+#formally verify
+
+identical(apply(tmp2, 2, mean, na.rm=TRUE), c(0,0))
+
+#uporaba funkcije near iz knjiznice dplyr
+dplyr::near(apply(tmp2, 2, mean, na.rm=TRUE), 0)
+
+
+```
+
+
++ Formalno preverite, ali ste dobili pravilni rezultat (povprecje je natanko 0 in standardni odklon je 1) (NAMIG: s katero funkcijo boste preverili enakost? `identical`? `all.equal`? `==`? `dplyr::near``? poskusite s temi funkcijami in komentirajte rezultate.)
+
+
+```{r}
+
+identical(as.numeric(apply(tmp2, 2, mean, na.rm=TRUE)), c(0,0))
+
+all.equal(as.numeric(apply(tmp2, 2, mean, na.rm=TRUE)), c(0,0))
+
+all(as.numeric(apply(tmp2, 2, mean, na.rm=TRUE))== c(0,0))
+
+all(dplyr::near(apply(tmp2, 2, mean, na.rm=TRUE), 0))
+
+
+```
+
+
+
+
+
+
+### 6 Opisne statistike - nekaj primerov, kako opisati podatke
+ 
++ Izberite podskupino spremenljivk (Sex, Age, Height, Weight, Shoe.size, Eye.Color, Smoking, Videogames,  Faculty) in jih povzemite glede v tabeli, ki vsebuje smiselne opisne statistike. (V resitvah so predstavljene razlicni nacini porocanja opisnih statistik).
+
+
+
+```{r, results="markup"}
+
+tmp.data <- my.data %>% dplyr::select(Sex, Age, Height, Weight, Shoe.size, Eye.Color, Smoking, Videogames,  Faculty) 
+
+
+print(summary(tmp.data))
+
+
+print(summarytools::dfSummary(tmp.data, plain.ascii = FALSE, style = 'grid', graph.magnif = 0.75, 
+                valid.col = FALSE, tmp.img.dir = "/tmp" ), max.tbl.height = 500, method = "render")
+#str(share1)
+```
+
+
+
+
++ Dodatno, povzemite podatke glede na spol.
+
+
+
+
+
+```{r, results="markup"}
+
+print(dfSummary(tmp.data, plain.ascii = FALSE, style = 'grid', graph.magnif = 0.75, 
+                valid.col = FALSE, tmp.img.dir = "/tmp" ), max.tbl.height = 500, method = "render")
+#str(share1)
+```
+
+
+
+```{r, results="asis", message=FALSE, warning =FALSE , echo=FALSE}
+s <-
+  Hmisc::summaryM(
+    #wave+ 
+    Age + Height + Weight + Shoe.size + Eye.Color + Smoking + Videogames + Faculty ~ Sex,
+    data = my.data,
+    overall = FALSE,
+    test = FALSE
+  )
+
+Hmisc::html(
+  s,
+  caption = 'Overall characteristics by gender',
+  exclude1 = TRUE,
+  npct = 'both',
+  digits = 3,
+  prmsd = TRUE,
+  brmsd = TRUE,
+  msdsize = mu$smaller2
+)
+```
+
++ Povzemite stevilo manjkajocih vrednosti glede naslednjih spremenljivk:
+
+Age, Sex, Height,  Weight , Shoe.size , TV..hours.per.week., Internet..hours.per.week., Books..how.many.per.year., 
+Friends.on.Facebook,       Sleep..hours.per.night.
+
+Predstavite podatke graficno.
+
+```{r, message =FALSE, warning =FALSE , echo=FALSE}
+my.data %>%
+  dplyr::select(Age, Sex, Height,  Weight , Shoe.size , TV..hours.per.week., Internet..hours.per.week., Books..how.many.per.year., Friends.on.Facebook,       Sleep..hours.per.night.) %>%
+  gg_miss_var(show_pct = TRUE)
+
+#enakovredno lahko zapisemo 
+tmp.data <- dplyr::select(my.data ,   c(Age, Sex, Height,  Weight , Shoe.size , TV..hours.per.week., Internet..hours.per.week., 
+            Books..how.many.per.year., Friends.on.Facebook,       Sleep..hours.per.night.))
+
+
+ gg_miss_var(tmp.data, show_pct = TRUE)
+
+
+```
