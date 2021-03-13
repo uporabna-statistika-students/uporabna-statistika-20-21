@@ -1,0 +1,311 @@
+---
+output: html_document
+runtime: shiny
+---
+## Before we start
+
+
+
+Make sure that you are all set to start working on the exercises!
+
+
+Programs and packages that should be already installed on your computer
+
+   - R statistical environment. ([CRAN](http://cran.r-project.org/)).
+   - RStudio integrated development environment. ([RStudio web page](http://www.rstudio.com/products/rstudio/download/)).
+   - The `shiny` R package. (Installed via R console by issuing command `install.packages("shiny")`).
+   - The `devtools` R package. (Installed via R console by issuing command `install.packages("devtools")`).
+  -  For deploying apps to [shinyapps](https://www.shinyapps.io/)): connect your account to RStudio using the Tools->Global Options -> Publishing -> Publishing accounts
+   More information about the setup of the shinyapp accounts are available on the shinyapps.io web page. 
+ - Optional: install the rsconnect library to deploy the shiny apps from the command line with the deployApp() function.
+ 
+ 
+
+Make sure that you downloaded and unzipped the course material availabe on the web page of the class.
+
+To get started: 
+
+1. Start R or (preferrably) RStudio
+
+2. Load the shiny package: type `library(shiny)` in the R console.
+
+3. To make things easier, select the subdirectory **containing the exercises of the course material** as your working directory in R.
+
+For example, you can (appropriately modify and ) use the commands:  
+
+```
+# modify the path to match the location on your laptop
+my.wd="C:/Users/lara/Dropbox/AS2014_shiny_workshop/exercises" 
+#set the working directory
+setwd(my.wd)
+```
+
+or change your working directory using the RStudio menu bar (click on Session > Set Working Directory > Choose Directory... ).
+
+--------------------------------------------------------------------
+--------------------------------------------------------------------
+
+**IMPORTANT** There are two ways in which a shiny app can be prepared. By preparing two files (ui.r and server.r), stored in the same directory, or by including the content of these files in a single file, adding the command shinyapp(ui=ui, server=server) at the end of the file. Both methods are supported, this tutorial uses the first approach but you can find an example using the second approach (based on a single file) in the Example0/Example0 subdirectory.
+
+
+## Exercise 1
+
+The aim of Exercise 1 is to develop (and eventually deploy) an application that draws the **density function of a Gaussian distribution** (with arbitrary mean and standard deviation), which is customizable to some extent (the labels appearing on the axes and the color of the curve can be changed). The exercise will guide you step by step, you will start with an *empty* application and finish (hopefully) with an application that will look like [this one](http://lara.shinyapps.io/NormalDistribution). If you get lost in one of the assignments you can always open the files of the following assignment, which contain the solutions of the previous steps.
+
+
+
+#### Exercise 1.1: draw the N(0,1) density function 
+1. Open the ui.R and server.R scripts contained in the **exercise1.0 subdirectory**. The content of the files is the *minimal* content needed for a working app.
+2. Run the application. If you set the working directory correctly and loaded the shiny package, the command `runApp("exercise1.0")` should display the app in your browser. Use the command `runApp("exercise1.0", display="showcase")` to display the code within the browser. 
+3. In which file do you think that you will include the code that plots the density function?
+4. In which file will you include the code used to display the density function?
+5. Add the code that will produce the plot of the standard Gaussian density function (N(0,1)) for values in the interval (-4<x<4), and display it in the main panel of the app. 
+Save the changes in the code and check if everything works by running your app. 
+(Hint: in R you could use the `curve(dnorm, from=-4, to=4)` function included in the graphics package; in shiny remember to use the `renderPlot()` and `plotOutput()` functions. Save your graph in the output slot called "plotDensity") 
+
+6. The working code is included in the Exercise1.1 app. 
+
+*To continue with the exercises: you can go on and continue editing this app and include the changes in the ui.R and server.R files contained in the Exercise1.0 directory, or you can use the files with the updated solutions that we included in Exercise1.1, Exercise1.2, etc. directories.*
+
+
+
+#### Exercise 1.2: allow the user to specify the mean value
+
+1. Add a widget for selecting the mean value of the Gaussian density and assign it to an input slot called "meanValue". Allow for values included in the (-2, 2) interval, set the default value to 0.
+
+2. Plot the density function N(meanValue, 1).
+
+Hints: use the `numericInput()` widget, remember to use `input$meanValue` instead of `meanValue` in the server.r file. If you want to debug your app you can add a `browser()` expression within the server.R file. Similarly as in R, the execution of the app will stop at the line of code where the browser is called and you will be able to check the values of the objects appearing within your functions typing commands in the R console. 
+
+
+
+#### Exercise 1.3: allow the user to specify the standard deviation
+
+1. Add a widget for selecting the standard deviation of the Gaussian density and assign it to an input slot called "sdValue". Allow for values included in the (0, 2) interval, set the default value to 1.
+
+2. Plot the density function N(meanValue, sdValue).
+
+Hints: use the `sliderInput()` widget, remember to use `input$sdValue` instead of `sdValue` in the server.r file.
+
+3. Explore the effect of specifiying `animate=TRUE` in the `sliderInput()` widget.  
+Don't forget that the widgets appearing in the sidebar panel must be separated with commas in the `sidebarPanel()` function.
+
+
+
+#### Exercise 1.4: add a vertical line at the mean value (if selected by the user)
+
+1. Add a checkbox widget for selecting whether to plot a vertical line at the mean (set the defalut value to FALSE). Assign the choice to an input slot called "plotMean". 
+2. Add a vertical line at the mean, if "plotMean==TRUE".
+
+Hint: use the `checkboxInput()` widget. Vertical lines in R can be drawn using the `abline()` function. Make sure there is an "expression" inside `renderPlot()`.
+
+
+
+#### Exercise 1.5: add the possibility of choosing the color of the curve
+
+1. Add a menu to select the color of the curve and assign the selection to an input slot called "curveColor". Let the admissible values be: black (default), red and blue.
+2. Draw the curve using the selected color.
+
+Hint: use the `selectInput()` widget. The color of the curve can be changed using the `col` option in the `curve()` function.
+
+3. To visually separate the inputs, add horizontal lines between widgets on the sidebar menu using the `hr()` command.
+`hr()` is an HTML builder function included in shiny; see the other builders by typing `? builder` in R. 
+
+
+
+#### Exercise 1.6: enable the user to specify the title of the plot and the label of the y-axis.
+
+1. Enable the user to specify the title of the plot and the label for the y-axis; assign the choices to the input slots "plotTitle" and "verticalLabel". Set the default values to "A plot" and "probability density", respectively.
+
+2. Use the specified strings to label the y-axis and to define the title of the plot. 
+
+Hint: use the `textInput()` widget. In R the title of the plot and the labels of the y-axis can be specified using the `main` and `ylab` options within the  `curve()` function.
+
+
+#### Exercise 1.7: display a table that reports (a subset of) the x and y values displayed in the graph.
+
+1. Prepare a table with two columns that includes a subset of the x and y values displayed in the graph. Let x vary between -4 and 4, and the increment of the sequence be 0.1. Assign the table to an output slot called "tableDensity". Name the columns: "Value" and "Probability density".
+
+2. Display the table in the main panel, below the graph.
+
+Hints: in R a sequence of values can be easily generated using the `seq()` function. Use the `renderTable()` and `tableOutput()` functions to deal with the table in shiny.
+Don't forget that the output elements appearing in the main panel must be separated with commas in the `mainPanel()` function.
+
+
+
+#### Exercise 1.8: move the table in a separate tab. 
+
+1. Create a tabset panel with two tab elements - put the graph on the first and the table on the second tab. 
+2. Make the column with probability density values display 4 decimal places instead of 2. (Hint: pass the "digits" argument to xtable.)
+
+Hints: In shiny `tabsetPanel()` creates a tabset that contains `tabPanel()` elements. In this exercise the tabset will be included in the main panel. 
+
+
+
+#### Exercise 1.9: deploy your app on the web
+
+1. Type the command `library(rsconnect)` in the R console.
+2. Login into [shinyapps](https://www.shinyapps.io/login). Find the "tokens" section and click "Show" next to your token. Use the "Copy to Clipboard" button. Paste to R console.
+3. Issue command `deployApp(appDir="exercise1.8", appName="NormalDistribution")`. The code and required packages will get installed to the remote server. A web page will open with the app running remotely. 
+
+Hopefully, it should work. The app is available online on one of our accounts at this [address](https://lara.shinyapps.io/NormalDistribution/).
+
+If you have not signed up for a shinyapps account you can exchange your app with collegues that have R installed on their computer sending them the ui.R and server.R files.
+
+
+
+#### Exercise 1.9 and 1.99 (optional): update the displayed results only when an action button is pressed
+
+1. Include an action button in your app that assures that the results will be updated only when this button will be pressed. (This can be a very useful feature when the values of many parameters can be chosen, as it executes the code only when the user decides to - and not each time a the value of a parameter is changed).
+
+Hints: the action button can be included using the widget `actionButton()`. If you include a reference to input slot linked to the actionButton in your rendering expressions, these will be re-evaluated each time the value of the input slot changes (each time the user presses the button in the app). 
+This can be obtained by simply writing the name of the input slot within the rendering expression. 
+Use the function `isolate({})` in order to avoid that the rendering expression is re-executed when the other input slots change. 
+All the commands embedded in {} will be executed only when the input slots included in the reactive expression, and not embedded in the non-reactive scope created by isolate, will change.
+
+The same result can be more easily achieved using the `submitButton()` widget. 
+
+2. Add a logo to your app. 
+
+Hint: the images must be saved in a subdirectory called (mandatorily) www. They can be included in the user interface using the `img()` HTML builder function (for example, with the code:  `img(src="nameOfTheFile", height = ..., width = ...)`).
+
+The solutions can be seen  using the `runApp(appDir="exercise1.9optional", display="showcase")` command - or looking into the ui.R and server.R files.
+
+See for yourself what is the difference between `exercise1.9optional` and `exercise1.99optional`.
+
+--------------------------------------------------------------------
+--------------------------------------------------------------------
+
+## Exercise 2
+
+The aim of exercise 2 is to create an app that upoads a data file, displays the uploaded data as a sortable table, displays data and allows you to download a subset of the data; moreover, you will define an input widget that depends on the other inputs. The result can be seen using the `runApp(appDir="exercise2.5")` command or see it online at this [address](https://lara.shinyapps.io/Exercise2/).
+
+The data that you can upload as test data are in csv format (comma separated values) and stored in the **exercise2.0** subdirectory (CompanyValuations.csv file). 
+
+Modify the server.R and ui.R files stored in the **exercise2.0** subdirectory  to solve the exercises.
+
+
+
+#### Exercise 2.1: create an app that uploads the data from a csv file and displays a table containing the data.
+
+1. Include a file upload widget in the user interface and assign the input to an input slot called "uploadedFile". 
+2. Effectively import the data in R and store its content in a reactive object called "data".  
+
+Hints: use the `fileInput()` widget to upload the file; see details of the fileInput() function in its help to figure out where/how the file is uploaded. In R you can use the `read.csv2()` function to read a csv file. Don't forget that the uploaded data must be **reactive**.
+
+3. Prepare a table containing the uploaded data and display it on the user interface. 
+
+Hints: use the `dataTableOutput()` function to display an output slot table created with the `renderDataTable()` function.
+
+
+
+#### Exercise 2.2: create a graphical representation of a specific variable
+
+1. Organize the outputs in the main panel using tabsets. In the second tab display a graphical representation of the "ValuationInEuros variable". Here you can assume that the name of the variable is fixed: all the users will use exactly the same name in their data. 
+
+Hints: remember that data are reactive. Functions that you might be using: `renderPlot()`, `plotOutput()`. 
+The variable in the data reactive expression will be assessed using the `data()$ValuationInEuros` expression. In R you can plot the variable using `barplot()`, `hist()` or `boxplot()` functions (we used barplot).
+
+
+
+#### Exercise 2.3: create a widget with which you will select the variable that will be graphically displayed
+
+Hints: The widgets in the user interface that depend on some of the other inputs (or outputs) can be defined in the server.R function, using the `renderUI()` function. Within the `renderUI()` function you can use the widgets that you are already familiar with (like `selectInput()`, etc.). See the help of the function for details.
+
+
+1. Create a reactive function called "variableNames", which returns the names of the variables of the uploded data. 
+2. (in server.R!) Create a widget and assign it to a slot called "variableSelection" (use renderUI). The widget menu should use `selectInput()` and offer the names of the variables as options (saved in the "variableNames" component). The selected variable should be saved into a slot called "selectedVariable". 
+3. Add the created menu to the sidebar using the `uiOutput()` function. 
+4. Modify the script used to plot the `data()$ValuationInEuros` variable to display the selected variable (Hint: Use [] for subsetting data().)
+
+
+
+#### Exercise 2.4: add a "submit button" and allow the user to download the data (with tab delimited format)
+
+1. add an action button that will make sure that the code of the app is executed only when this button is pressed (reactivity will "wait" until the user clicks the button).
+
+Hints: use the `submitButton()` widget, which will handle easily the problem (you could use the `isolate()` functionalities introduced in Exercise 1.9, but it would be more cumbersome).
+
+2. Add a widget that will allow the user to download the data using a tab delimited format.
+
+Hints: prepare the data using the `downloadHandler()` function in server.R (see help for details), assign the output component to an object called "downloadData". Within the function you can use the `write.table()` function with the option `sep="\t"` to prepare the data in tab delimited format ready for downlowad. In ui.R use the `downloadButton()` widget to allow the user to download the file prepared with the `downloadHandler()` function.
+
+Hint: the download handler functionality is one of the features that does not work well in all the browsers. If you don't get an error in the app but the file does not download you might try using a different browser (for example, in our tests the browser within RStudio did not handle correctly the download, while Chrome and Firefox did).
+
+3. Give the user the possibility of downloading also a plot (add the option in the tab where the plot appears).
+
+Hint: you can use almost the same code used to download the data, only the contents of the `downloadHandler()` function (content slot) will be changed. In R we can prepare files containing graphs with commands like 
+
+```
+png(filename=file)
+plot(...)
+dev.off()
+```
+Here you can use a similar approach (and use a different graphics device, if you want).
+
+
+
+#### Exercise 2.5: get rid of the annoying error messages that are displayed before uploading the data
+
+Before data are uploaded error messages are displayed ("Error: 'file' must be a character string or connection"); the reason is that the R server tries to load the data. 
+
+1. Try to get rid of this messages.
+
+Hint: you can add a control condition in the function that reads the data. The control can be based on `is.null(input$uploadedFile)`.
+
+2. Change the file type of the saved data: use `write.csv2()` instead of `write.table()`.
+
+You can now deploy your app online:
+
+`deployApp("exercise2.5", appName="Exercise2")`
+(the command should work if your shinyapps account works).
+
+--------------------------------------------------------------------
+--------------------------------------------------------------------
+
+## Exercise 3
+
+In this exercise we will explore the possibility of building an interactive document that embeds a shiny application (*shiny markdown* document). You might have noticed that this document (HTML) incuded some interactive features, which are not available if you open the document outside of the RStudio environment. 
+
+These features are very useful if you want to allow your users to interact with a document that your prepared. This might be useful for teaching or for interactive data analysis.
+
+Interactive documents are based on R Markdown, a format which can accomodate text, executed R code and also include shiny applications (or part of them). To learn more, see [Interactive Documents](http://rmarkdown.rstudio.com/authoring_shiny.html).
+
+
+
+#### Exercise 3.1
+
+1. Use RStudio to open a new "shiny markdown" document.  File -> New file -> Rmarkdown. Select "Shiny" option and give the document a title. A template file will open with some demo code already in it. 
+2. Save the file to your drive with the .Rmd suffix. 
+3. Use the Run document command in Rstudio to execute the interactive document. 
+
+#### Exercise 3.2
+
+1. Change template file to run one of our apps (e.g., exercise 1.9). 
+2. Add to the template file another section "Scatterplot of the eruptions data", where you plot() the scatterplot of x=faithful\$eruptions, y=faithful\$waiting. Add two textInput() boxes, where the user can define/change the plot axis labels. 
+
+#### Exercise 3.3
+
+1. Remove the code refering to our embededd application (since it contains relative references, our next step otherwise won't work.).
+2. Try to deploy your app to shinyapp.io, using the "Publish Document" button in the Rstudio display pane. If all goes well, the app should open in a web browser, hosted on shinyapp.io.
+
+
+--------------------------------------------------------------------
+--------------------------------------------------------------------
+
+
+## Conclusion
+We hope you have learned something useful for your future work. 
+
+
+## Useful links
+
+The [shiny web page](http://shiny.rstudio.com/) provides very good tutorials and learning material. The [shiny cheatsheet](http://shiny.rstudio.com/articles/cheatsheet.html) is very useful once you get started.
+
+A good place to get inspired about the existing widgets is the [widget gallery](http://shiny.rstudio.com/gallery/widget-gallery.html) or the tutorial [Lesson #3](http://shiny.rstudio.com/tutorial/lesson3/), both available on the shiny web page.
+
+If you are interested in changing the layout of the user interface, there are many ways in which you can do it.
+You can read more about it in the [layout guide](http://shiny.rstudio.com/articles/layout-guide.html) published on the shiny web page.
+
+
+To learn more about interactive documents and R Markdown, see [Interactive Documents](http://rmarkdown.rstudio.com/authoring_shiny.html).

@@ -1,0 +1,250 @@
+---
+title: "Domača naloga 6"
+subtitle: "Osnove teoretične statistike"
+author: "Alen Kahteran"
+date: "13. 03. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(ggplot2)
+```
+
+
+# 1.
+
+Opazovanja so časi med dvemi naročili. Kot je razvidno iz navodil so ti porazdeljeni kot
+
+$$
+X \sim exp(\lambda) \,,
+$$
+kjer $\lambda$ predstavlja stopnjo in je enaka $0.5$ ($30$ naročil na $60$ min $\rightarrow$ $2$ min na naročilo oz. $0.5$ naročila na minuto). Naslednji graf prikazuje porazdelitev časa med naročili.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+ggplot(data.frame(x=seq(0, 8, 0.01)), aes(x)) +
+    stat_function(fun=dexp,
+                  geom="line",
+                  args=list(rate=0.5)) +
+    labs(x="Čas med naročili",
+         y="Verjetnost")
+
+```
+
+Ker je cilj zabeležiti 50 različnih časov (torej 100 naročil, da bodo $X_i$ neodvisni), čigar vsota je porazdeljena po 
+
+$$
+\sum_{i=1}^{n}X_i \sim \Gamma(n,\lambda) \,,
+$$
+kar je tudi prikazano na spodnjem grafu.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+ggplot(data.frame(x=seq(50, 150, 0.01)), aes(x)) +
+    stat_function(fun=dgamma,
+                  geom="line",
+                  args=list(shape=50,
+                            rate=0.5)) +
+    labs(x="Vsota časov med naročili",
+         y="Verjetnost")
+
+```
+
+# 2.
+
+Želja je dokazati da se je število naročil povečalo. Torej, da se je čas med dvemi naročili zmanjšal (tj. $\lambda$). Se pravi ničelna domneva je
+
+$$
+H_0:\lambda=0.5
+$$
+
+in alternativna
+
+$$
+H_0:\lambda\neq0.5 \,.
+$$
+
+Domneva je enostavna dvostranska.
+
+# 3.
+
+Naj bo $T$ testna statistika za naš primer in je enaka
+
+$$
+T = \sum_{i=1}^{n}X_i \,.
+$$
+
+Predstavlja vsoto vseh časov med dvemi naročili. $T$ je porazdeljen pod $H_0$ po naslednji porazdelitvi
+
+$$
+T \sim \Gamma(n=50, \lambda=0.5)
+$$
+
+## a.
+
+Poglejmo si graf z območjem zavrnitve pri $\alpha=0.05$.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+ggplot(data.frame(x=seq(50, 150, 0.01)), aes(x)) +
+    stat_function(fun=dgamma,
+                  geom="line",
+                  args=list(shape=50,
+                            rate=0.5)) +
+    stat_function(fun=dgamma,
+                  geom="area",
+                  fill="steelblue",
+                  xlim=c(50, qgamma(0.025, shape = 50, rate = 0.5)),
+                  args=list(shape=50,
+                            rate=0.5))  +
+    stat_function(fun=dgamma,
+                  geom="area",
+                  fill="steelblue",
+                  xlim=c(qgamma(0.975, shape = 50, rate = 0.5), 150),
+                  args=list(shape=50,
+                            rate=0.5)) +
+    geom_vline(xintercept=qgamma(0.025, shape = 50, rate = 0.5), 
+               linetype="dashed", 
+               color="red") +
+        geom_vline(xintercept=qgamma(0.975, shape = 50, rate = 0.5), 
+               linetype="dashed", 
+               color="red") +
+    labs(x="Vsota časov med naročili",
+         y="Verjetnost")
+```
+
+Naše območje zavrnitve je $(0, 74.22]\cup[129.56, \infty]$.
+
+## b.
+
+Če so delavčeve domneve upravičene, pomeni da pričakujemo manjšo statistiko $T$ saj ta predstavlja vsoto časa med naročili. Torej če je več naročil, je čas med naročili krajši in posledično tudi njihova vsota.
+
+## c.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+lmbd <- seq(0, 1, 0.001)
+
+powahs <- pgamma(qgamma(0.975, shape = 50, rate = 0.5), 
+                 shape=50, 
+                 rate=lmbd) - 
+    pgamma(qgamma(0.025, shape = 50, rate = 0.5), 
+           shape=50, 
+           rate=lmbd)
+
+# which(powahs>=0.2) returns indexes where that holds true, we want minimum becuase we are interested at the limit where test power is 80%
+lmbd[min(which(powahs>=0.2))]
+```
+
+Torej, minimalni povprečni čas med dvemi naročili, da imamo $80\%$ moč testa, je enak $2.94$ min ($1/0.34 = 2.94$).
+
+# 4.
+
+$$
+\Lambda = \frac{\prod_{i=1}^{n}f_0(x_i, \lambda_0)}{\prod_{i=1}^{n}f_0\left(x_i;\hat{\lambda}\right)} 
+$$
+$$
+\Lambda = \frac{\lambda_0^nexp\left(-\lambda_0(\sum_{i=1}^{n}x_i)\right)}{\hat{\lambda}^nexp\left(-\hat{\lambda}(\sum_{i=1}^{n}x_i)\right)} 
+$$
+
+$$
+\Lambda = \frac{\lambda_0^n}{\hat{\lambda^n}}exp\left(\sum_{i=1}^{n}x_i(\hat{\lambda} - \lambda_0)\right)
+$$
+Malce preoblikujemo in kasneje vidimo da asimptotsko velja naslednje
+
+$$
+-2\ln\Lambda=-2\ln\left(\frac{\lambda_0^n}{\hat{\lambda^n}}\right) - 2\left(\sum_{i=1}^{n}x_i(\hat{\lambda} - \lambda_0)\right)
+$$
+
+$$
+-2\ln\Lambda= -2n(\ln\lambda_0 - \ln(\hat{\lambda})) - 2(\hat{\lambda}- \lambda_0)\sum_{i=1}^{n}x_i \sim \chi_1^2
+$$
+kjer sem izpustil postopek za izpeljavo $\hat{\lambda}$ po metodi največjega verjetja in dobil da velja $\hat{\lambda}=\frac{n}{\sum_{i=1}^{n}x_i}=\frac{1}{\bar{X}}$.
+
+## a.
+
+Območje zavrnitve je $[3.84, \infty]$.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+ggplot(data.frame(x=seq(0, 6, 0.001)), aes(x)) +
+    stat_function(fun=dchisq,
+                  geom="line",
+                  args=list(df=1)) +
+    stat_function(fun=dchisq,
+                  geom="area",
+                  fill="steelblue",
+                  xlim=c(qchisq(p=0.95, df=1), 6),
+                  args=list(df=1)) +
+    geom_vline(xintercept=qchisq(p=0.95, df=1), 
+               linetype="dashed", 
+               color="red")
+
+```
+
+## b.
+
+Velikost vzorca mora biti dovolj velika zaradi asimptotske lastnosti. Odločil sem se za $10000$ ponovitev z velikostjo vzorca $10000$, saj mislim da bi vse skupaj moralo delati dovolj dobro.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+set.seed(8)
+
+# generiramo vzorce iz eksponentne
+vzorci <- replicate(10000, rexp(10000, rate=0.5)) # rexp ker pod nicelno domneevo
+
+# zracunamo lambda strehe po vrsticah
+lambda_strehe <- 1/rowMeans(vzorci)
+
+# sestejemo po vrsticah
+vsota_vzorci <- rowSums(vzorci)
+
+# izracunamo statistike T
+statistike_t <- -2*10000*(log(0.5)-log(lambda_strehe)) - 2*(lambda_strehe-0.5)*vsota_vzorci
+
+ggplot(data.frame(x=statistike_t), aes(x)) +
+    geom_histogram(aes(y=..density..),
+                   bins=69) +
+    stat_function(fun=dchisq,
+                  geom="line",
+                  col="red",
+                  args=list(df=1)) +
+    xlim(c(0.01, 5)) # nujno 0.01 ker ce ne, narise tocko pri 1200 in ni razvidno.
+
+```
+
+## c.
+
+Pričakujemo majhne vrednosti testne statistike, saj bomo tako zavrnili ničelno hipotezo in rekli da je št. naročil na minuto različno od $0.5$.
+
+# 5.
+
+Pri obeh testih smo predpostavili da so $X_i$ neodvisni ($iid$), ter da je čas med naročili porazdeljen po eksponentni porazdelitvi. Razlika se je pojavila pri velikosti vzorca. Pri prvemu smo uporabili konstantno velikost $n=50$ medtem ko smo pri drugemu morali uporabiti neko veliko številko saj smo morali preverjati asimptotsko.
+
+# 6.
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+# generiramo vzorce iz eksponentne
+statistike_t_1 <- colSums(replicate(10000, rexp(50, rate=0.5)))
+
+# delez zavrnjenih t_1
+sum(statistike_t_1 >= qgamma(0.975, shape = 50, rate = 0.5) | statistike_t_1 <= qgamma(0.025, shape = 50, rate = 0.5))/10000
+
+# statistike_t so še od prejšnjega primera in so že izračunane
+sum(statistike_t >= qchisq(p=0.95, df=1))/10000
+
+```
+
+V obeh primerih vidimo da je velikost testa zelo blizu $\alpha=0.05$.
+

@@ -248,7 +248,7 @@ Poglejmo si graf $Exp\left(\lambda=\frac{1}{2}\right)$. Temnejši označen del p
 ```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center"}
 
 # drawing the above distribution
-ggplot(NULL, aes(x=c(0, 8))) +
+ggplot(data.frame(x=seq(0,8,0.01)), aes(x)) +
     stat_function(fun=dexp,
                   geom="area",
                   fill="steelblue",

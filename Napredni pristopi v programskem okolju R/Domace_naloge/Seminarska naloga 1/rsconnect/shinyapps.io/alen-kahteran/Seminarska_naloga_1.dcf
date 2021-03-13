@@ -1,0 +1,13 @@
+name: Seminarska_naloga_1
+title: Seminarska_naloga_1
+username:
+account: alen-kahteran
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3750305
+bundleId: 4322265
+url: https://alen-kahteran.shinyapps.io/Seminarska_naloga_1/
+when: 1615314224.88941
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|avtorja.txt|data_za_urh.rds|SN1.pdf|testing/app.R|testing/test.R

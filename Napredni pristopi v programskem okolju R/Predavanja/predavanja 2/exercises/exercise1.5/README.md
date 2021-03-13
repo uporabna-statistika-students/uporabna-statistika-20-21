@@ -1,0 +1,1 @@
+Enable the user to specify the title of the plot and the label of the y-axis.

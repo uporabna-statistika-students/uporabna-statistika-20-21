@@ -1,0 +1,299 @@
+---
+title: "Predavanje 1 - 2.del - Risanje podatkov s knjiznico ggplot2"
+author: "Lara Lusa"
+date: ''
+output:
+  html_document: default
+  pdf_document: default
+params:
+  printcode: no
+  printresults: hide
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, fig.height = 2, warning = FALSE)
+```
+
+
+Hitra povezava na dokument z navodili za pripravo grafikonov s knjiznico [ggplot2 (cheat sheet)](https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf)
+
+
+
+## Uvod v ggplot 2
+
+
+
+```{warning=FALSE, message=FALSE, echo=TRUE}
+library(ggplot2)
+library(gridExtra)
+```
+
+V Rmarkdown-u: uporabiti `warning=FALSE` in `message=FALSE`, da bi preprecili pojav nezelenih obvestil v dokumentu.
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+require(ggplot2)
+require(gridExtra)
+```
+
+Za risanje podatkov s knjiznico `ggplot2` morajo biti podatki vkljuceni v podatkovni okvir (data frame).  
+
+
+### Kaj sestavi graf
+
+* podatki (v data frame)
+
+* geometrijski elementi: `geom_*` (kjer lahko dolocimo: barve, velikosti, polozaje.). Vsak graf mora imeti vsaj en `geom`. Lahko vsebujejo esteticne lastnosti (`aes()`).
+Primeri `geom_*`
+    + `geom_histogram()`: histogram
+    + `geom_boxplot()`: okvir z rocaji
+    + `geom_points()`: tocke, razsevni diagram
+    + `geom_line()`: premica
+    + `geom_text()`: tekstovne oznake
+    + ....
+
+
+* mapiranje podatkov  `aes()`: tisto, kar lahko vidite 
+
+    + `mapping=aes(x=Sex, y=Height, ...)`
+
+    + dodatni parametri: color (zunanje barve), fill (notranje barve), position, shape (oblika tock), size, linetype, ...
+    
+    +  Posebnost: vrednosti, ki se lahko spreminjajo (in so odvisne od kaksne spremenljivke), so dolocene znotraj aes(), fiksne vrednosti izven aes()!
+Primer `aes(x=Height, color=Sex)` je v redu, `aes(x=Height, color="white")` ni! color bo specificiran izven aes!
+ 
+    + ponavadi je mapping dolocen znotraj geom, lahko pa tudi v osnovnem ggplot(), ce zelimo uporabiti povsod isti aes (najpogosteje je to v redu) 
+ 
+
+* pozicija (position): kako urediti geom, ki bi se nahajale na istem mestu, ponavadi specificirano znotraj geom (ampak izven aes())
+     +  `geom_point(position = "jitter")`
+     +  `geom_bar(position = "stack")`
+     +  `geom_bar(position = "dodge")`
+
+
+  
+* skale (scales)
+     + `scale_x_continuous()`, `scale_y_continuous()`: zvezne osi
+     + `scale_*_discrete()`: diskretne osi
+     + `scale_*_log10()`: logaritemska transformacija
+
+  
+* `coord_*` koordinatni sistem 
+     + `coor_cartesian()`:  kartezicni koordinatni sistem
+     + `coor_filp()`: obrne x in y osi v kartezicnem koordinatnem sistemu
+  
+
+* faceting: risanje po podskupinah
+    + `facet_grid(.~.)`
+    + `facet_wrap(.~.)`
+
+* tema: oblika grafikona
+    + `theme_classic()`
+    + `theme_bw()`
+
+  
+
+Dodatne uporabne moznosti
+
+* statisticne transformacije `stat()`  
+
+* imenovanje `labs(x="oznaka na x osi", y="oznaka na y osi", title="naslov")`  
+
+* legende `labs(x="oznaka na x osi", y="oznaka na y osi", title="naslov")`  
+
+
+
+### Primeri 
+
+* Uvozimo preciscene podatke o anketah. Uporabimo spodnji ukaz
+
+`my.data <- read.delim(file="https://sites.google.com/site/larasfiles/Home/Students1012.txt?attredirects=0&d=1")`
+
+
+
+```{r, echo=FALSE}
+
+my.data <- read.delim(file="https://sites.google.com/site/larasfiles/Home/Students1012.txt?attredirects=0&d=1")
+
+```
+
+
+#### Razsevni diagram
+```{r, echo=TRUE}
+ggplot(my.data, aes(Height, Weight, color=Sex))+geom_point(position="jitter")
+```
+
+```{r, echo=TRUE}
+ggplot(my.data, aes(Height, Weight, shape=Faculty))+geom_point(position="jitter")+scale_x_log10()+scale_y_log10()
+```
+
+
+```{r, echo=TRUE}
+ggplot(my.data, aes(Height, Weight, color=Sex))+geom_point(position="jitter")+geom_smooth()
+```
+
+
+#### Okvir z rocaji
+```{r, echo=TRUE, fig.height=3, fig.width=10}
+
+#library(gridExtra)
+
+p1 <- ggplot(my.data, aes(Sex, Height, color=Sex))+geom_boxplot()+coord_flip()
+
+p2 <- ggplot(my.data, aes(Sex, Height, color=Sex))+geom_boxplot(outlier.colour ="transparent") + geom_jitter(shape=1, position=position_jitter(0.2), col="gray")+coord_flip()
+
+p3 <- ggplot(my.data, aes(Sex, Height, color=Sex))+geom_boxplot(outlier.alpha = .2)+coord_flip()
+
+gridExtra::grid.arrange(p1, p2, p3, nrow=1)
+
+
+```
+
+
+
+#### Histogram
+
+```{r, echo=TRUE}
+
+ggplot(my.data, aes(Height, fill=Sex, col=Sex))+geom_histogram(position="identity", binwidth = 5, alpha=0.2)+labs(title="Histogram of height by sex")
+
+ggplot(my.data, aes(Height, fill=Sex, col=Sex))+geom_histogram(aes(y=..density..), position="identity", binwidth = 5, alpha=0.2)+labs(title="Histogram of height by sex")
+```
+
+#### Gostota
+
+```{r, echo=TRUE}
+ggplot(my.data)+geom_density(aes(Height, col=Sex))+labs(title="Density of height by sex")
+
+ggplot(my.data, aes(Height, fill=Sex))+geom_density(aes(fill=Sex), alpha=.2)+geom_histogram(aes(y=..density..), binwidth = density(my.data$Height)$bw, alpha=0.4)+labs(title="Density of height by sex")
+
+```
+
+
+```{r, echo=TRUE}
+ggplot(my.data, aes(Height, col=Eye.Color))+geom_density()+labs(title="Density by eye color")+scale_colour_manual(name = "Eye.color",values = c("black", "blue",  "brown", "green","gray" ))
+
+```
+
+
+#### Stolpicni diagram
+```{r, echo=TRUE}
+p1 <- ggplot(my.data, aes(Videogames, fill=Sex))+geom_bar(position="dodge")
+p2 <- ggplot(my.data)+geom_bar(position="dodge", aes(Videogames, y=..prop.., group=Sex, fill=Sex))
+p3 <- ggplot(my.data, aes(Videogames, fill=Sex))+geom_bar(position="fill")
+
+grid.arrange(p1, p2, p3, nrow=1)
+
+```
+
+
+
+#### crte
+```{r, echo=TRUE}
+
+ggplot(my.data)+stat_summary(mapping = aes(x = Sex, y = Weight),  fun.min = min, fun.max = max, fun = median)+ facet_wrap(Faculty~.)+theme_classic()
+```
+
+
+### Naloga
+
+
+
+
+* Narisite histogram visine vseh studentov (Namig: uporabili bomo `geom_histogram()`), naj bo sirina razredov 10 cm, barva stolpcev bela, na y-osi napisite "Frekvenca", na x-osi "Visina".
+     
+     + Korak 1: Povejte R-u, kaj so podatki in katero sprememenlivko zelite narisati 
+
+     `p <- ggplot(data=my.data, aes(x=Height))`
+    
+    
+    
+Ta ukaz ne bo narisal nobenega grafikona! Program se ne ve, katere vrste grafikona zelite narisati.
+     
+     + Korak 2: Dodajte nivo (layer),  s katerim pretvorite podatke v grafikonu (eksplicitno povejte, da zelite narisati histogram). `geom_*`, ki narise histogram se imenuje `geom_histogram()` Dodamo nivoje z znakom `+`. (Posebnost ggplot-a je, da mora biti  `+` znak v isti vrstici kot prejsnji del ukaza.)
+
+`ggplot(data=my.data, aes(x=Height)) + geom_histogram()`
+
+Ker smo shranili prvi grafikon z imenom `p`, lahko napisemo ukaz tudi kot 
+
+`p <- p + geom_histogram()`
+
+Za prikaz grafikona vtipkamo `print(p)` ali samo `p` v ukazno okno.
+
+
+```{r,   eval=FALSE}
+p <- ggplot(my.data, aes(x=Height)) 
+p2 <- p + geom_histogram()
+print(p2)
+
+```
+    + Korak 3: Naj bodo stolpci histograma bele barve (`fill`), sirina razredov 10 (`binwidth`) in naj bo zunanja barva stopcev crna (`color`). Namig: dolocite nastavitve znotraj funkcije `geom_histogram()`.
+
+
+```{r, echo=FALSE}
+ggplot(data=my.data, aes(Height))+geom_histogram(binwidth = 10, color="black", fill="white")
+```
+
+Posebnost: zakaj ne najdete opcije `binwidth` v `? geom_histogram()`?
+`binwidth` je opcija funkcije `stat_bin()`! Tisto, kar v resnici pocnemo je vsebovano v naslednjem ukazu. 
+
+`ggplot(my.data, aes(x=Height))  + geom_histogram(stat = "bin", binwidth=10)`
+
+ce bi zeleli narisati histogram gostote, bi uporabili ukaz, s katerim bi povedali, da zelimo povzeti podatke glede gostote (in ne glede razredov). 
+
+`ggplot(my.data, aes(x=Height))  + geom_histogram(stat = "density")`
+
+    + Korak 3b: Organizirajte podakte v frekvencno tabelo z razredi sirine 10 cm.
+
+`my.table=table(cut(my.data$Height, seq(150, 210, by=10)))` 
+
+`my.data.table=cbind.data.frame(Razred=names(my.table), Frekvenca=as.numeric(my.table) )`
+
+
+
+in narisite stolpicni diagram s podatki (`geom_bar`). Namig: ker so podatki ze urejeni v frekvencno tabelo, boste morali uporabiti `stat="identity"`.
+
+
+```{r, echo=FALSE}
+my.table=table(cut(my.data$Height, seq(150, 210, by=10))); my.data.table=cbind.data.frame(Razred=names(my.table), Frekvenca=as.numeric(my.table) )
+ggplot(my.data.table, aes(Razred, Frekvenca))+geom_bar(stat="identity")
+```
+ 
+    + Korak 4: Dodajte se slovenska imena na x in y osi. Pomagajte si funkcijo `labs()`.
+
+
+
+```{r,   eval=FALSE}
+ggplot(data=my.data, aes(Height))+geom_histogram(binwidth = 10, color="black", fill="white")+
+  labs(x="Visina", y="Frekvenca")
+
+```
+    + Korak 5: Spremenite lokacijo razredov, tako da bodo razredi se vedno sirine 10 cm, ampak naj bodo  zacetne tocke razredov 150cm, 160cm, itd.
+
+```{r,   eval=FALSE}
+ggplot(data=my.data, aes(Height))+geom_histogram(breaks=seq(150, 210, by=10), color="black", fill="white")+
+  labs(x="Visina", y="Frekvenca")
+
+```
+    + Korak 5b: Narisite histogram z obrnjenimi osmi (na x osi naj bodo frekvence, vrednosti visine na y osi).
+```{r,   eval=FALSE}
+ggplot(data=my.data, aes(Height))+geom_histogram(breaks=seq(150, 210, by=10), color="black", fill="white")+
+  labs(x="Visina", y="Frekvenca") + coord_flip()
+
+```
+
+    + Korak 6: Narisite histogram visine loceno glede spola studentov (Namig: `facet_grid()`).
+
+```{r,   eval=FALSE}
+ggplot(my.data, aes(Height))+geom_histogram(breaks=seq(150, 210, by=10), color="black", fill="white")+
+  labs(x="Visina", y="Frekvenca")+facet_grid(Sex~.)
+
+```
+    + Korak 7: Narisite histogram visine loceno glede spola in fakutete studentov (Namig: `facet_grid()`).
+
+```{r,   eval=FALSE}
+ggplot(my.data, aes(Height))+geom_histogram(breaks=seq(150, 210, by=10), color="black", fill="white")+
+  labs(x="Visina", y="Frekvenca")+facet_grid(Sex~Faculty)
+
+```

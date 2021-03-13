@@ -1,0 +1,13 @@
+name: naloga_1
+title:
+username:
+account: alen-kahteran
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3727648
+bundleId: 4295011
+url: https://alen-kahteran.shinyapps.io/naloga_1/
+when: 1614774339.63429
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: DN1.pdf|diamante/server.R|diamante/ui.R

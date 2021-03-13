@@ -1,0 +1,12 @@
+name: example0
+title: example0
+username:
+account: lara
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 760678
+bundleId: 1914054
+url: https://lara.shinyapps.io/example0/
+when: 1551707385.22911
+asMultiple: FALSE
+asStatic: FALSE

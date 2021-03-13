@@ -1,0 +1,1 @@
+In the main panel display a table that reports (a subset of) the x and y values displayed in the graph.

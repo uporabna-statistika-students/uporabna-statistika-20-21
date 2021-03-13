@@ -1,0 +1,1 @@
+Modifiy the ui.R and server.R files as to give the user the possibility of selecting the mean of the Gaussian distribution.

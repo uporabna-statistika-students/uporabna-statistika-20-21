@@ -1,0 +1,1 @@
+Create a tabset in the main panel with two tabs and move the table in the second tab. 

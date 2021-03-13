@@ -1,0 +1,1 @@
+Modifiy the ui.R and server.R files adding the possibility of selecting the standard deviation of the Gaussian distribution, using a slider (allowing for values in the (0,2) interval).
