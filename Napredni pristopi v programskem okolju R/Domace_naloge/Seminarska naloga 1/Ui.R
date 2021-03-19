@@ -1,178 +1,117 @@
-# define the user interface
-
 library(shinythemes)
-
 all_vars <- c("Znamka",
-     "Letnik",
-     "Kilometrina",
-     "Tip_motorja",
-     "Menjalnik",
-     "Motor",
-     "Moc",
-     "Cena")
+              "Letnik",
+              "Kilometrina",
+              "Tip_motorja",
+              "Menjalnik",
+              "Motor",
+              "Moc",
+              "Cena")
 
-fluidPage(theme = shinytheme("united"),
-    navbarPage("Zadnjih 100 avto.net podatki",
-               tabPanel("Info",
-                        mainPanel(
-                            p("Enostavna aplikacija za pregled podatkov zadnjih 100 oglasov na spletni strani avto.net, ki je namenjena objavljanju oglasov za prodajo avtov."),
-                            p("Ob zagonu aplikacije zajamemo zadnjih 100 oglasov iz surovega HTML-ja. Nato z Regex nastavitvami aplikacija ustrezno zajame podatke in jih nato preoblikuje v podatkovni okvir, ki jih prikažemo na več načinov."),
-                            p("V zavihkih je mogoče izbirati način analize podatkov (univariatno, multivariatno). V spodnji tabeli so pa opisane uporabljene spremenljivke."),
-                            tableOutput("desc_table")
-                            )
-                        ),
-               tabPanel("Univariatno",
-                        sidebarPanel(
-                            selectInput("var_x1",
-                                        "Spremenljivka:",
-                                        choices=all_vars,
-                                        selected="Znamka"),
-                            uiOutput('geom_selector'),
-                            conditionalPanel(condition = "input.geom_selected == 'density'",
-                                             checkboxInput("dens_mean_ind1",
-                                                           "Prikaz skupnega povprečja (rdeča)"),
-                                             checkboxInput("dens_med_ind1",
-                                                           "Prikaz skupne mediane (modra)"),
-                                             checkboxInput("dens_color_ind1",
-                                                           "Barva"),
-                                             conditionalPanel(condition="input.dens_color_ind1 == true",
-                                                              selectInput("dens_select1",
-                                                                          "Izbor spremenljivke:",
-                                                                          choices = NULL)
-                                                              )
+# User inference, kar uporabnik vidi.
+fluidPage(
+  # Tema spletne strani
+  theme = shinytheme("united"),
+  # Glavni naslov
+          navbarPage("Zadnjih 100 avto.net podatkov"),
+          # Okenčki, ki ti odprejo nove stvari.
+          tabsetPanel(
+            # Okenček informacije
+            tabPanel(title="Informacije",
+                     # Besedilo, ki opisuje spletno stran.
+                     p(""),
+                     p("Enostavna aplikacija za pregled podatkov zadnjih 100 oglasov na spletni strani avto.net, ki je namenjena objavljanju oglasov za prodajo avtov."),
+                     p("Ob zagonu aplikacije zajamemo zadnjih 100 oglasov iz surovega HTML-ja. Nato z Regex nastavitvami aplikacija ustrezno zajame podatke in jih nato preoblikuje v podatkovni okvir, ki jih prikažemo na več načinov."),
+                     p("V zavihkih je mogoče izbirati način analize podatkov (univariatno, multivariatno). V spodnji tabeli so pa opisane uporabljene spremenljivke."),
+                     # Tabela, ki opisuje uporabljene podatke, v Server ji je ime TabelaInfo.
+                     tableOutput(outputId="TabelaInfo")
+                     ),
 
-                                             ),
-                            conditionalPanel(condition = "input.geom_selected == 'ECDF'",
-                                             sliderInput("ecdf_slider_value1",
-                                                         "Prikazovalnik percentilne črte",
-                                                         0,
-                                                         1,
-                                                         0.5,
-                                                         step=0.01)
-                                             ),
-                            conditionalPanel(condition = "input.geom_selected == 'histogram'",
-                                             checkboxInput("hist_mean_ind1",
-                                                           "Prikaz skupnega povprečja (rdeča)"),
-                                             checkboxInput("hist_med_ind1",
-                                                           "Prikaz skupne mediane (modra)"),
-                                             sliderInput("hist_slider_value1",
-                                                         "Število stolpcev",
-                                                         1,
-                                                         50,
-                                                         30,
-                                                         step=1),
-                                             checkboxInput("hist_color_ind1",
-                                                           "Barva"),
-                                             conditionalPanel(condition="input.hist_color_ind1 == true",
-                                                              selectInput("hist_select1",
-                                                                          "Izbor spremenljivke:",
-                                                                          choices = NULL)
-                                                              )
-                                             ),
+            # Okenček za enodimenzionalni prikaz
+            tabPanel(title="Enodimenzionalno",
+                     # Stranski meni
+                     sidebarPanel(
+                       p(""),
+                       # Okenček z možnostmi spremenljivke za prikaz
+                       selectInput(inputId="var_x1", label="Spremenljivka", choices=all_vars, selected=NULL),
+                       # Okenček z možnostmi grafa za prikaz. Ta je odvisen od izbire spremenljivke v var_x1
+                       uiOutput(outputId="geom_selector"),
+                       # V odvisnosti od izbire pod geom_selected (Server) se pokažejo dodatna okenca, ki ponujajo izbire.
+                       conditionalPanel(condition="input.geom_selected == 'density'",
+                                        # Izbire, ki se pojavijo, če izberemo density.
+                                        checkboxInput(inputId="dens_mean_ind1", label="Prikaz skupnega povprečja [rdeča]"),
+                                        checkboxInput(inputId="dens_med_ind1", label="Prikaz skupne mediane [modra]"),
+                                        checkboxInput(inputId="dens_color_ind1", label="Barvni prikaz dodatne spremenljivke"),
+                                        # Če izberemo Barvni prikaz dodatne spremenljivke se pojavijo dodatne možnosti, tudi v odvisnosti od izbire grafa.
+                                        conditionalPanel(condition="input.dens_color_ind1 == true",
+                                                         selectInput(inputId="dens_select1", label="Dodatna spremenljivka", choices=NULL)
+                                                         )
+                                        ),
+                       conditionalPanel(condition="input.geom_selected == 'ECDF'",
+                                        # Izbire, ki se pojavijo, če izberemo ECDF
+                                        sliderInput(inputId="ecdf_slider_value1", label="Izbira percentila", min=0, max=1, value=0.5, step=0.01)
+                                        ),
+                       conditionalPanel(condition="input.geom_selected == 'histogram'",
+                                        # Izbire, ki se pojavijo, če izberemo histogram
+                                        checkboxInput(inputId="hist_mean_ind1", label="Prikaz skupnega povprečja [rdeča]"),
+                                        checkboxInput(inputId="hist_med_ind1", label="Prikaz skupne mediane [modra]"),
+                                        sliderInput(inputId="hist_slider_value_1", label="Število stolpcev", min=1, max=50, value=25, step=1),
+                                        checkboxInput(inputId="hist_color_ind1", label="Barvni prikaz dodatne spremenljivke"),
+                                        # Če izberemo Barvni prikaz dodatne spremenljivke se pojavijo dodatne možnosti, tudi v odvisnosti od izbire grafa
+                                        conditionalPanel(condition="input.hist_color_ind1 == true",
+                                                         selectInput(inputId="hist_select1", label="Dodatna spremenljivka", choices=NULL)
+                                                         )
+                                        ),
+                       conditionalPanel(condition="input.geom_selected == 'barplot'",
+                                        # Izbire, ki se pojavijo če izberemo barplot
+                                        checkboxInput(inputId="barplot_color_ind1", label="Barvni prikaz dodatne spremenljivke"),
+                                        # Če izberemo Barvni prikaz dodatne spremenljivke se pojavijo dodatne možnosti, tudi v odvisnosti od izbire grafa
+                                        conditionalPanel(condition="input.barplot_color_ind1 == true",
+                                                         selectInput(inputId="bar_select1", label="Dodatna spremenljivka", choices=NULL),
+                                                         radioButtons(inputId="bar_type1", label="Izbira barvanja", c("stack", "dodge", "fill"))
+                                                         )
+                                        )
+                     ),
+                     # Dodamo še graf, ki ga konstruiramo v Server, v glavno okno.
+                     mainPanel(plotOutput(outputId="plot_1d", height="700px"))
+                     ),
 
-                            conditionalPanel(condition = "input.geom_selected == 'barplot'",
-                                             checkboxInput("barplot_color_ind1",
-                                                           "Barva"),
-                                             conditionalPanel(condition="input.barplot_color_ind1 == true",
-                                                              selectInput("bar_select1",
-                                                                          "Izbor spremenljivke:",
-                                                                          choices = NULL),
-                                                              radioButtons("bar_type1", "Način barve:",
-                                                                           c("stack", "dodge", "fill")
-                                                                           )
-                                                              )
-                                             )
-                            ),
 
-                        mainPanel(plotOutput("plot_1d", height="700px")
-                                  )
-               ),
-               tabPanel("Multivariatno",
-                        sidebarPanel(
-                            selectInput("var_x2",
-                                        "Neodvisna spremenljivka:",
-                                        choices=all_vars[all_vars != "Znamka"],
-                                        selected="Letnik"),
-                            selectInput("var_y2",
-                                        "Odvisna spremenljivka:",
-                                        choices=all_vars,
-                                        selected="Cena"),
-                            p("Barva deluje če je vsaj ena spremenljivka številska"),
+            # Okenček za dvodimenzionalni prikaz
+            tabPanel(title="Dvodimenzionalno",
+                     sidebarPanel(
+                       # Okenci z možnimi izbirami neodvisne in odvisne spremenljivke.
+                       selectInput(inputId="var_x2", label="Neodvisna spremenljivka", choices=all_vars[all_vars != "Znamka"], selected="Letnik"),
+                       selectInput(inputId="var_y2", label="Odvisna spremenljivka", choices=all_vars, selected="Cena"),
+                       # Okvirček za možnost Barvnega prikaza dodatne spremenljivke.
+                       checkboxInput(inputId="color_ind2", label="Barvni prikaz dodatne spremenljivke", value=FALSE),
+                       p("[Barva deluje, če je vsaj ena od izbranih spremenljivk številska.]"),
+                       # Če zberemo Barvni prikaz dodatne spremenljivke se pojavi okence z izbiro spremenljivke za prikaz.
+                       conditionalPanel(condition="input.color_ind2 == true",
+                                        selectInput(inputId="var_color2", label="Dodatna (tretja) spremenljivka", choices=all_vars[all_vars != "Znamka"], selected=NULL)),
+                       # Okvirček za možnost dodatka krivulje za Glajenje.
+                       checkboxInput(inputId="smooth_ind2", label="Dodatek krivulje za glajenje", value=FALSE),
+                       # Če izberemo dodatek Glajenja, se odprejo tri možnosti za obkljukati izbiro glajenja, možna je samo ena izbira. Doda se tudi izbira senčenja.
+                       p("[Glajenje deluje, če sta obe spremenljivki številski.]"),
+                       conditionalPanel(condition="input.smooth_ind2 == true",
+                                        radioButtons(inputId="smooth_method2", label="Metoda glajenja", choices=list("lm","gam","loess")),
+                                        checkboxInput(inputId="smooth_se_ind2", label="Senčenje", value=FALSE))
+                     ),
+                     # Dodamo še graf, ki ga konstruiramo v Server, v glavno okno.
+                     mainPanel(div(style="position:relative", plotOutput(outputId="plot_2d", height="700px")))
+                     ),
 
-                            checkboxInput("color_ind2", "Barva", FALSE),
-                            conditionalPanel(
-                                condition = "input.color_ind2 == true",
-                                selectInput("var_color2",
-                                            "Izbor spremenljivke:",
-                                            choices=all_vars[all_vars != "Znamka"],
-                                            selected=NULL)),
-                            p("Glajenje deluje če sta obe spremenljivki številski"),
-                            checkboxInput("smooth_ind2", "Glajenje", FALSE),
-                            conditionalPanel(
-                                condition = "input.smooth_ind2 == true",
-                                radioButtons("smooth_method2", "Metoda:",
-                                             list("lm", "gam", "loess")),
-                                checkboxInput("smooth_se_ind2", "SE", FALSE)
-                            )),
+            # Okenček za napredni graf
+            tabPanel(title="Napredni graf",
+                     sidebarPanel(
+                       p("Z miško se premikaj po grafu in si oglej katere avtomobile predstavljajo posamezne točke.")),
+                     mainPanel(div(style="position:relative",
+                                   plotOutput(outputId="tmp_plot",
+                                              hover=hoverOpts(id="plot_hover", delay = 100, delayType = "debounce"), height="700px"),
+                                   uiOutput("hover_info")))
+                     )
 
-                        # define content of the main part of the page ####
-                        mainPanel(
-                            div(style="position:relative",
-                                plotOutput("plot_2d",
-                                           hover = hoverOpts(id ="plot_hover", delay = 100, delayType = "debounce"),
-                                           height="700px"),
-                                # uiOutput("hover_info")
-                                )
-                            )
-                        ),
-               tabPanel("tmp",
-                        sidebarPanel(p("teeeeeeext")),
-                        mainPanel(
-                            div(style="position:relative",
-                                plotOutput("tmp_plot",
-                                           hover = hoverOpts(id ="plot_hover", delay = 100, delayType = "debounce"),
-                                           height="700px"),
-                                uiOutput("hover_info")
-                            )
-                        ))
-    )
 
-    # # define type of page layout
-    # pageWithSidebar(
-    #
-    # # define content of page header ####
-    # headerPanel("Nastavitve"),
-    #
-    # # define content of left side of the page ####
-    # sidebarPanel(
-    #     selectInput("var_x",
-    #                 "Neodvisna spremenljivka:",
-    #                 choices=all_vars[all_vars != "Znamka"],
-    #                 selected="Letnik"),
-    #     selectInput("var_y",
-    #                 "Odvisna spremenljivka:",
-    #                 choices=all_vars,
-    #                 selected="Cena"),
-    #     checkboxInput("color_ind", "Barva", FALSE),
-    #     conditionalPanel(
-    #         condition = "input.color_ind == true",
-    #         selectInput("var_color",
-    #                 "Barva:",
-    #                 choices=all_vars[all_vars != "Znamka"],
-    #                 selected=NULL)),
-    #     checkboxInput("smooth_ind", "Glajenje", FALSE),
-    #     conditionalPanel(
-    #         condition = "input.smooth_ind == true",
-    #         radioButtons("smooth_method", "Metoda:",
-    #                     list("lm", "gam", "loess")),
-    #         checkboxInput("smooth_se_ind", "SE", FALSE)
-    #     )),
-    #
-    # # define content of the main part of the page ####
-    # mainPanel(
-    #     plotOutput("plot_plot", height="700px"),
-    #
-    #     )
-    )
-# )
+          )
 
+)

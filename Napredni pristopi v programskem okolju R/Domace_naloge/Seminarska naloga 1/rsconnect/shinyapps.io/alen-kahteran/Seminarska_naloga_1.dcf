@@ -5,9 +5,9 @@ account: alen-kahteran
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3750305
-bundleId: 4322265
+bundleId: 4365181
 url: https://alen-kahteran.shinyapps.io/Seminarska_naloga_1/
-when: 1615314224.88941
+when: 1616093702.59395
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: .RData|avtorja.txt|data_za_urh.rds|SN1.pdf|testing/app.R|testing/test.R
+ignoredFiles: .RData|avtorja.txt|data_za_urh.rds|SN1.pdf|testing/app.R|testing/Server.R|testing/test.R|testing/Ui.R
