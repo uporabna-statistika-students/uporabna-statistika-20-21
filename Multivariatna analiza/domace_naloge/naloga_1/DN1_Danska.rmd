@@ -44,7 +44,7 @@ library("gridExtra")
 
 Cilj naloge je pregledati in urediti podatke ter jih obenem pripraviti in pregledati njihovo primernost za nadaljne statistične analize. 
 
-Podatki so bili zbrani v sklopu Evropske družboslovne raziskave (European Social Survey – ESS) in sicer v 9. valu leta 2018. Podatki, ki jih bomo obravnavali so bili zbrani na Danskem in tako predstavljajo dansko prebivalstvo. Na različna vprašanja je odgovorilo okoli 1400 ljudi, na nekatera vprašanja več, na nekatera manj. Analizirali bomo različne vrednote, merjenje s tako imenovanimi Schwartzovimi spremenljivkami. 
+Podatki so bili zbrani v sklopu Evropske družboslovne raziskave (European Social Survey – ESS) in sicer v 9. valu leta 2018. Podatki, ki jih bomo obravnavali so bili zbrani na Danskem in tako predstavljajo dansko prebivalstvo. Na različna vprašanja je odgovorilo okoli 1400 ljudi, na nekatera vprašanja več, na nekatera manj. Razlog za to, je izbira spremenljivk, saj smo se pri večini osredotočili le na zaposlene osebe (delež takšnih je približno 89%). Analizirali bomo različne vrednote, merjenje s tako imenovanimi Schwartzovimi spremenljivkami. 
 
 \newpage
 
@@ -251,9 +251,9 @@ for (i in 1:length(Sch)) {
 }
 ```
 
-Na vprašanja o vsebinskih spremenljivkah je odgovorilo okoli 1552 ljudi, njihove vrednosti pa se v povprečju porazdeljujejo okrog 4.3 s standardnim odklonom 1.3. Spremenljivka skewness, ki meri asimetrijo porazdelitve je v povprečju enaka -0.49, kar pomeni, da so spremenljivke nekoliko asimetrične v levo vendar ne odstopajo bistveno od normalne porazdelitve, katera zavzame vrednost 0. Spremenljivka kurtosis meri sploščenost porazdelitve in je v povprečju enaka -0.49, kar nakazuje nekolikšno sploščenost porazdelitve, vendar pa tudi v tem primeru ne prihaja do bistvenejšega odstopanja od normalne porazdelitve.
+Na vprašanja o vsebinskih spremenljivkah je odgovorilo okoli 1552 ljudi, njihove vrednosti pa se v povprečju porazdeljujejo okrog 4.3 s standardnim odklonom 1.3. Mere asimetričnosti "skewness", so na intervalu $[-0.86, 0.10]$, kjer je večina na negativnem območju kar pomeni, da so spremenljivke nekoliko asimetrične v levo vendar ne odstopajo bistveno od normalne porazdelitve, katera zavzame vrednost 0. Mere sploščenosti "kurtosis" so na intervalu $[-0.99, 0.17]$, kar nakazuje nekolikšno sploščenost porazdelitev, vendar pa tudi v tem primeru ne prihaja do bistvenejšega odstopanja od normalne porazdelitve.
 
-Anketiranci so se v povprečju najbolj našli v svodobi, najmanj pa so naklonjeni vznemerljivosti. Med ostalimi opazimo, da najbolj prisegajo še na kreativnost, užitek in sprejemljivost. Najmanj pa so poleg vznemerljivosti naklonjeni še ponižnosti in drugačnosti. Odgovori so najbolj variirali pri spremenljivkah tradicija, drugačnost in varnost, najmanj pa pri svobodi in užitku. Gledano odstopanje od normalne porazdelitve v smeri asimetrije najbolj odstopa svoboda, ki je močno asimetrična v levo, že blizu meje, kjer ni več podobna normalni porazdelitvi. Najbolj pa je gledano simetrijo le tej podobna vznemerljivost, ki pa je po drugi strani skupaj z drugačnostjo najbolj sploščena in bi že skoraj lahko rekli, da se ne porazdeljujeta normalno. 
+Anketiranci so se v povprečju najbolj našli v svodobi, najmanj pa so naklonjeni vznemerljivosti. Med ostalimi opazimo, da najbolj prisegajo še na kreativnost, užitek in sprejemljivost. Najmanj pa so poleg vznemerljivosti naklonjeni še ponižnosti in drugačnosti. Odgovori so najbolj variirali pri spremenljivkah tradicija, drugačnost in varnost, najmanj pa pri svobodi in užitku. Gledano odstopanje od normalne porazdelitve v smeri asimetrije najbolj odstopa svoboda, ki je močno asimetrična v levo, že blizu meje, kjer ni več podobna normalni porazdelitvi (skewness = 0.86). Najbolj pa je gledano simetrijo le tej podobna vznemerljivost, ki pa je po drugi strani skupaj z drugačnostjo najbolj sploščena in bi že skoraj lahko rekli, da se ne porazdeljujeta normalno. 
  
 \newpage 
  
@@ -263,7 +263,7 @@ Anketiranci so se v povprečju najbolj našli v svodobi, najmanj pa so naklonjen
 
 Analizirajmo sedaj povezanost med spremenljivkami tematskega sklopa tj. vsebinskimi spremenljivkami. Pri tem si bomo pomagali s Pearsonovim koeficientom korelacije. Spremenljivke smo razdelili na približno dve skupini, ki sta med seboj najbolj povezani, kar nam bo v nadaljevanju služilo kot izhodišče za izdelavo dveh spremenljivk Likertovih lestvic.
 
-```{r, fig.height=5.7, fig.height=5.7, fig.cap="Povezanost vsebinskih spremenljivk (Pearson)"}
+```{r, fig.height=5, fig.height=5, fig.cap="Povezanost vsebinskih spremenljivk (Pearson)"}
 # ANALIZA POVEZANOSTI spremenljivk o vrednotah
 
 # Izračun korelacij med spremenljivkami.
@@ -278,7 +278,7 @@ vrstni.red <- c(1,3,4,6,10,5,8,9,2,7,11,12)
 plot.mat(R.p[vrstni.red, vrstni.red], main=" ")
 ```
 
-Delež proučevanih enot tj. anketirancev, ki so odgovorili na vsa vprašanja vsebinjskih spremenljivk je 95%. Spremenljivke vsebinskega sklopa so, če že so vsaj šibko, povezane pozitivno. Najbolj povezane so spremenljivke, ki merijo naklonjenost h drugačnosti, užitku, vznemerljivosti in zabavi. Te so v večini srednje povezane, edino drugačnost in vznemerljivost ter zabava in užitek so močno povezane. Pod povezane spremenljivke navedenim štirim lahko dodamo tudi kreativnost in svobodo, ki sta med seboj srednje povezani. Svoboda je z zgornjimi spremenljivkami šibko povezana, kreativnost pa je srednje povezana z drugačnostjo in vznemerljivosti, sicer pa je povezana šibko. Ostale spremenljivke so povezane zanemarljivo ali pa sploh niso, morda sta zgolj obramba in tradicija šibko povezani z užitkom.
+Delež proučevanih enot tj. anketirancev, ki so odgovorili na vsa vprašanja vsebinjskih spremenljivk je 95%. Spremenljivke vsebinskega sklopa so, če že so vsaj šibko, povezane pozitivno. Spremenljivke drugačnost, užitek, vznemirljivost, zabava, kreativnost in svoboda so šibko do srednje pozitivno povezane spremenljivke. Te spremenljivke kasneje povežemo v spremenljivko "Odprtost". Na drugi strani so spremenljivke obramba, tradicija, varnost, ponižnost, ubogljivost in sprejemljivost, ki so zanemarljivo do šibko pozitivno povezane in jih kasneje povežemo v spremenljivko "konzervativnost". Med sklopoma je povezanost zanemarljiva, sicer pa nekoliko izstopa spremenljivka užitek, ki spada pod "odprtost", je pa šibko pozitivno povezana s spremenljivkama obramba in tradicija ki spadata pod "konzervativnost". V splošnem so najbolj povezane spremenljivke, ki merijo naklonjenost k drugačnosti, užitku, vznemerljivosti in zabavi. Te so v večini srednje povezane, edino drugačnost in vznemerljivost ter zabava in užitek so močno povezane. Pod povezane spremenljivke navedenim štirim lahko dodamo tudi kreativnost in svobodo, ki sta med seboj srednje povezani. Svoboda je z zgornjimi spremenljivkami šibko povezana, kreativnost pa je srednje povezana z drugačnostjo in vznemerljivosti, sicer pa je povezana šibko.
 
 ## Povezanost med vsebinskimi in nominalnima spremenljivkama
 
@@ -291,22 +291,24 @@ Sledeče si oglejmo povezanost med spremenljivkami tematskega sklopa in nominaln
 
 # Povezanost spremenljivk o opravičiljivosti z nominalnimi spremenljivkami predstavimo grafično.
 # par(mfrow = c(1, 2), oma = c(5, 2, 1, 1))
+par(mar=c(7,5,2,2) + 0.1)
 plotMeans(x = podatki[, Sch[vrstni.red]], by = podatki$Nadzor, xlab = "", ylab="Povprečje", ylim = c(2.8, 6.2))
 ```
 
 Opazno je, da so enote, ki so odgovorne za nadzor nad drugimi delavci nekoliko bolj naklonjene drugačnosti, vznemerljivosti, kreativnosti, svobodi in tradiciji. Medtem, ko so enote, ki niso odgovorne za nadzor bolj naklonjene predvsem varnosti in ponižnosti. Pri ostalih spremenljivkah pa ne opazimo večjih razlik glede spremenljivke Nadzor.
 
 ```{r, results=TRUE, fig.height=5.5, fig.width=7, fig.cap="Povezanost med delovnim razmerjem in vsebinskimi spr."}
+par(mar=c(7,5,2,2) + 0.1)
 plotMeans(x = podatki[, Sch[vrstni.red]], by = podatki$Razmerje, xlab = "", ylab="Povprečje", ylim = c(2.8, 6.2))
 ```
 
-Pri povezanosti med delovnim razmerjem in vsebinskimi spremenljivkami opazujemo tri skupine enot. Do vidnejših razlik prihaja v naklonjenosti h drugačnosti in vznemerljivosti, kjer prevladujejo osebe s pogodbo za določen čas, najmanjše vrednosti pa so spremenljivkama v povprečju dodelili ljudje brez pogodbe. Pri spremenljivkah tradicije, varnosti in sprejemljivosti so največje vrednosti v povprečju dodelili anketiranci brez pogodbe, najmanjše vrednosti pa anketiranci s pogodbo za določen čas. Omeniti velja še spremenljivko zabava, v kateri se v povprečju najbolj najdejo ljudje s pogodobo za določen čas.
+Pri povezanosti med delovnim razmerjem in vsebinskimi spremenljivkami opazujemo tri skupine spremenljivk. Do vidnejših razlik prihaja v naklonjenosti k drugačnosti in vznemerljivosti, kjer imajo najvišja povprečja osebe s pogodbo za določen čas, najmanjše vrednosti pa so spremenljivkama v povprečju dodelili ljudje s pogodbo za določen čas. Pri spremenljivkah tradicije, varnosti in sprejemljivosti so največje vrednosti v povprečju dodelili anketiranci brez pogodbe, najmanjše vrednosti pa anketiranci s pogodbo za določen čas. Omeniti velja še vrednoto zabava, ki je v povprečju najbolj pomembna ljudem s pogodobo za določen čas.
 
 \newpage
 
 ## Povezanost med vsebinskimi spremenljivkami in Prebivališčem ter Zaposlitvijo
 
-Za izračun povezanosti med velikostjo domačega kraja in vsebinskimi spremenljivkami smo si pomagali s Spearmanovim koeficientom, medtem ko smo za povezanost vsebinskih spremenljivk z letom prve zaposlitve uporabili Pearsonov koeficient korelacije. Nobena izmed vsebinskih spremenljivk ni povezana z velikostjo domačega kraja oziroma je povezanost bolje rečeno največ zanemarljiva. Če pa si pogledamo povezanost vsebinskih spremenljivk z letom prve zaposlitve, je pozitivna šibka povezanost z užitkom, vznemerljivostjo in zabavo, kar pomeni, da ljudje, ki so se zaposlili kasneje bolj prisegajo h tem spremenljivkam kot tisti prej zaposleni. Povezanost s tradicijo in sprejemljivostjo je negativna, torej na ti dve vrednosti bolj prisegajo v starejših časih zaposleni ljudje. Z drugimi spremenljivkami pa je povezanost največ zanemarljiva. 
+Za izračun povezanosti med velikostjo domačega kraja in vsebinskimi spremenljivkami smo si pomagali s Spearmanovim koeficientom, medtem ko smo za povezanost vsebinskih spremenljivk z letom prve zaposlitve uporabili Pearsonov koeficient korelacije. Nobena izmed vsebinskih spremenljivk ni povezana z velikostjo domačega kraja oziroma je povezanost bolje rečeno največ zanemarljiva. Če pa si pogledamo povezanost vsebinskih spremenljivk z letom prve zaposlitve, je pozitivna šibka povezanost z užitkom, vznemerljivostjo in zabavo, kar pomeni, da ljudje, ki so se zaposlili kasneje so jim bolj pomembne te vrednote, kot prej zaposlenim. Povezanost s tradicijo in sprejemljivostjo je negativna, torej na ti dve vrednoti bolj prisegajo v starejših časih zaposleni ljudje. Z drugimi spremenljivkami pa je povezanost največ zanemarljiva. 
 
 ```{r, results=TRUE, fig.cap="Povezanost med vsebinskimi spr. in Prebivališčem ter Zaposlitivjo"}
 korelacije <- data.frame(
@@ -355,7 +357,7 @@ histNorm(podatki$konservativnost, xlim = c(1, 6), main = "Porazdelitev konservat
 t <- t.test(x = podatki$konservativnost, y = podatki$odprtost, paired = TRUE)
 ```
 
-Porazdelitvi odprtosti in konservativnosti sta si precej podobni. Povprečna nagnjenost h odprtosti je 4.3 s standarndim odklonom 0.8 in je simetrična, kar razberemo iz enakosti povprečja in mediane. Povprečna nagnjenost h konservativnosti je za odtenek manjša in enaka 4.2, medtem ko je standardni odklon enak 0.8 in njena porazdelitev je za odtenek asimetrična v levo (mediana je 4.3).
+Porazdelitvi odprtosti in konservativnosti sta si precej podobni. Povprečna nagnjenost k odprtosti je 4.3 s standarndim odklonom 0.8 in je simetrična, kar razberemo iz enakosti povprečja in mediane. Povprečna nagnjenost h konservativnosti je za odtenek manjša in enaka 4.2, medtem ko je standardni odklon enak 0.8 in njena porazdelitev je za odtenek asimetrična v levo (mediana je 4.3).
 
 Da preverimo domnevo o enakosti povprečij odprtosti in konservativnosti uporabimo test t za odvisna vzorca z ničelno domnevo, da je razlika povprečij enaka 0. Ta vrne vrednost p manjšo od 0.001, kar pomeni, da domnevo pri stopnji značilnosti 0.05 lahko zavrnemo in sprejmemo alternativno domnevo, ki pravi, da sta si povprečji odprtosti in koservativnosti različni. 95% interval zaupanja za razliko povprečij med odprtostjo in konservativnostjo je [0.05,0.159].
 
@@ -375,15 +377,14 @@ plot(tmp[,1], tmp[,2], ylim = c(1, 6), xlim = c(1, 6), xlab = "Odprtost", ylab =
 cor.test(x=podatki$odprtost, y=podatki$konservativnost)
 ```
 
-Da preverimo domnevo o ničelni povezanosti med odprtostjo in konservativnostjo uporabimo korelacijski test za odvisna vzorca na osnovi Pearsonovega koeficienta korelacije. Ta nam kot oceno za Pearsonov korelacijski koeficient vrne vrednost 0.033, vendar pa vrednost 0 pade v 95% interval zaupanja in je tako tudi vrednost p večja od 0.05, zato pri 95% zaupanju lahko rečemo, da spremenljivki nista povezani in ne zavrnemo domneve o ničelni povezanosti.
+Da preverimo domnevo o ničelni povezanosti na populaciji med odprtostjo in konservativnostjo uporabimo korelacijski test za odvisna vzorca na osnovi Pearsonovega koeficienta korelacije. Ta nam kot oceno za Pearsonov korelacijski koeficient vrne vrednost 0.033, vendar pa vrednost 0 pade v 95% interval zaupanja in je tako tudi vrednost p večja od 0.05, zato pri stopnji statistične značilnosti 5% ali manj ne moremo  zavrniti ničelne domneve oziroma trditi, da povezanost obstaja tudi na populaciji.
 
 ## Likertovi spremenljivki in Leto
 
-Poglejmo si še grafični prikaz korelacije med spremenljivkama Likertove lestvice in letom prve zaposlitve ter obenem poženimo še korelacijski test na osnovi Pearsonovega koeficienta korelacije.
+Poglejmo si še grafični prikaz korelacije med spremenljivkama Likertove lestvice in letom prve zaposlitve ter obenem izvedimo še korelacijski test na osnovi Pearsonovega koeficienta korelacije.
 
-Leto prve zaposlitve je pri stopnji značilnosti 0.05 statistično značilno povezano z odprtostjo (p < 0.001), ocena Pearsonovega koeficienta korelacije je 0.134, kar pomeni, da gre za šibko pozitivno povezanost spremenljivk. Na drugi strani pa leto prve zaposlitve pri stopnji značilnosti 0.05 ni povezano s konservativnostjo (p > 0.05), saj ničla pade v 95% interval zaupanja ocene Pearsonovega korelacijskega koeficienta.
-
-Sedaj pa si poglejmo še kako je z ocenami vrednosti Likertovih spremenljivk znotraj skupin ostalih treh obravnavanih spremenljivk ter razliko v povprečjih med skupinami znotraj posamezne spremenljivke.
+Leto prve zaposlitve je pri stopnji značilnosti 0.05 statistično značilno povezano z odprtostjo (p < 0.001), ocena Pearsonovega koeficienta korelacije je 0.134, kar pomeni, da gre za šibko pozitivno povezanost spremenljivk. Na drugi strani pa leto prve zaposlitve pri stopnji značilnosti 0.05 ne moremo trditi da je povezano s konservativnostjo (p > 0.05), saj ničla pade v 95% interval zaupanja ocene Pearsonovega korelacijskega koeficienta.
+Poglejmo si še kako je z ocenami vrednosti Likertovih spremenljivk znotraj skupin ostalih treh obravnavanih spremenljivk ter razliko v povprečjih med skupinami znotraj posamezne spremenljivke.
 
 ```{r, fig.width=4, fig.height=4.1, fig.cap="Razsevni diagram odprtosti z letom prve zaposlitve"}
 # par(mfrow=c(1,2))
@@ -402,8 +403,8 @@ cor.test(podatki$Zaposlitev, podatki$konservativnost, use = "compl")
 
 ## Likertovi spremenljivki in Nadzor
 
-```{r, fig.width=7, fig.height=5, fig.cap="Povprečja odprtosti (levo) in konzervativnosti (desno) po skupinah spr. Nadzor"}
-par(mfrow = c(1,2), mar = c(11, 5, 2, 2))
+```{r, fig.width=6, fig.height=3, fig.cap="Povprečja odprtosti (levo) in konzervativnosti (desno) po skupinah spr. Nadzor"}
+par(mfrow = c(1,2), mar = c(4, 5, 2, 2))
 # kako odstranit gap med captionom in figurama???
 plotmeans(odprtost ~ Nadzor, 
           data = podatki, 
@@ -421,14 +422,14 @@ t.test(podatki$odprtost ~ podatki$Nadzor)
 t.test(podatki$konservativnost ~ podatki$Nadzor)
 ```
 
-Welchow test za primerjavo povprečij pokaže, da se skupini Nadzora pri stopnji značilnosti 0.05 v povprečju statistično značilno razlikujeta v odprtosti (p < 0.05). Ocena za povprečnost nagnjenost h odprtosti v skupini, ki je odgovorna za nadzor nad drugimi osebami je približno 4.38, medtem ko je ocena za odprotst v drugi skupini približno 4.28. 95% interval zaupanja za razliko povprečij je enak [0.019, 0.187]. Na drugi strani pa se skupini Nadzora pri stošnji značilnosti 0.05 ne razlikujeta statistično značilno v konservativnosti (p = 0.41), povprečna vrednost nagnjenosti h konservativnosti je približno 4.20.
+Welchev test za primerjavo povprečij pokaže, da se skupini Nadzora pri stopnji značilnosti 0.05 v povprečju statistično značilno razlikujeta v odprtosti (p < 0.05). Ocena za povprečnost nagnjenost k odprtosti v skupini, ki je odgovorna za nadzor nad drugimi osebami je približno 4.38, medtem ko je ocena za odprtost v drugi skupini približno 4.28. 95% interval zaupanja za razliko povprečij je enak [0.019, 0.187]. Na drugi strani pa ne moremo trditi da se skupini Nadzora pri stopnji značilnosti 0.05 razlikujeta v konservativnosti (p = 0.41), povprečna vrednost nagnjenosti h konservativnosti je približno 4.20. 95% interval zaupanja za razliko povprečij je enak [-0.121, 0.050].
 
 ## Likertovi spremenljivki in Razmerje
 
-Da lahko preverimo domnevo o enakosti povprečij treh ali več skupin, moramo najprej preveriti domnevo o enakosti varianc znotraj skupin spremenljivke Razmerje. Na podlagi Levenovega testa s 95% zaupanjem ne moremo zavrniti ničelne domneve o enakosti varianc skupin spremenljivke Razmerje glede odprtosti (p = 0.33) niti glede konservativnosti (p = 0.39), kar pomeni, da za primerjavo povprečij skupin lahko uporabimo enosmerni Anova test s predpostavko enakosti varianc. Z enosmornim Anova testom, na podlagi vrednosti p (p < 0.05) s 95% zaupanjem lahko zavrnemo tako ničelno domnevo o enakosti povprečij glede odprtosti kot glede konservativnosti in sprejmemo sklep, da so povprečja skupin Razmerja statistično značilno različna glede odprtosti kot tudi konservativnosti. Njihove približke lahko razberemo iz slike.
+Da lahko preverimo domnevo o enakosti povprečij treh ali več skupin, moramo najprej preveriti domnevo o enakosti varianc med skupinami spremenljivke Razmerje. Na podlagi Levenovega testa s 95% zaupanjem ne moremo zavrniti ničelne domneve o enakosti varianc skupin spremenljivke Razmerje glede odprtosti (p = 0.33) niti glede konservativnosti (p = 0.39), kar pomeni, da za primerjavo povprečij skupin lahko uporabimo enosmerni Anova test s predpostavko enakosti varianc. Z enosmornim Anova testom, na podlagi vrednosti p (p < 0.05) s 95% zaupanjem lahko zavrnemo tako ničelno domnevo o enakosti povprečij glede odprtosti kot glede konservativnosti in sprejmemo sklep, da so povprečja skupin Razmerja statistično značilno različna glede odprtosti kot tudi konservativnosti. Njihove približke lahko razberemo iz slike. Največja razlika v odprtosti med povprečji pri spremenljivki Razmerje je bila okrog 0.21 medtem ko je bila pri konzervativnosti okrog 0.26.
 
 ```{r, fig.width=8, fig.height=4.1, fig.cap="Povprečja odprtosti (levo) in konzervativnosti (desno) po skupinah spr. Razmerje"}
-par(mfrow = c(1,2), mar = c(11, 5, 2, 2))
+par(mfrow = c(1,2), mar = c(8, 5, 2, 2))
 
 plotmeans(odprtost ~ Razmerje, 
           data = podatki, 
@@ -447,13 +448,22 @@ plotmeans(konservativnost ~ Razmerje,
 
 leveneTest(y=podatki$odprtost, group=podatki$Razmerje)
 oneway.test(podatki$odprtost ~ podatki$Razmerje, var.equal = TRUE)
+aggregate(podatki$odprtost, list(podatki$Razmerje), FUN=mean, na.rm=TRUE)
 
 leveneTest(y = podatki$konservativnost, group=podatki$Razmerje)
 oneway.test(podatki$konservativnost ~ podatki$Razmerje, var.equal = TRUE)
 ```
 
+
+
+## Likertovi spremenljivki in Odprtost
+
+Oglejmo si še primerjavo povprečij skupin spremenljivke Prebivališče, glede odprtosti in konservativnosti.
+
+Korelacijski test na podlagi Spearmanovega koeficienta korelacije nam na podlagi vrednosti p (p = 0.8) pove, da z 95% zaupanjem ne moremo zavrniti ničelne domneve o ničelni povezanosti spremenljivke Prebivalisce z odprtostjo.  Na drugi strani pa z 95% zaupanjem ničelno domnevo zavrnemo (p < 0.05) in lahko trdimo, da je velikost domačega kraja pozitivno povezana s konservativnostjo, pa čeprav je povezanost zgolj zanemarljiva (rho = 0.06).
+
 ```{r, fig.width=8.5, fig.height=4.1, fig.cap="Povprečja odprtosti (levo) in konzervativnosti (desno) po skupinah spr. Odprtost"}
-par(mfrow = c(1,2), mar = c(11, 5, 2, 2))
+par(mfrow = c(1,2), mar = c(8, 5, 2, 2))
 
 plotmeans(odprtost ~ Prebivalisce,
           data = podatki, 
@@ -474,12 +484,6 @@ plotmeans(konservativnost ~ Prebivalisce,
 cor.test(podatki$odprtost, as.numeric(podatki$Prebivalisce), method = "spearman", use = "com")
 cor.test(podatki$konservativnost, as.numeric(podatki$Prebivalisce), method = "spearman", use = "com")
 ```
-
-## Likertovi spremenljivki in Odprtost
-
-Sledeče si oglejmo še primerjavo povprečij skupin spremenljivke Prebivališče, glede odprtosti in konservativnosti.
-
-Korelacijski test na podlagi Spearmanovega koeficienta korelacije nam na podlagi vrednosti p (p = 0.8) pove, da z 95% zaupanjem ne moremo zavrniti ničelne domneve o ničelni povezanosti spremenljivke Prebivalisce z odprtostjo.  Na drugi strani pa z 95% zaupanjem ničelno domnevo zavrnemo (p < 0.05) in lahko trdimo, da je velikost domačega kraja pozitivno povezana s konservativnostjo, pa čeprav je povezanost zgolj zanemarljiva (rho = 0.06).
 
 # Razsevni diagram
 
@@ -512,7 +516,7 @@ par(xpd=TRUE)
 legend("topleft", legend = agg[,1], pch = 16, col = 1:nrow(agg))
 ```
 
-Iz grafa raztresenih točk, ki predstavljajo enote ni opaziti večjih razlik med obema skupinama spremenljivke Nadzor. Opazno je zgolj to, da so enote, ki so odgovorne za nadzor nad sodelavci nekoliko bolj nagnjene h odprtosti, kar smo dokazali že z statističnim testom, ter morda za odtenek manj h konservativnosti, vendar pa razlika pri stopnji značilnosti 0.05 ni statistično značilna.
+Iz grafa raztresenih točk, ki predstavljajo enote ni opaziti večjih razlik med obema skupinama spremenljivke Nadzor. Opazno je zgolj to, da so enote, ki so odgovorne za nadzor nad sodelavci nekoliko bolj nagnjene k odprtosti, kar smo dokazali že z statističnim testom, ter morda za odtenek manj h konservativnosti, vendar pa razlika pri stopnji značilnosti 0.05 ni statistično značilna.
 
 Tudi pri spremenljivki Razmerje iz grafa raztresenih točk ni večjih razlik med skupinami glede konservativnosti in odprtosti. Zaposleni s pogodbo za določen čas so nekoliko bolj odprti kot ostali dve skupini in  obenem najmanj konservativni. Najbolj konservativni so tisti brez pogodbo, čeprav so razlike v povprečjih pri obeh spremenljivkah zelo majhne smo dokazali, da so statistično značilne. 
 
@@ -549,6 +553,6 @@ legend("bottomleft", legend = agg[,1], pch = 16, col = 1:nrow(agg))
 
 V nalogi smo obravnavali spremenljivke izračunane na podatkih danskega prebivalstva v sklopu Evropske družbene raziskave. Analizirali smo 4 spremenljivke in sicer Nadzor, Delovno razmerje, Prebivališče ter Zaposlitev. Obravnavali pa smo tudi 12 spremenljivk tematskega sklopa, ki smo jih rekodirali v številske spremenljivke z vrednostmi od 1 (to nikakor nisem jaz) do 6 (to sem točno jaz) in ugotovili, da ne odstopajo bistveno od normalne porazdelitve. 
 
-Med vsebinskimi spremenljivkami anketiranci najbolj prisegajo na svobodo, kreativnost ter užitek, najmanj pa k vznemerljivosti, ponižnosti in drugačnosti. K drugačnosti in vznemerljivosti so najbolj nagnjene osebe, ki so odgovorne za nadzor in imajo pogodbo za določen čas, najmanj pa ljudje brez pogodbe. Varnosti so denimo najbolj naklonjene osebe, ki niso odgovorne za nadzor in so brez delovne pogodbe, najmanj pa osebe s pogodbo za določen čas. Med drugim se v zabavi najbolj najdejo ljudje s pogodbo za določen čas. Z letom prve zaposlitve so najbolj povezane užitek, vznemerljivost ter zabava in sicer šibko pozitivno.
+Med vsebinskimi spremenljivkami anketiranci najbolj prisegajo na svobodo, kreativnost ter užitek, najmanj pa k vznemerljivosti, ponižnosti in drugačnosti. K drugačnosti in vznemerljivosti so najbolj nagnjene osebe, ki so odgovorne za nadzor in imajo pogodbo za določen čas, najmanj pa ljudje brez pogodbe. Varnosti so denimo najbolj naklonjene osebe, ki niso odgovorne za nadzor in so brez delovne pogodbe, najmanj pa osebe s pogodbo za določen čas. Med drugim se v zabavi najbolj najdejo ljudje s pogodbo za določen čas. Z letom prve zaposlitve so najmočneje povezane užitek, vznemerljivost ter zabava in sicer šibko pozitivno.
 
-V nadaljevanju smo vsebinske spremenljivke razdelili v dva sklopa glede njihove povezanosti in tako ustvarili dve Likertovi spremenljivki tako, da smo za vsako opazovano enoto izračunali povprečje spremenljivk znotraj sklopa. Prva spremenljivka predstavlja odprtost, druga pa konservativnost. S 95% zaupanjem lahko trdimo, da je povprečna nagnjenost h odprtosti statistično značilno, za odtenek višja ter, da odprtost in konservativnost nista statistično značilno povezani. Pri stopnji značilnosti 0.05 lahko trdimo tudi, da je leto prve zaposlitve šibko pozitivno povezano z odprtostjo, vendar pa ni povezano s konservativnostjo. Opazujoč spremenljivko Nadzor, so odgovorne osebe nekoliko bolj nagnene h odprtosti, pri konservativnosti pa ne prihaja do statistično značilnih razlik. Skupine spremenljivke Razmerje se statistično značilno razlikujejo tako glede odprtosti kot konservativnosti, medtem, ko je Prebivališče največ zanemarljivo povezano z Likertovima spremenljivkama.
+V nadaljevanju smo vsebinske spremenljivke razdelili v dva sklopa glede njihove povezanosti in tako ustvarili dve Likertovi spremenljivki tako, da smo za vsako opazovano enoto izračunali povprečje spremenljivk znotraj sklopa. Prva spremenljivka predstavlja odprtost, druga pa konservativnost. S 95% zaupanjem lahko trdimo, da je povprečna nagnjenost k odprtosti statistično značilno, za odtenek višja ter, da odprtost in konservativnost nista statistično značilno povezani. Pri stopnji značilnosti 0.05 lahko trdimo tudi, da je leto prve zaposlitve šibko pozitivno povezano z odprtostjo, vendar pa ni povezano s konservativnostjo. Opazujoč spremenljivko Nadzor, so odgovorne osebe nekoliko bolj nagnene k odprtosti, pri konservativnosti pa ne prihaja do statistično značilnih razlik. Skupine spremenljivke Razmerje se statistično značilno razlikujejo tako glede odprtosti kot konservativnosti, medtem, ko je Prebivališče največ zanemarljivo povezano z Likertovima spremenljivkama.
