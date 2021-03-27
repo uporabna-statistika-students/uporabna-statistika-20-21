@@ -15,7 +15,7 @@ header-includes:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, results = FALSE, 
-                      fig.show = FALSE, fig.width=6, fig.height=4, fig.pos = 'H')
+                      fig.show = FALSE, fig.width=6, fig.height=4, fig.pos = 'H', fig.align="center")
 ```
 
 ```{r}
@@ -97,7 +97,17 @@ d2 <- d^2
 
 Število skupin lahko določimo na podlagi dendograma, ki grafično prikazuje potek združevanja v skupine in katerega dobra lastnost je ta, da uporabniku ni potrebno vnaprej določiti števila skupin. Je pa določanje števila skupin na podlagi dendograma je do neke mere subjektivno, saj število skupin določimo tako, da pogledamo, kdaj se začnejo razdalje med skupinami pri združevanju občutneje manjšati.
 
-```{r, fig.height=14, fig.width=14, fig.cap="Dendogrami metod razvrščanja v skupine"}
+Minimalna metoda (enojna povezanost - single linkage) je primerna za dolge in neeliptične skupine, ki so jasno ločene med seboj. Kadar skupine med seboj niso jasno ločene pri minimalni metodi pride do problema veriženja, kar se pri nas zgodi. Na takem dendogramu ne moremo določiti števila skupin in zato rečemo, da je skupina zgolj ena.
+
+Maksimalna metoda (polna povezanost - complete linkage) je primerna za okrogle skupine. Na podlagi maksimalne metode se odločimo za 3 skupine, lahko pa bi se tudi za 2.
+
+Na podlagi McQuittyjeve metode oziroma "povprečne" povezanosti se odločimo za zgolj 2 skupini.
+
+Wardova metoda je primera za eliptične skupine in na podatkih podobnim našim, da Wardova metoda ponavadi najboljše rezultate. Odločimo se za 4 skupine (lahko bi se tudi za 3), saj je vsebinska interpretacija bolj zanimiva kot za 2 skupini, za kar bi se teoretično morali odločiti.
+
+Na koncu se na podlagi Wardovega dendograma ter tudi upoštevanja ostalih metod odločimo za 4 skupine.
+
+```{r, fig.height=15, fig.width=12, fig.cap="Dendogrami različnih metod razvrščanja v skupine"}
 par(mfrow = c(2, 2))
 # Za razvrščanje v skupine uporamo funkcijo hclust
 # Podamo matriko različnosti in metodo.
@@ -141,16 +151,6 @@ plot(ward, hang = -1,
 # Obrobimo skupine, odločimo se za 4.
 rect.hclust(ward, k=4, border="red")
 ```
-
-Minimalna metoda (enojna povezanost - single linkage) je primerna za dolge in neeliptične skupine, ki so jasno ločene med seboj. Kadar skupine med seboj niso jasno ločene pri minimalni metodi pride do problema veriženja, kar se pri nas zgodi. Na takem dendogramu ne moremo določiti števila skupin in zato rečemo, da je skupina zgolj ena.
-
-Maksimalna metoda (polna povezanost - complete linkage) je primerna za okrogle skupine. Na podlagi maksimalne metode se odločimo za 3 skupine, lahko pa bi se tudi za 2.
-
-Na podlagi McQuittyjeve metode oziroma "povprečne" povezanosti se odločimo za zgolj 2 skupini.
-
-Wardova metoda je primera za eliptične skupine in na podatkih podobnim našim, da Wardova metoda ponavadi najboljše rezultate. Odločimo se za 4 skupine (lahko bi se tudi za 3), saj je vsebinska interpretacija bolj zanimiva kot za 2 skupini, za kar bi se teoretično morali odločiti.
-
-Na koncu se na podlagi Wardovega dendograma ter tudi upoštevanja ostalih metod odločimo za 4 skupine.
 
 ## Razvrstitev na podlagi Wardove kriterijske funkcije
 
@@ -199,24 +199,23 @@ kable(rezWard, caption = "Vrednost Wardove kriterijske funkcije glede na metodo 
 # To pomeni, da je Wardova metoda najboljša, ob upoštevanju pristranskosti.
 ```
 
-Wardova metoda ima pri dveh skupinah nižjo in s tem boljšo vrednost kot povprečna metoda pri treh kot pri štirih skupinah. Pri vseh številih skupin ima Wardova metoda nižjo vrednost tudi od maksimalne metode.
+Wardova metoda ima pri dveh skupinah nižjo (boljšo) vrednost kot povprečna metoda pri treh oz. pri štirih skupinah. Pri vseh številih skupin ima Wardova metoda nižjo vrednost tudi od maksimalne metode.
 Tako se za najboljšo metodo in število skupin, tudi z upoštevanjem dendograma in vsebinske zanimivosti, odločimo za Wardovo metodo s štirimi skupinami.
 
 ## Povprečja odgovorov po skupinah
 
 Za izbrano razvrstitev tj. Wardovo metodo s štirimi skupinami prikažimo povprečja odgovorov po skupinah na standariziranih in nestandariziranih podatkih.
 
-```{r, fig.height=6, fig.width=12, fig.cap="Povprečja po skupinah za Wardovo metodo s štirimi skupinami"}
+```{r, fig.height=6, fig.width=12, fig.cap="Povprečja po skupinah za Wardovo metodo s štirimi skupinami. Levo - nestandardizirane vrednosti, desno - standardizirane vrednosti"}
 # Prikažemo nestandarizirane in standarizirane podatke.
-par(mfrow = c(1, 2), mar = c(10, 5, 1, 1))
+par(mfrow = c(1, 2), mar = c(7.5, 5, 1, 1))
 
 # Povprečja nestandariziranih spremenljivk.
 plotMeans(SchData, by = wardK4, 
           ylim = c(1, 6), 
           plotLegend = FALSE, # Nimamo še določenih imen skupin.
           ylab = "povprečja\nnestandardiziranih spremenljivk", 
-          xlab = "", 
-          main = "Wardova metoda")
+          xlab = "")
 abline(v = 6.5, col="grey", lty=2)
 
 # Povprečja standariziranih spremenljivk.
@@ -224,10 +223,11 @@ plotMeans(SSchData, by= wardK4,
           ylim = c(-2, 2), 
           plotLegend = FALSE, # Nimamo še določenih imen skupin.
           ylab = "povprečja\nstandardiziranih spremenljivk", 
-          xlab = "", 
-          main = "Wardova metoda")
+          xlab = "")
 abline(v = 6.5, col="grey", lty=2)
 ```
+
+\newpage
 
 Če si ogledamo standarizirane vrednosti spremenljivk, vidimo, da skupina 3 odraža povprečje vsebinskih spremenljivk, morda zgolj pri spremenljivki tradicija zavzame nekoliko višjo in pri vznemerljivosti nekoliko nižjo vrednost. Tako jo lahko vzamemo za nekakšno primerjavo. Sledeče poglejmo skupino 4. Ta pri vsebinskih spremenljivkah, ki odražajo odprtost zavzame nadpovprečne vrednosti, medtem ko je pri spremenljivkah konservativnosti podpovprečna. Ravno obratno sliko pa vidimo pri skupini 2, ki ima pri spremenljivki odprtosti podpovprečne, pri konservativnosti pa povprečne oziroma nadpovprečne vrednosti pri varnosti in ponižnosti. Zadnja obravnavana skupina, skupina 1, je pri vseh spremenljivkah, neupoštevajoč tradicije, nadpovprečna, pri tradiciji pa zavzame povprečno vrednost. Pri nestandariziranih vrednostih spremenljivk lahko dodamo zgolj to, da zgoraj omenjena nadpovprečna vrednost niha nekje okoli 5, povprečje okoli vrednosti 4, pri podpovprečni vrednosti pa razumemo okolico vrednosti 3.
 
@@ -241,6 +241,7 @@ for (i in 2:10){
   si <- silhouette(cutree(ward, k = i), daisy(SSchData))
   sis[i] <- mean(si[,3])
 }
+
 # plot(sis, type = "b", xlab = "stevilo skupin", ylab = "povprecna silhueta")
 
 # Kakor smo ocenili pri Complete cases, bi bilo število skupin načeloma najboljše kar 2.
@@ -263,7 +264,9 @@ V našem primeru, bomo upoštevali k-means pristop s standariziranimi podatki.
 
 Poglejmo si vrednosti Wardove kriterijske funkcije pri različnem številu skupin. Velja upoštevati, da vrednost Wardove kriterijske funkcije pada z naraščanjem števila skupin, zato za optimalno število skupin velja vrednost k, kjer se "zgodi" koleno. Če koleno ni jasno razvidno je to lahko indikator, da skupine niso jasno ločene.
 
-```{r, fig.cap="Vrednost Wardove kriterijske funkcije"}
+Na podlagi k-means pristopa in Wardove kriterijske funkcije se odločimo za 3 skupine, kjer je "koleno" najbolj razvidno.
+
+```{r, fig.height=4.5, fig.cap="Vrednost Wardove kriterijske funkcije"}
 # Določimo maksimalno število skupin, ki jih je še dopustno.
 Kmax <- 12 
 # Prostor za shranjevanje rezultatov.
@@ -284,8 +287,6 @@ plot(kmCrit,
 # Ker skupine med seboj niso popolnoma jasno ločene koleno ni najboljše razvidno.
 ```
 
-Na podlagi k-means pristopa in Wardove kriterijske funkcije se odločimo za 3 skupine, kjer je "koleno" najbolj razvidno.
-
 ## GAP statistika
 
 Pri določevanju števila skupin si lahko pomagamo tudi z GAP statistiko. V tem primeru iščemo skupine, ki so bolj homogene kot bi jih našli v podatkih brez skupin. Torej primerjamo razdalje znotraj skupin z razdaljami kot bi jih pričakovali glede na referenčne podatke, torej na podatkih brez skupin (iz verzije enakomerne porazdelitve). 
@@ -294,22 +295,24 @@ Izberemo število skupin, kjer je razlika med opaženimi in referenčnimi podatk
 
 Na podlagi spodnjega grafičnega prikaza vrednosti GAP statistike pri različnem številu skupin se odločimo za 3 skupine.
 
-```{r, fig.cap="Vrednost GAP statistike"}
+```{r, fig.height=5, fig.cap="Vrednost GAP statistike"}
 # ODKOMENTIRAJ NA KONCU
-# gskmn <- clusGap(SSchData, # Standarizirani podatki.
-#                  FUN = kmeans, # Uporabljena metoda razvrščanja.
-#                  iter.max = 100, # Število iteracij.
-#                  nstart = 100,# Število ponovitev znotraj posameznega razvrščanja.
-#                  K.max = 8, # Največje število skupin.
-#                  B = 100, # Število referenčnih podatkovij in s tem razvrščanj.
-#                  d.power = 2 # Eksponent za evklidsko razdaljo.
-#                  )
-# 
-# # Grafični prikaz Gap statistik.
-# plot(gskmn, main = "GAP statistika za različno\nštevilo skupin", xlab = "število skupin")
+gskmn <- clusGap(SSchData, # Standarizirani podatki.
+                 FUN = kmeans, # Uporabljena metoda razvrščanja.
+                 iter.max = 100, # Število iteracij.
+                 nstart = 100,# Število ponovitev znotraj posameznega razvrščanja.
+                 K.max = 8, # Največje število skupin.
+                 B = 100, # Število referenčnih podatkovij in s tem razvrščanj.
+                 d.power = 2 # Eksponent za evklidsko razdaljo.
+                 )
+
+# Grafični prikaz Gap statistik.
+plot(gskmn, main = "", xlab = "število skupin")
 
 # !Nujno je napisati na podlagi katerega kriterija smo se odločili za izbrano število skupin!
 ```
+
+\newpage
 
 ## Povprečja skupin glede na vsebinske spremenljivke
 
@@ -365,24 +368,25 @@ Z metodo, ki temelji na EM algoritmu ocenimo število skupin in parametre za vsa
 
 ## BIC kriterij na originalnih podatkih
 
-```{r, fig.cap="BIC kriterij za originalne podatke"}
+```{r, fig.height=5.8, fig.cap="BIC kriterij za originalne podatke"}
 # Naredimo razvrstitev na originalnih podatkih.
 # Funkcija sama izbere najprimernejši model.
 mc <- Mclust(SchData, G=1:5) # G pomeni število skupin za razvrščanje.
 
 # Izpišimo ime izbranega modela ter število skupin za razvrščanje.
 povzetek <- summary(mc)
-# Model je izbran na podlagi kriterija BIC (Bias information critery).
+# Model je izbran na podlagi kriterija BIC (Bayes Information Criterion).
 
 # Pogledamo še vrednosti BIC za ostale modele.
 plot(mc, what = "BIC")
 ```
+\newpage
 
-Na podlagi BIC kriterija (Bias information critery), ki zavzame vrednost -56775.4 izberemo model VVE s štirimi skupinami, kar pomeni, da gre za elipsoidne skupine, ki so različno velike, različnih oblik, hkrati pa so enako usmerjene (od leve zgoraj proti desni spodaj).
+Na podlagi BIC kriterija (Bayesian Information Criterion), ki zavzame vrednost -56775.4 izberemo model VVE s štirimi skupinami, kar pomeni, da gre za elipsoidne skupine, ki so različno velike, različnih oblik, hkrati pa so enako usmerjene (od leve zgoraj proti desni spodaj).
 
 Pri oceni modela lahko uporabimo tudi argument priorControl s čimer določimo apriorne verjetnosti, kar rezultira v bolj stabilnih ocenah, a lahko povzroči pristranskost. 
 
-```{r, fig.cap="BIC kriterij (priorControl) za originalne podatke"}
+```{r, fig.height=5.8, fig.cap="BIC kriterij (priorControl) za originalne podatke"}
 # priorControl -> v primeru težav z oceno modelov.
 mcP <- Mclust(SchData, G=1:5, prior = priorControl())
 povzetek <- (mcP)
@@ -391,11 +395,13 @@ plot(mcP, what = "BIC")
 
 Na podlagi BIC kriterija z uporabljenim argumentom se odločimo za model VVI s petimi skupinami, kar pomeni, da gre za različno velike skupine, različnih oblik in enake usmerjenosti (vzporedne abscisni osi).
 
+\newpage
+
 ## BIC kriterij na standariziranih podatkih
 
 Poglejmo si še kako je z oceno modela na standariziranih podatkih. Po teoriji pri modelih, kjer porazdelitev ni okrogla (spherical), (se pravi pri oznaki modela na sredini ni "I"), ne bi smelo biti razlik. Velja opomniti, da vrednosti BIC kriterija niso primerljive med standariziranimi in nestandariziranimi podatki. 
 
-```{r, fig.cap="BIC kriterij za standarizirane podatke"}
+```{r, fig.height=5.8, fig.cap="BIC kriterij za standarizirane podatke"}
 mcStdP <- Mclust(SSchData, G=1:5)
 povzetek <- summary(mcStdP)
 plot(mcStdP, what="BIC")
@@ -403,7 +409,7 @@ plot(mcStdP, what="BIC")
 
 Tudi pri oceni modela na standariziranih podatkih na podlagi BIC kriterija z vrednostjo -48322.36 izberemo model VVE s štirimi skupinami.
 
-```{r, fig.cap="BIC kriterij (priorControl) za standarizirane podatke"}
+```{r, fig.height=5.8, fig.cap="BIC kriterij (priorControl) za standarizirane podatke"}
 mcStdP <- Mclust(SSchData, G=1:5, prior = priorControl())
 povzetek <- summary(mcStdP)
 plot(mcStdP, what="BIC")
@@ -417,7 +423,9 @@ Na podlagi vseh štirih kriterijev se zaradi enostavnosti odločimo za model VVE
 
 Včasih se lahko omejimo tudi na posamezne modele. Na pogladi BIC kriterja in primerjave modelov EII (okrogle in enako velike skupine), ki je enakovreden metodi k-means in izbranega modela VVE se odločimo za model VVE. Poleg tega bi se pri obeh modelih odločili za tri skupine, saj vrednost BIC kriterija po treh skupinah narašča počasi.
 
-```{r, fig.cap="Primerjava VVE in EII modela"}
+\newpage
+
+```{r, fig.height=6, fig.align="center", fig.cap="Primerjava VVE in EII modela"}
 # Model EII bi moral dati podobne skupine kot k-means.
 # Model VVE s štirimi skupinami je model, ki smo ga izbrali kot najboljšega.
 
@@ -430,6 +438,8 @@ mcEII3 <- Mclust(SSchData, G = 3, modelNames = "EII")
 mcVVE3 <- Mclust(SSchData, G = 3, modelNames = "VVE")
 ```
 
+\newpage
+
 # Primerjava razvrstitev in izbor
 
 V sklopu primerjave razvrstitev je cilj ugotoviti kako podobne so si naše razvrstitve. V prejšnjih poglavjih smo iz hierarhične in nehierarhične metode ter metode na podlagi modelov izbrali najboljšo razvrstitev, sedaj pa izbrane razvrstitve primerjajmo.
@@ -438,7 +448,7 @@ V sklopu primerjave razvrstitev je cilj ugotoviti kako podobne so si naše razvr
 
 Ponovno izračunamo povprečja po skupinah in izbrane  razvrstitve primerjajmo na standariziranih podatkih.
 
-```{r, fig.height=8, fig.width=16, fig.cap="Primerjava razvrstitev na standariziranih podatkih"}
+```{r, fig.height=6, fig.width=16, fig.cap="Primerjava razvrstitev na standariziranih podatkih"}
 par(mfrow = c(1, 3), mar = c(10, 5, 1, 1))
 # Primerjava povprečij na standariziranih spremenljivkah.
 
@@ -449,7 +459,7 @@ plotMeans(SSchData, by=wardK4, ylim = c(-2, 2), ylab = "povprečja\nstandarizira
 plotMeans(SSchData, by=mcVVE3$classification, ylim = c(-2, 2), ylab = "povprečja\nstandariziranih spremenljivk", plotLegend = FALSE, main = "na podlagi modelov", xlab = "") 
 ```
 
-Vrstni red skupin v modelih je sicer drugačen, vendar pa sta si model izračunan na podlagi k-means in tisti na podlagi modelov nekoliko podobna, pri Wardovem modelu pa je dodana nekakšna povprečna skupina označena s številko 3. Podrobneje, skupina 3 pri k-means je podobna skupini 1 na podlagi modelov, do ostopanja pride zgolj pri spremenljivkah kreativnosti in svobode, ki pri metodi na podlagi modelov dosežeta nadpovprečni vrednosti. Poleg tega je skupina 1 pri k-means zelo podobna skupini 2 na podlagi modelov. Prav tako pa sta si nekoliko podobni tudi skupini 2 pri k-means in 3 na podlagi modelov, razlikujeta se zgolj v spremenljikah varnosti in ponižnosti, kjer k-means doseže občutno višje vrednosti. Tudi pri Wardovi metodi so skupine 1, 2 in 3 podobne pripadajočim skupinam pri k-means in na podlagi modelov, kot rečeno pa je dodana skupina 3, ki odraža povprečje.
+Vrstni red skupin v modelih je sicer drugačen, vendar pa sta si model izračunan na podlagi k-means in tisti na podlagi modelov nekoliko podobna, pri Wardovem modelu pa je dodana nekakšna povprečna skupina označena s številko 3. Podrobneje, skupina 3 pri k-means je podobna skupini 1 na podlagi modelov, do odstopanja pride zgolj pri spremenljivkah kreativnosti in svobode, ki pri metodi na podlagi modelov dosežeta nadpovprečni vrednosti. Poleg tega je skupina 1 pri k-means zelo podobna skupini 2 na podlagi modelov. Prav tako pa sta si nekoliko podobni tudi skupini 2 pri k-means in 3 na podlagi modelov, razlikujeta se zgolj v spremenljikah varnosti in ponižnosti, kjer k-means doseže občutno višje vrednosti. Tudi pri Wardovi metodi so skupine 1, 2 in 3 podobne pripadajočim skupinam pri k-means in na podlagi modelov, kot rečeno pa je dodana skupina 3, ki odraža povprečje.
 
 ## Primerjava razvrstitev na podlagi Wardove kriterijske funkcije
 
@@ -498,13 +508,13 @@ Da se spomnimo, si še enkrat oglejmo povprečja izračunanih skupin pri nestand
 
 ```{r}
 # Nekako poimenujemo skupine in pripadnost k skupini shranimo v podatke.
-SchData$raz <- raz <- factor(km3$cluster, labels=c("univerzalisti", "podpovprečno odprti", "podpovprečno konservativni"))
+SchData$raz <- raz <- factor(km3$cluster, levels=c(2, 1, 3), labels=c("univerzalisti", "podpovprečno odprti", "podpovprečno konservativni"))
 # Velikost skupin
 velikost <- table(raz)
 ```
 
 ```{r, fig.height=6, fig.width=12, fig.cap="Povprečja skupin za k-means s tremi skupinami"}
-par(mfrow = c(1, 2))
+par(mfrow = c(1, 2), mar = c(8, 5, 1, 1))
 
 plotMeans(SchData[, Sch], by=raz, ylim = c(1, 6), 
           ylab = "povprečja\nnestandariziranih spremenljivk", 
@@ -523,6 +533,9 @@ plotMeans(SSchData[, Sch], by=raz, ylim = c(-2, 2),
 ## Razsevni grafikon skupin glede na spremenljivki Likartove lestvice
 
 Prikažemo lahko še vrednosti enot glede na spremenljivki Likartove lestvice odprtosti in konservativnosti ter jih pobarvamo glede na pripadnost skupini.
+
+Kot vidimo, skupine niso jasno ločene, saj se držijo precej skupaj. Zgornja slika pa nam lahko služi tudi kot preverba ali smo skupine smiselno poimenovali, seveda relativno glede na ostale spremenljivke, kar v našem primeru drži.
+
 
 ```{r, fig.height=5, fig.width=5, fig.cap="Razsevni grafikon skupin glede na Likartovi spremenljivki"}
 # Ponovno izračunamo vrednosti Likartovih spremenljivk.
@@ -548,7 +561,7 @@ legend("bottomleft",
        xpd = TRUE)
 ```
 
-Kot vidimo, skupine niso jasno ločene, saj se držijo precej skupaj. Zgornja slika pa nam lahko služi tudi kot preverba ali smo skupine smiselno poimenovali, seveda relativno glede na ostale spremenljivke, kar v našem primeru drži.
+\newpage
 
 ## Vpliv dodatnih spremenljivk na razvrstitev v skupine
 
@@ -558,12 +571,12 @@ Vpliv dodatnih, v prejšnji nalogi izbranih, spremenljivk na razvrstitev v skupi
 
 ```{r}
 VplivNadzor <- cbind(prop.table(table(raz, podatki[com, "Nadzor"]), 2), "Skupaj"=prop.table(table(raz)))
-# kable(VplivNadzor, caption="Vpliv spremenljivke Nadzor na razvrstitev v skupine", digits = 3)
+kable(VplivNadzor, caption="Vpliv spremenljivke Nadzor na razvrstitev v skupine", digits = 3)
 ```
 
 Na podlagi spodnjega grafa vidimo, da so zaposleni, ki so odgovorni za nadzor nad sodelavci nekoliko bolj odprti in s tem manj konservativni kot njihovi kolegi na drugi strani. Največ odgovornih za nadzor je sicer univerzialistov, med podpovprečno odprte in podpovprečno konservativne pa se porazdeljujejo približno enakomerno. Tudi nadzorovani so v največji meri unverzialisti, sledijo jim podpovprečno odprti in kasneje še podpovprečno konservativni.
 
-```{r, fig.cap="Vpliv spremenljivke Nadzor na razvrstitev v skupine"}
+```{r, fig.cap="Spremenljivke Nadzor glede na razvrstitev v skupine"}
 # Vpliv dodatnih spremenljivk na razvrstitev - grafično.
 barplot(prop.table(table(raz, podatki[com, "Nadzor"]), 2), 
         beside = TRUE,
@@ -582,17 +595,22 @@ moc <- cramer.v(table(podatki[com, "Nadzor"], raz))
 
 Na podlagi testa hi-kvadrat, pri stopnji značilnosti 0.05, na podlagi vrednosti p (p=0.0115), pri dveh stopinjah prostosti, zavrnemo ničelno domnevo, ki pravi, da spremenljivka Nadzor ne vpliva na razporeditev v skupine. Povemo pa lahko tudi, da na podlagi koeficienta povezanosti Kramerjev V, ki zavzame vrednost 0.0783, rečemo, da je povezanost zelo šibka, pa vendar statistično značilna.
 
+\newpage
+
 ### Vpliv spremenljivke Prebivališče
 
 Podobno lahko naredimo tudi glede spremenljivke Prebivališče.
 
-```{r, fig.cap="Vpliv spremenljivke Nadzor na razvrstitev v skupine"}
+```{r, fig.cap="Spremenljivke Prebivališče na razvrstitev v skupine"}
+par(mar=c(6.5,5,1,1))
 barplot(prop.table(table(raz, podatki[com, "Prebivalisce"]), 2), 
         beside = TRUE,
         legend = TRUE,
         ylim = c(0, 1),  
         names.arg = levels(podatki$Prebivalisce),
-        col = 1:3, las = 2)
+        col = 1:3,
+        ylab="Delež",
+        las = 2)
 
 # Alternativa anovi.
 test <- kruskal.test(x = podatki[com, "Prebivalisce"], g = raz)
@@ -604,6 +622,8 @@ Na podlagi grafičnega prikaza lahko rečemo, da je v vseh področjih bivanja bo
 
 S Kruskal-Wallisovim testom ugotovimo tudi, da spremenljivka Prebivališče pri velikosti testa 0.05 statistično značilno vpliva na razporeditev v skupine. Torej obstajajo razlike med vsaj dvema skupinama glede na kraj bivanja. Moč povezanosti ponovno preverimo s Kramerjevim V-jem, ki zavzame vrednost 0.066, kar pomeni, da spremenljivka Prebivališče še nekoliko šibkeje povezana s skupinami kot Nadzor.
 
+\newpage
+
 ### Vpliv spremenljivke Razmerje
 
 Preverimo še kako je z vplivom delavnega razmerja na skupine.
@@ -611,12 +631,16 @@ Preverimo še kako je z vplivom delavnega razmerja na skupine.
 ```{r, fig.cap="Vpliv spremenljivke Razmerje na razvrstitev v skupine"}
 tabela <- cbind(prop.table(table(raz, podatki[com, "Razmerje"]), 2), prop.table(table(raz)))
 
+par(mar=c(7,5,1,1))
+
 barplot(prop.table(table(raz, podatki[com, "Razmerje"]), 2), 
         beside = TRUE,
         legend = TRUE,
         ylim = c(0, 1),  
         names.arg = levels(podatki$Razmerje),
-        col = 1:3, las = 2)
+        col = 1:3, 
+        ylab="Delež",
+        las = 2)
 
 test <- chisq.test(table(podatki[com, "Razmerje"], raz))
 moc <- cramer.v(table(podatki[com, "Razmerje"], raz))
@@ -624,13 +648,15 @@ moc <- cramer.v(table(podatki[com, "Razmerje"], raz))
 
 Največje razlike med deleži v skupinah so v ljudeh brez pogodbe, kjer je največ univerzialistov in najmanj podpovprečno konservativnih. Delež podpovprečno odprtih je največji pri enotah s pogodbo za določen čas, najmanjši pa pri pogodbi za nedoločen čas. Največji delež podpovprečno konservativnih pa je pri tistih s pogodbo za nedoločen čas.
 
-S hi-kvadrat testom, pri štirih stopinjah prostosti lahko pri stopnji značilnosti 0.05 na podlagi vrednosti p (p=0.00395) zavrnemo ničelno domnevo, ki pravi da delovno razmerje ne vpliva na skupine. Kramerjev V poda vrednost 0.761, kar pomeni, da gre za podobno, zelo šibko, povezanost kot pri spremenljivk Nadzor.
+S hi-kvadrat testom, pri štirih stopinjah prostosti lahko pri stopnji značilnosti 0.05 na podlagi vrednosti p (p=0.00395) zavrnemo ničelno domnevo, ki pravi da delovno razmerje ne vpliva na skupine. Kramerjev V poda vrednost 0.0761, kar pomeni, da gre za podobno, zelo šibko, povezanost kot pri spremenljivk Nadzor.
+
+\newpage
 
 ### Primerjava povprečij glede na spremenljivko Zaposlitev
 
 Kot zadnje pa si oglejmo še primerjavo povprečij po skupinah glede na leto prve zaposlitve.
 
-```{r, fig.cap="Primerjava povprečij glede na Zaposlitev"}
+```{r, fig.width=8, fig.height=7, fig.cap="Primerjava povprečij glede na Zaposlitev"}
 plotmeans(podatki[com, "Zaposlitev"] ~ raz, 
           ylab = "Leto", 
           xlab = "skupina")
@@ -638,6 +664,7 @@ plotmeans(podatki[com, "Zaposlitev"] ~ raz,
 leveneTest(podatki[com, "Zaposlitev"] ~ raz)
 oneway.test(Zaposlitev ~ raz, data=podatki[com, ], var.equal = TRUE) 
 ```
+
 Vidimo, da so se v povprečju podpovprečno odprti zaposlili najprej, okrog leta 1983, kar nekako pomeni, da so starejši ljudje v povprečju najmanj odprti in obenem so tudi najbolj konservativni. Univerzialisti so se v povprečju zaposlili nekje okrog leta 1986, podpovprečno konservativni pa v letu 1985.
 
 Levenov t-test, s katerim preverimo ali so variance po skupinah spremenljivke Zaposlitev enake, pri dveh stopinjah prostosti vrne vrednost p 0.067, kar pomeni da pri stopnji značilnosti 0.05, ne moremo zavrniti ničelne domneve, da so variance po skupinah različne. Tako izvedemo enosmerni anova test s predpostavko enakosti varianc, pri katerih lahko na podlagi vrednosti p (p<0.001) pri stopnji značilnosti 0.05 zavrnemo ničelno domnevo, da so povprečja pri vseh skupinah glede na spremenljivko Zaposlitev enaka in z 95% zaupanjem sklenemo, da vsaj pri dveh skupinah obstajajo razlike v povprečjih.

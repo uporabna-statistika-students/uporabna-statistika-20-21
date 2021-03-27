@@ -1,0 +1,1105 @@
+---
+title: "Seminarska naloga"
+author: "Urh Peček"
+date: "17 1 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(dplyr)
+library(nimble)
+library(R2BayesX)
+library(gridExtra)
+library(basicMCMCplots)
+library(coda)
+library(ggplot2)
+```
+
+
+# Multipla linearna regresija; primerjava frekventističnega Bayesovega pristopa
+
+```{r, echo=FALSE}
+Matrika <- function(N){
+  A <- data.frame(beta0=rep(0,N), beta1=rep(0,N),
+                      beta2=rep(0,N), beta3=rep(0,N),
+                      beta4=rep(0,N), beta5=rep(0,N))
+  return(A)
+}
+
+imena <- c("beta0","beta1","beta2","beta3","beta4","beta5")
+```
+
+## Okvir
+
+V okviru multiple linearne regresije bomo primerjali Bayesov in frekventistični pristop. V obeh primerih bomo uporabili normalni model. Primerjavo pristopov bomo naredili na 3 različne scenarije: 
+
+* normalno porazdeljena napaka z majhno varianco;
+* normalno porazdeljena napaka z veliko varianco;
+* asimetrično porazdeljena napaka (log-normal(meanlog=1.3, sdlog=1.5)).
+
+V primeru asimetrično porazdeljene napake bomo primerjavo pristopov naredili čeprav predpostavke modelov ne držijo, torej bomo primerjali njuno robustnost.
+
+Pri vseh treh pristopih bo veljalo:
+
+* Število ponovitev simulacij je 5.000.
+* Velikost vzorca je 100.
+* Pojasnjevalne spremenljivke so simulirane neodvisno ena od druge in iz različnih porazdelitev. Imajo različne efekte (močan, šibek, brez).
+* V modelu je 5 neodvisnih (pojasnjevalnih) spremenljivk in začetna vrednost (intercept).
+
+## Podatki 
+
+V vseh modelih bomo obravnavali enak podatkovni okvir napovednih spremenljivk, ki bo izhajal iz simulacije 100 (velikost vzorca) vrednosti konstante in 5 napovednih spremenljivk. Spremenljivke bodo izhajale iz naslednjih porazdelitev:
+
+* $X_0 = 1800$, (npr. $\beta_0 =$ povprečen čas vzpona na goro [s])
+* $X_1 \sim N(70,5^2)$ (npr. teža športnika [kg])
+* $X_2 \sim N(175,6^2)$ (npr. višina športnika [cm])
+* $X_3 \sim Ber(0.7)$ (npr. spol športnika; M=1, Ž=0)
+* $X_4 \sim \text{Celoštevilsko enakomerno na [20,45]}$ (npr. starost športnika [leta])
+* $X_5 \sim Geom(0.1)$ (npr. število tekem brez uvrstitve med prvih 10)  
+
+Parametri, ki nastopajo v linearni kombinaciji z napovednimi spremenljivkami od koder dobimo vrednosti odzivne spremenljivke bodo konstantni. Vrednosti parametrov bodo nekako logične glede na zgornje razlage napovednih spremenljivk.
+
+* $\beta_0 = 1$
+* $\beta_1 = 60$
+* $\beta_2 = 12$ (šibek efekt)
+* $\beta_3 = -300$ (močan efekt)
+* $\beta_4 = 2$ ("brez" efekta)
+* $\beta_5 = 180$
+
+```{r, echo=FALSE}
+b0 <- 1
+b1 <- 60
+b2 <- 12
+b3 <- -300
+b4 <- 2
+b5 <- 180
+beta <- c(b0,b1,b2,b3,b4,b5)
+```
+
+V nadaljevanju bomo simulirali 5.000 vzorcev velikosti 100 zgoraj navedenih spremenljivk in na podlagi njihovih vrednosti v kombinaciji s parametri $\beta_0, \ldots,\beta_5$ izračunali vrednosti odzivne spremenljivke $y_i$ za $i=1 \ldots, 100$ kot $y_i = \beta_0 + \beta_1 x_{i1} + \beta_2x_{i2} + \beta_3x_{i3} + \beta_4x_{i4} + \beta_5x_{i5} + \epsilon_i$, kjer bodo $\epsilon_i$ neodvisno enako porazdeljeni z vnaprej določeno porazdelitvijo.
+
+\newpage
+
+## 1. Normalno porazdeljena napaka z majhno varianco
+
+V prvem razdelku bodo simulirane napake porazdeljene normalno z (v relativnem smislu) majhno varianco, $\epsilon_i~\sim N(0,20^2)$.
+
+### Primernost privzetih parametrov funkcije bayesx
+
+Najprej preverimo, ali so privzeti parametri funkcije bayesx primerni, da je konvergenca zadovoljiva. 
+
+Predpostavlja se neinformativna apriorna porazdelitev, nekatere privzete vrednosti v funkciji bayesx pa so denimo, število iteracij, ki je enako 12.000 in uporabljen burn-in 2.000. Step, ki predstavlja thinning je prednastavljen na 10, kar pomeni, da se bo shranila in kasneje pri aposteriorni porazdelitvi bila uporabljena zgolj vsaka deseta vrednost parametra. Namen thinninga je zmanjšati porabo prostora na disku in avtokorelacijo vzorčenih vrednosti parametrov. Za oceno parametrov je uporabljena MCMC metoda, uporabljen pa je običajni normalni model podan kot "gaussian".
+
+```{r, echo=FALSE, Note=FALSE}
+# Velikost vzorca
+n <- 100
+# Standardni odklon napak
+odklon <- 20
+# Simulacija
+x0 <- 1800
+x1 <- rnorm(n,70,5)
+x2 <- rnorm(n,175,6)
+x3 <- rbinom(n,size=1,prob=0.7)
+x4 <- sample(20:45,size=100,replace=TRUE)
+x5 <- rgeom(100,prob=0.1)
+X <- data.frame(x0,x1,x2,x3,x4,x5)
+# Napake
+eps <- rnorm(n, mean=0, sd=odklon)
+# Vrednost odzivne spremenljivke
+y <- b0*x0 + b1*x1 + b2*x2 + b3*x3 + b4*x4 + b5*x5 + eps
+# Podatkovni okvir
+SimPod <- cbind(y,X,eps)
+# Bayesova linearna regresija
+capture.output(lm.bayes.prvic <- bayesx(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5, family = "gaussian", method = "MCMC"))
+```
+
+Za preučevanje konvergence si narišimo celotne vzorce in le prvih 150 členov iz aposteriornih porazdelitev parametrov $\beta$. Dodajmo tudi grafe avtokorelacij za katere želimo, da so (od 1 naprej) čim bližje 0 in obenem izpišimo effective sample size.
+
+```{r, fig.height=3, fig.width=14, echo=FALSE}
+prvic.beta <- attr(lm.bayes.prvic$fixed.effects, "sample")
+par(mfrow=c(1,3))
+
+plot(prvic.beta[,1], type="l",main = "beta0, veriga", ylab = "")
+plot(prvic.beta[1:150,1], type="l",main = "beta0, prvih 150", ylab = "")
+acf(prvic.beta[,1], ylim=c(-0.2,0.2),  main=paste("beta0, EFF =", round(effectiveSize(prvic.beta[,1]),0)))
+
+plot(prvic.beta[,2], type="l",main = "beta1, veriga", ylab = "")
+plot(prvic.beta[1:150,2], type="l",main = "beta1, prvih 150", ylab = "")
+acf(prvic.beta[,2], ylim=c(-0.2,0.2),  main=paste("beta1, EFF =", round(effectiveSize(prvic.beta[,2]),0)))
+
+plot(prvic.beta[,3], type="l",main = "beta2, veriga", ylab = "")
+plot(prvic.beta[1:150,3], type="l",main = "beta2, prvih 150", ylab = "")
+acf(prvic.beta[,3], ylim=c(-0.2,0.2),  main=paste("beta2, EFF =", round(effectiveSize(prvic.beta[,3]),0)))
+
+plot(prvic.beta[,4], type="l",main = "beta3, veriga", ylab = "")
+plot(prvic.beta[1:150,4], type="l",main = "beta3, prvih 150", ylab = "")
+acf(prvic.beta[,4], ylim=c(-0.2,0.2),  main=paste("beta3, EFF =", round(effectiveSize(prvic.beta[,4]),0)))
+
+plot(prvic.beta[,5], type="l",main = "beta4, veriga", ylab = "")
+plot(prvic.beta[1:150,5], type="l",main = "beta4, prvih 150", ylab = "")
+acf(prvic.beta[,5], ylim=c(-0.2,0.2),  main=paste("beta4, EFF =", round(effectiveSize(prvic.beta[,5]),0)))
+
+plot(prvic.beta[,6], type="l",main = "beta5, veriga", ylab = "")
+plot(prvic.beta[1:150,6], type="l",main = "beta5, prvih 150", ylab = "")
+acf(prvic.beta[,6], ylim=c(-0.2,0.2),  main=paste("beta5, EFF =", round(effectiveSize(prvic.beta[,6]),0)))
+```
+
+
+Vse verige izgledajo v redu, konvergenca je takoj dosežena in ni potrebe po (še) večjem burn-in. Posledično je tudi število iteracij zadostno in glede na konvergenco jih je 1000 (vzet je zgolj vsak deseti) dovolj za ugotavljanje aposteriorne porazdelitve. Ker je v aposteriorni porazdelitvi vzeta zgolj vsaka deseta iteracija parametra, so vsi effective sample size (EFF) okrog 1000 in so ocene avtokorelacij statistično neznačilne (pomembnih je le prvih nekaj, ostale so morda statistično značilne vendar so značilne zaradi naključja). Ugotovili smo torej, da ni potrebe po ročni nastavitvi parametrov funkcije bayesx in jih ne bomo spreminjali.
+
+```{r, echo=FALSE, Note=FALSE, eval=FALSE}
+# Velikost vzorca
+n <- 100
+# Število simulacij
+N <- 30
+# Standardni odklon napak
+odklon <- 20
+
+# Shranjevanje vrednosti
+HatFrek <- Matrika(N)
+HatBayes <- Matrika(N)
+SEfrek <- Matrika(N)
+SEbayes <- Matrika(N)
+
+for(i in 1:N) {
+  # Vrednosti napovednih spremenljivk
+  x0 <- 1800
+  x1 <- rnorm(n,70,5)
+  x2 <- rnorm(n,175,6)
+  x3 <- rbinom(n,size=1,prob=0.7)
+  x4 <- sample(20:45,size=100,replace=TRUE)
+  x5 <- rgeom(100,prob=0.1)
+  X <- data.frame(x0,x1,x2,x3,x4,x5)
+  # Napake
+  eps <- rnorm(n, mean=0, sd=odklon)
+  # Vrednost odzivne spremenljivke
+  y <- b0*x0 + b1*x1 + b2*x2 + b3*x3 + b4*x4 + b5*x5 + eps
+  # Podatkovni okvir
+  SimPod <- cbind(y,X,eps)
+  
+  # FREKVENTISTIČNI PRISTOP
+  lm.frek <- lm(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5)
+  # Ocene regresijskih koeficientov in njihove standardne napake
+  for (j in 1:6){
+    HatFrek[i,j] <- coefficients(summary(lm.frek))[j,1]
+    SEfrek[i,j] <- coefficients(summary(lm.frek))[j,2]
+  }
+  
+  # BAYESOV PRISTOP
+  capture.output(lm.bayes <- bayesx(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5, family = "gaussian", method = "MCMC"))
+  # Povprečne vrednosti aposteriornih porazdelitev in njihovi standardni odkloni
+  for(j in 1:6){
+    HatBayes[i,j] <- mean(attr(lm.bayes$fixed.effects, "sample")[,j])
+    SEbayes[i,j] <- sd(attr(lm.bayes$fixed.effects, "sample")[,j])
+  }
+}
+```
+
+```{r, echo=FALSE}
+HatFrek <- as.data.frame(source(file="HatFrek1.R"))[,1:6]
+HatBayes <- as.data.frame(source(file="HatBayes1.R"))[,1:6]
+SEfrek <- as.data.frame(source(file="SEfrek1.R"))[,1:6]
+SEbayes <- as.data.frame(source(file="SEbayes1.R"))[,1:6]
+colnames(HatFrek) <- imena
+colnames(HatBayes) <- imena
+colnames(SEfrek) <- imena
+colnames(SEbayes) <- imena
+```
+
+### Primerjava frekventističnega in Bayesovega pristopa
+
+Najprej si oglejmo kako je s pristranostjo ocen parametrov pri obeh pristopih. Primerjali bomo pristranost ocene vsakega parametra $\beta_j$ definirano kot $E[\hat{\beta_j}] - \beta_j$, kjer bomo namesto matematičnega upanja upoštevali vzorčno povprečje, za $j=0,\ldots,5$.
+
+```{r, echo=FALSE}
+betas <- c(1800,b1,b2,b3,b4,b5)
+
+BiasFrek <- apply(HatFrek,2,mean) - betas
+BiasBayes <- apply(HatBayes,2,mean) - betas
+
+Bias1 <- data.frame(BiasFrek, BiasFrek/betas * 100, BiasBayes, BiasBayes/betas * 100, Razmerje=BiasBayes/BiasFrek)
+
+kable(Bias1, caption="Pristranost", col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4, )
+```
+
+V primeru napak z majhno variabilnostjo imata tako frekventistični kot Bayesov pristop ocenjevanja parametrov linearne regresije v relativnem smislu zelo majhno pristranost, ta se pri vseh parametrih, razen $\beta_0$, kjer je blizu, spusti pod 0.5% prave vrednosti parametra. Njune ocene parametrov so si bolj ali manj enake. V vseh primerih ima Bayesov pristop ocenjevanja parametrov nekoliko večjo pristranost.
+
+Kako pa je s standardnimi napakami izračunanimi kot vzorčni standardni odklon ocen $\beta_j$ in s koreni srednje kvadratne napake, ki je definirana kot $SKN(\hat{\beta_j})=Var(\hat{\beta_j}) + E[\hat{\beta_j}-\beta_j]^2$, kjer namesto variance vzamemo kvadrirano vrednost zgornje standardne napake in namesto matematičnega upanja že zgoraj izračunano vzorčno povprečje?
+
+```{r, echo=FALSE}
+SdFrek1 <- apply(HatFrek,2,sd)
+SdBayes1 <- apply(HatBayes,2,sd)
+Sd1 <- data.frame(SdFrek1, abs(SdFrek1/betas*100), SdBayes1, abs(SdBayes1/betas*100), Razmerje=SdBayes1/SdFrek1)
+
+kable(Sd1, caption="Standardne napake", col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Nekako tako kot je s pristranostjo je tudi s standardnimi napakami ocen parametrov, ki so izračunane kot vzorčni standardni odkloni. Te so pri obeh pristopih ocenjevanja parametrov precej nizke, pod 5% vrednosti parametra, edino pri $\beta_4$, katerega efekt je skoraj ničeln, standardna napaka predstavlja nekaj manj kot 15% vrednosti parametra. Pri obeh pristopih so si standardne napake zelo blizu in med njimi skorajda ni razlik.
+
+```{r, echo=FALSE}
+SKNfrek1 <- SdFrek1^2 + BiasFrek^2
+SKNbayes1 <- SdBayes1^2 + BiasBayes^2
+
+sqrtSKN1 <- data.frame(betas, sqrt(SKNfrek1), sqrt(SKNbayes1), Razmerje=sqrt(SKNbayes1)/sqrt(SKNfrek1))
+
+kable(sqrtSKN1, caption="Koren srednjih kvadratnih napak", col.names=c("Parameter","Frekventisticno", "Bayesovsko", "Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Tudi pri srednjih kvadratnih napakah skorajda ni razlik med frekventističnim in Bayesovim pristopom ocenjevanja paramatrov. Tudi te so v relativnem smislu zelo nizke, saj so izračunane iz pristranosti in standardnih napak katere so zelo nizke in si med seboj zelo podobne.
+
+Nenazadnje si oglejmo kako je s povprečnimi ocenjenimi standardnimi napakami, torej povprečjem vrednosti, ki nam jih funkcija lm() oz. bayesx() vrne kot oceno standardne napake cenilke. 
+
+```{r, echo=FALSE}
+SEpovpFrek1 <- apply(SEfrek,2,mean)
+SEpovpBayes1 <- apply(SEbayes,2,mean)
+
+SE1 <- data.frame(Frek=SEpovpFrek1, abs(SEpovpFrek1/betas*100),
+                    Bayes=SEpovpBayes1, abs(SEpovpBayes1/betas*100),
+                    Razmerje=SEpovpBayes1/SEpovpFrek1)
+
+kable(SE1, caption="Povprečne ocenjene standardne napake", 
+      col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Povprečne ocenjene standardne napake so zelo podobne tistim, ki so izračunane kot vzorčni standardni odkloni ocen parametrov. Tudi te so zelo nizke vendar je morda opazno, da Bayesov pristop ocenjevanja vrne nekoliko višje povprečne ocenjene standardne napake, okrog 8-9% kot bomo opazili v nadaljevanju.
+
+Na koncu bi si bilo morda zanimivo pogledati primerjavo med standardnimi napakami izračunanimi kot vzorčni standardni odkloni ocen in pa povprečnimi ocenjenimi standardnimi napakami, ki nam jih vrne funkcija lm() oz bayesx(). Za boljši prikaz bomo primerjali standardne napake izražene v odstotnih deležih pravih vrednosti parametrov (torej % napaka / % napaka).
+
+```{r, echo=FALSE}
+IzracunFrek <- abs(SdFrek1/betas*100)
+IzracunBayes <- abs(SdBayes1/betas*100)
+OcenaFrek <- abs(SEpovpFrek1/betas*100)                   
+OcenaBayes <- abs(SEpovpBayes1/betas*100)
+
+PrimerjavaSE1 <- data.frame(betas,
+                            IzracunBayes/IzracunFrek,
+                            OcenaBayes/OcenaFrek)
+
+kable(PrimerjavaSE1,
+  caption="Primerjava izračunanih in ocenjenih standardnih napak", 
+      col.names=c("Parameter", "Izračun: Bayes/Frek", "Ocena: Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Kot je bilo omenjeno že zgoraj, noben pristop ni superiorno boljši od drugega, je pa razvidno, da je z vidika standardnih napak frekventistični pristop za odtenek boljši od Bayesovega, še posebej pri ocenjenih standardnih napakah.
+
+\newpage
+
+## 2. Normalno porazdeljena napaka z veliko varianco
+
+V tem razdelku bodo simulirane napake porazdeljene normalno z (v relativnem smislu) veliko varianco, $\epsilon_i~\sim N(0,250^2)$.
+
+Preverimo najprej ali tudi v primeru večje variance privzete nastavitve funkcije bayesx zadoščajo kriterijem konvergence verig.
+
+```{r, echo=FALSE, Note=FALSE}
+# Velikost vzorca
+n <- 100
+# Standardni odklon napak
+odklon <- 250
+# Simulacija
+x0 <- 1800
+x1 <- rnorm(n,70,5)
+x2 <- rnorm(n,175,6)
+x3 <- rbinom(n,size=1,prob=0.7)
+x4 <- sample(20:45,size=100,replace=TRUE)
+x5 <- rgeom(100,prob=0.1)
+X <- data.frame(x0,x1,x2,x3,x4,x5)
+# Napake
+eps <- rnorm(n, mean=0, sd=odklon)
+# Vrednost odzivne spremenljivke
+y <- b0*x0 + b1*x1 + b2*x2 + b3*x3 + b4*x4 + b5*x5 + eps
+# Podatkovni okvir
+SimPod <- cbind(y,X,eps)
+# Bayesova linearna regresija
+capture.output(lm.bayes.drugic <- bayesx(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5, family = "gaussian", method = "MCMC"))
+```
+
+```{r, fig.height=3, fig.width=14, echo=FALSE}
+drugic.beta <- attr(lm.bayes.drugic$fixed.effects, "sample")
+par(mfrow=c(1,3))
+
+plot(drugic.beta[,1], type="l",main = "beta0, veriga", ylab = "")
+plot(drugic.beta[1:150,1], type="l",main = "beta0, prvih 150", ylab = "")
+acf(drugic.beta[,1], ylim=c(-0.2,0.2),  main=paste("beta0, EFF =", round(effectiveSize(drugic.beta[,1]),0)))
+
+plot(drugic.beta[,2], type="l",main = "beta1, veriga", ylab = "")
+plot(drugic.beta[1:150,2], type="l",main = "beta1, prvih 150", ylab = "")
+acf(drugic.beta[,2], ylim=c(-0.2,0.2),  main=paste("beta1, EFF =", round(effectiveSize(drugic.beta[,2]),0)))
+
+plot(drugic.beta[,3], type="l",main = "beta2, veriga", ylab = "")
+plot(drugic.beta[1:150,3], type="l",main = "beta2, prvih 150", ylab = "")
+acf(drugic.beta[,3], ylim=c(-0.2,0.2),  main=paste("beta2, EFF =", round(effectiveSize(drugic.beta[,3]),0)))
+
+plot(drugic.beta[,4], type="l",main = "beta3, veriga", ylab = "")
+plot(drugic.beta[1:150,4], type="l",main = "beta3, prvih 150", ylab = "")
+acf(drugic.beta[,4], ylim=c(-0.2,0.2),  main=paste("beta3, EFF =", round(effectiveSize(drugic.beta[,4]),0)))
+
+plot(drugic.beta[,5], type="l",main = "beta4, veriga", ylab = "")
+plot(drugic.beta[1:150,5], type="l",main = "beta4, prvih 150", ylab = "")
+acf(drugic.beta[,5], ylim=c(-0.2,0.2),  main=paste("beta4, EFF =", round(effectiveSize(drugic.beta[,5]),0)))
+
+plot(drugic.beta[,6], type="l",main = "beta5, veriga", ylab = "")
+plot(drugic.beta[1:150,6], type="l",main = "beta5, prvih 150", ylab = "")
+acf(drugic.beta[,6], ylim=c(-0.2,0.2),  main=paste("beta5, EFF =", round(effectiveSize(drugic.beta[,6]),0)))
+```
+
+Tudi v primeru relativno večje variance napak so ugotovitve podobne tistim iz modela z manjšo varianco. Konvergenca je hitro dosežena in ni potrebe po dodatnem burn-in. Vse vrednosti EFF so zelo visoke in ocene avtokorelacij parametrov statistično neznačilne. Ni potrebe po dodatnem številu iteracij ali spremembi česar koli drugega.
+
+
+```{r, echo=FALSE, eval=FALSE}
+# Velikost vzorca
+n <- 100
+# Število simulacij
+N <- 30
+# Standardni odklon napak
+odklon <- 150
+
+# Shranjevanje vrednosti
+HatFrek <- Matrika(N)
+HatBayes <- Matrika(N)
+SEfrek <- Matrika(N)
+SEbayes <- Matrika(N)
+
+for(i in 1:N) {
+  # Vrednosti napovednih spremenljivk
+  x0 <- 1800
+  x1 <- rnorm(n,70,5)
+  x2 <- rnorm(n,175,6)
+  x3 <- rbinom(n,size=1,prob=0.7)
+  x4 <- sample(20:45,size=100,replace=TRUE)
+  x5 <- rgeom(100,prob=0.1)
+  X <- data.frame(x0,x1,x2,x3,x4,x5)
+  # Napake
+  eps <- rnorm(n, mean=0, sd=odklon)
+  # Vrednost odzivne spremenljivke
+  y <- b0*x0 + b1*x1 + b2*x2 + b3*x3 + b4*x4 + b5*x5 + eps
+  # Podatkovni okvir
+  SimPod <- cbind(y,X,eps)
+  
+  # FREKVENTISTIČNI PRISTOP
+  lm.frek <- lm(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5)
+  # Ocene regresijskih koeficientov in njihove standardne napake
+  for (j in 1:6){
+    HatFrek[i,j] <- coefficients(summary(lm.frek))[j,1]
+    SEfrek[i,j] <- coefficients(summary(lm.frek))[j,2]
+  }
+  
+  # BAYESOV PRISTOP
+  capture.output(lm.bayes <- bayesx(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5, family = "gaussian", method = "MCMC"))
+  # Povprečne vrednosti aposteriornih porazdelitev in njihovi standardni odkloni
+  for(j in 1:6){
+    HatBayes[i,j] <- mean(attr(lm.bayes$fixed.effects, "sample")[,j])
+    SEbayes[i,j] <- sd(attr(lm.bayes$fixed.effects, "sample")[,j])
+  }
+}
+```
+
+```{r, echo=FALSE}
+HatFrek <- as.data.frame(source(file="HatFrek2.R"))[,1:6]
+HatBayes <- as.data.frame(source(file="HatBayes2.R"))[,1:6]
+SEfrek <- as.data.frame(source(file="SEfrek2.R"))[,1:6]
+SEbayes <- as.data.frame(source(file="SEbayes2.R"))[,1:6]
+colnames(HatFrek) <- imena
+colnames(HatBayes) <- imena
+colnames(SEfrek) <- imena
+colnames(SEbayes) <- imena
+```
+
+### Primerjava frekventističnega in Bayesovega pristopa
+
+Ponovno si najprej oglejmo kako je s pristranostjo ocen parametrov pri obeh pristopih. Primerjavo bomo izvedli enako kot prej, kjer bomo namesto matematičnega upanja upoštevali vzorčno povprečje.
+
+```{r, echo=FALSE}
+betas <- c(1800,b1,b2,b3,b4,b5)
+
+BiasFrek <- apply(HatFrek,2,mean) - betas
+BiasBayes <- apply(HatBayes,2,mean) - betas
+
+Bias2 <- data.frame(BiasFrek, BiasFrek/betas * 100, BiasBayes, BiasBayes/betas * 100, Razmerje=BiasBayes/BiasFrek)
+
+kable(Bias2, caption="Pristranost", col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4, )
+```
+
+V primeru večje variance je pristranost nekoliko višja kot je bila v primeru manjše variance, vendar pa je še vedno zelo nizka pri obeh pristopih ocenjevanja parametrov. Težko rečemo kateri pristop ocenjevanja je gledano pristranost boljši, morda pa, gledano celoto, nekoliko v pozitivno smer odstopa Bayesov. Ponovno je največja pristranost pri parametru $\beta_4$ in sicer nad 8% prave vrednosti parametra. Zmotila bi nas lahko primerjava pri parametru $\beta_5$, vendar pa je to posledica zelo nizke ($<10^{-4}$) pristranosti frekventističnega pristopa, in primerjava kot je zapisana ne pove cele slike.
+
+Kako pa je v primeru relativno velike variance s standardnimi napakami izračunanimi kot vzorčni standardni odklon ocen $\beta_j$ in s koreni srednje kvadratne napake?
+
+```{r, echo=FALSE}
+SdFrek2 <- apply(HatFrek,2,sd)
+SdBayes2 <- apply(HatBayes,2,sd)
+Sd2 <- data.frame(SdFrek2, abs(SdFrek2/betas*100), SdBayes1, abs(SdBayes2/betas*100), Razmerje=SdBayes2/SdFrek2)
+
+kable(Sd2, caption="Standardne napake", col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Standardne napake ocen parametrov so v primeru velike variance zelo visoke. Pri nekaterih parametrih bolj, pri drugih manj. Najvišja standardna napaka je pri $\beta_4$ in sicer kar prek 170% prave vrednosti parametra, najmanjša je pri parametru $\beta_5$ kjer je pod 2%. Oba pristopa ocenjevanja podata bolj kot ne enake standardne napake, za zanemarljiv odtenek je sicer boljši frekventistični pristop.
+
+```{r, echo=FALSE}
+SKNfrek2 <- SdFrek2^2 + BiasFrek^2
+SKNbayes2 <- SdBayes2^2 + BiasBayes^2
+
+sqrtSKN2 <- data.frame(betas, sqrt(SKNfrek2), sqrt(SKNbayes2), Razmerje=sqrt(SKNbayes2)/sqrt(SKNfrek2))
+
+kable(sqrtSKN2, caption="Koren srednjih kvadratnih napak", col.names=c("Parameter","Frekventisticno", "Bayesovsko", "Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Ker so v primeru velike variance napak tako pristranosti kot standardne napake ocen parametrov zelo podobne za oba pristopa, je tako tudi s srednjimi kvadratnimi napakami. Te so očitno večje kot v primeru manjše variance napak h čemer prispevajo predvsem standardne napake.
+
+Predzadnje preverimo povprečne ocenjene standardne napake v primeru relativno velike variance.
+
+```{r, echo=FALSE}
+SEpovpFrek2 <- apply(SEfrek,2,mean)
+SEpovpBayes2 <- apply(SEbayes,2,mean)
+
+SE2 <- data.frame(Frek=SEpovpFrek2, abs(SEpovpFrek2/betas*100),
+                    Bayes=SEpovpBayes2, abs(SEpovpBayes2/betas*100),
+                    Razmerje=SEpovpBayes2/SEpovpFrek2)
+
+kable(SE2, caption="Povprečne ocenjene standardne napake", 
+      col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4, )
+```
+
+Povprečne ocenjene standardne napake so si v obeh pristopih prav tako podobne in precej višje kot v primeru majhne variance. Nekoliko pa odstopajo tiste izračunane po Bayesovem pristopu in sicer so za nekaj več kot 1% višje od frekventističnih.
+
+Ponovno si na koncu oglejmo primerjavo med izračunanimi in ocenjenimi standardnimi napakami.
+
+```{r, echo=FALSE}
+IzracunFrek <- abs(SdFrek2/betas*100)
+IzracunBayes <- abs(SdBayes2/betas*100)
+OcenaFrek <- abs(SEpovpFrek2/betas*100)                   
+OcenaBayes <- abs(SEpovpBayes2/betas*100)
+
+PrimerjavaSE2 <- data.frame(betas,
+                            IzracunBayes/IzracunFrek,
+                            OcenaBayes/OcenaFrek)
+
+kable(PrimerjavaSE2,
+  caption="Primerjava izračunanih in ocenjenih standardnih napak", 
+      col.names=c("Parameter", "Izračun: Bayes/Frek", "Ocena: Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Opazimo, da so si tako kot v primeru manjše variance tudi tu standardne napake precej podobne ne glede na njihov izračun. Razliko pa vendarle opazimo. V primeru višje variance prihaja do nekoliko manjših razlik standardnih napak med pristopoma in sicer se Bayesove bližajo frekventističnim, torej so si bolj enake kot v primeru majhne variance.
+
+\newpage
+
+## 3. Asimetrično porazdeljena napaka
+
+Nazadnje pa si oglejmo še primerjavo frekventističnega in Bayesovega pristopa ocenjevanja parametrov v primeru napake porazdeljene po log-normal porazdelitvi s parametroma meanlog=1.3 in sdlog=1.5. Porazdelitev log-normal je asimetrična in posledično predpostavke modelov ne držijo. Tako bomo primerjali njuno robustnost. (Preveril sem vzorčenje vrednosti iz izbrane porazdelitve in se mi zdijo vredu, da bomo lahko preverili kar želimo.)
+
+Za začetek ponovno preverimo kako je s konvergenco ocen parametrov v primeru asimetrično porazdeljene napake.
+
+```{r, echo=FALSE, Note=FALSE, capture.out}
+# Velikost vzorca
+n <- 100
+# Simulacija
+x0 <- 1800
+x1 <- rnorm(n,70,5)
+x2 <- rnorm(n,175,6)
+x3 <- rbinom(n,size=1,prob=0.7)
+x4 <- sample(20:45,size=100,replace=TRUE)
+x5 <- rgeom(100,prob=0.1)
+X <- data.frame(x0,x1,x2,x3,x4,x5)
+# Napake
+eps <- rlnorm(n,meanlog=1.3,sdlog=1.5)
+# Vrednost odzivne spremenljivke
+y <- b0*x0 + b1*x1 + b2*x2 + b3*x3 + b4*x4 + b5*x5 + eps
+# Podatkovni okvir
+SimPod <- cbind(y,X,eps)
+# Bayesova linearna regresija
+capture.output(lm.bayes.tretjic <- bayesx(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5, family = "gaussian", method = "MCMC"))
+```
+
+
+```{r, fig.height=3, fig.width=14, echo=FALSE}
+tretjic.beta <- attr(lm.bayes.tretjic$fixed.effects, "sample")
+par(mfrow=c(1,3))
+
+plot(tretjic.beta[,1], type="l",main = "beta0, veriga", ylab = "")
+plot(tretjic.beta[1:150,1], type="l",main = "beta0, prvih 150", ylab = "")
+acf(tretjic.beta[,1], ylim=c(-0.2,0.2),  main=paste("beta0, EFF =", round(effectiveSize(tretjic.beta[,1]),0)))
+
+plot(tretjic.beta[,2], type="l",main = "beta1, veriga", ylab = "")
+plot(tretjic.beta[1:150,2], type="l",main = "beta1, prvih 150", ylab = "")
+acf(tretjic.beta[,2], ylim=c(-0.2,0.2),  main=paste("beta1, EFF =", round(effectiveSize(tretjic.beta[,2]),0)))
+
+plot(tretjic.beta[,3], type="l",main = "beta2, veriga", ylab = "")
+plot(tretjic.beta[1:150,3], type="l",main = "beta2, prvih 150", ylab = "")
+acf(tretjic.beta[,3], ylim=c(-0.2,0.2),  main=paste("beta2, EFF =", round(effectiveSize(tretjic.beta[,3]),0)))
+
+plot(tretjic.beta[,4], type="l",main = "beta3, veriga", ylab = "")
+plot(tretjic.beta[1:150,4], type="l",main = "beta3, prvih 150", ylab = "")
+acf(tretjic.beta[,4], ylim=c(-0.2,0.2),  main=paste("beta3, EFF =", round(effectiveSize(tretjic.beta[,4]),0)))
+
+plot(tretjic.beta[,5], type="l",main = "beta4, veriga", ylab = "")
+plot(tretjic.beta[1:150,5], type="l",main = "beta4, prvih 150", ylab = "")
+acf(tretjic.beta[,5], ylim=c(-0.2,0.2),  main=paste("beta4, EFF =", round(effectiveSize(tretjic.beta[,5]),0)))
+
+plot(tretjic.beta[,6], type="l",main = "beta5, veriga", ylab = "")
+plot(tretjic.beta[1:150,6], type="l",main = "beta5, prvih 150", ylab = "")
+acf(tretjic.beta[,6], ylim=c(-0.2,0.2),  main=paste("beta5, EFF =", round(effectiveSize(tretjic.beta[,6]),0)))
+```
+
+Ne opazimo ničesar kar bi bilo potrebno popraviti. Konvergenca je hitro doseženo, ni potrebe po dodatnem burn-in niti po dodatnem številu iteracij, effective sample size je zelo visok, ocene parametrov pa niso avtokorelirane. Ne spreminjajmo ničesar.
+
+```{r, echo=FALSE, Note=FALSE, eval=FALSE}
+# Velikost vzorca
+n <- 100
+# Število simulacij
+N <- 30
+
+# Shranjevanje vrednosti
+HatFrek <- Matrika(N)
+HatBayes <- Matrika(N)
+SEfrek <- Matrika(N)
+SEbayes <- Matrika(N)
+
+for(i in 1:N) {
+  # Vrednosti napovednih spremenljivk
+  x0 <- 1800
+  x1 <- rnorm(n,70,5)
+  x2 <- rnorm(n,175,6)
+  x3 <- rbinom(n,size=1,prob=0.7)
+  x4 <- sample(20:45,size=100,replace=TRUE)
+  x5 <- rgeom(100,prob=0.1)
+  X <- data.frame(x0,x1,x2,x3,x4,x5)
+  # Napake
+  eps <- rchisq(n,df=60)
+  # Vrednost odzivne spremenljivke
+  y <- b0*x0 + b1*x1 + b2*x2 + b3*x3 + b4*x4 + b5*x5 + eps
+  # Podatkovni okvir
+  SimPod <- cbind(y,X,eps)
+  
+  # FREKVENTISTIČNI PRISTOP
+  lm.frek <- lm(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5)
+  # Ocene regresijskih koeficientov in njihove standardne napake
+  for (j in 1:6){
+    HatFrek[i,j] <- coefficients(summary(lm.frek))[j,1]
+    SEfrek[i,j] <- coefficients(summary(lm.frek))[j,2]
+  }
+  
+  # BAYESOV PRISTOP
+  capture.output(lm.bayes <- bayesx(data=SimPod, y ~ x1 + x2 + x3 + x4 +x5, family = "gaussian", method = "MCMC"))
+  # Povprečne vrednosti aposteriornih porazdelitev in njihovi standardni odkloni
+  for(j in 1:6){
+    HatBayes[i,j] <- mean(attr(lm.bayes$fixed.effects, "sample")[,j])
+    SEbayes[i,j] <- sd(attr(lm.bayes$fixed.effects, "sample")[,j])
+  }
+}
+```
+
+```{r, echo=FALSE}
+HatFrek <- as.data.frame(source(file="HatFrekManjsaNesim.R"))[,1:6]
+HatBayes <- as.data.frame(source(file="HatBayesManjsaNesim.R"))[,1:6]
+SEfrek <- as.data.frame(source(file="SEfrekManjsaNesim.R"))[,1:6]
+SEbayes <- as.data.frame(source(file="SEbayesManjsaNesim.R"))[,1:6]
+colnames(HatFrek) <- imena
+colnames(HatBayes) <- imena
+colnames(SEfrek) <- imena
+colnames(SEbayes) <- imena
+```
+
+### Primerjava frekventističnega in Bayesovega pristopa
+
+Omenim naj še, da sem poskusil tudi z večjo varianco napak kot jo bomo uporabili sedaj. Uporabil sem porazdelitev s parametroma (2,2.5). Razlika glede na normalno porazdeljeno napako z veliko varianco je bila v večini zgolj v pristranosti, kjer smo jo zelo "pokvarili", torej so bile cenilke parametrov zelo pristrane. Standardne napake in srednje kvadratične napake so bile zelo velike, vendar podobne primeru z veliko varianco. Največja razlika je bila torej v pristranosti.
+
+Po enakem principu kot v prejšnih dveh primerih si najprej oglejmo pristranost ocen parametrov pri obeh pristopih.
+
+```{r, echo=FALSE}
+betas <- c(1800,b1,b2,b3,b4,b5)
+
+BiasFrek <- apply(HatFrek,2,mean) - betas
+BiasBayes <- apply(HatBayes,2,mean) - betas
+
+Bias3 <- data.frame(BiasFrek, BiasFrek/betas * 100, BiasBayes, BiasBayes/betas * 100, Razmerje=BiasBayes/BiasFrek)
+
+kable(Bias3, caption="Pristranost", col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4, )
+```
+
+Pristranost pri nobenem od pristopov ni zelo velika. Vendar kot je že omenjeno zgoraj, večja kot pri obeh prejšnjih primerih. Torej se pristranost glede na primer z normalno porazdeljenimi napakami precej poviša. Ocene parametrov so si pri obeh pristopih precej podobne in nemoremo reči kateri pristop je boljši glede (ne)pristranosti. Če bi pa se že morali odločiti za en pristop ocenjevanja parametrov pa bi izbrali Bayesovega.
+
+Sledeče si poglejmo kako je s standardnimi napakami in koreni srednjih kvadratnih napak.
+
+```{r, echo=FALSE}
+SdFrek3 <- apply(HatFrek,2,sd)
+SdBayes3 <- apply(HatBayes,2,sd)
+Sd3 <- data.frame(SdFrek3, abs(SdFrek3/betas*100), SdBayes1, abs(SdBayes3/betas*100), Razmerje=SdBayes3/SdFrek3)
+
+kable(Sd3, caption="Standardne napake", col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Standardne napake parametrov relativno gledano niso visoke, nekako so bližje primeru z majhno varianco kot pa modelu z veliko varianco. Tu opazimo kar je bilo na začetku razdelka omenjeno in sicer, da se s kršitvijo predpostavke o normalno okrog 0 porazdeljeni napaki "uniči" predvsem pristranost, standardne napake pa niso tako občutljive.
+
+Standardne napake so si pri obeh pristopih ocenjevanja zelo podobne in nemoremo favorizirati nobenega od njiju.
+
+```{r, echo=FALSE}
+SKNfrek3 <- SdFrek3^2 + BiasFrek^2
+SKNbayes3 <- SdBayes3^2 + BiasBayes^2
+
+sqrtSKN3 <- data.frame(betas, sqrt(SKNfrek3), sqrt(SKNbayes3), Razmerje=sqrt(SKNbayes3)/sqrt(SKNfrek3))
+
+kable(sqrtSKN3, caption="Koren srednjih kvadratnih napak", col.names=c("Parameter","Frekventisticno", "Bayesovsko", "Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Koreni srednjih kvadratnih napak niso visoki, saj k njim v veliki meri ne prispevata niti pristranost niti standardna napaka. Ponovno so si srednje kvadratne napake precej podobne, kar smo pričakovali glede na podobnost pristranosti in standardnih napak.
+
+Pred koncem si oglejmo še kako je s povprečnimi ocenjenimi standardnimi napakami, torej povprečjem vrednosti, ki nam jih funkcija lm() oz. bayesx() vrne kot oceno standardne napake cenilke. 
+
+```{r, echo=FALSE}
+SEpovpFrek3 <- apply(SEfrek,2,mean)
+SEpovpBayes3 <- apply(SEbayes,2,mean)
+
+SE3 <- data.frame(Frek=SEpovpFrek3, abs(SEpovpFrek3/betas*100),
+                    Bayes=SEpovpBayes3, abs(SEpovpBayes3/betas*100),
+                    Razmerje=SEpovpBayes3/SEpovpFrek3)
+
+kable(SE3, caption="Povprečne ocenjene standardne napake", 
+      col.names=c("Frekventisticno", "% Frek.", "Bayesovsko", "% Bayes.", "Bayes/Frek"),
+      align="c", digits=4, )
+```
+
+Tudi povprečne standardne napake ocen parametrov so si pri obeh pristopih podobne in niso previsoke. Nekoliko nižje da sicer frekventistični pristop, ki bi ga v tem primeru favorizirali.
+
+In še zadnje, primerjava izračunanih in ocenjenih standardnih napak.
+
+```{r, echo=FALSE}
+IzracunFrek <- abs(SdFrek3/betas*100)
+IzracunBayes <- abs(SdBayes3/betas*100)
+OcenaFrek <- abs(SEpovpFrek3/betas*100)                
+OcenaBayes <- abs(SEpovpBayes3/betas*100)
+
+PrimerjavaSE3 <- data.frame(betas,
+                            IzracunBayes/IzracunFrek,
+                            OcenaBayes/OcenaFrek)
+
+kable(PrimerjavaSE3,
+  caption="Primerjava izračunanih in ocenjenih standardnih napak", 
+      col.names=c("Parameter", "Izračun: Bayes/Frek", "Ocena: Bayes/Frek"),
+      align="c", digits=4)
+```
+
+Tudi v primeru asimetrične porazdelitve napak sta si obe vrsti standardnih napak ocen parametrov obeh pristopov precej podobni. Ponovno je nekoliko manjša razlika v primeru izračunanih standardnih napakah. Gledajoč ocenjene standardne napake bi lahko nekoliko favorizirali frekventistični pristop ocenjevanja.
+
+Ugotovili smo torej, da je v primeru nesimetričnih in ne okrog 0 porazdeljenih napak "pokvarjena" predvsem nepristranost ocen parametrov. Na standardne napake, ne glede na njihov izračun, pa neizpolnjenost predpostavk ne vpliva v tako veliki meri kot na pristranost.
+
+\newpage
+
+# Analiza izbranih podatkov
+
+## 1. Predstavitev podatkov
+
+```{r, echo=FALSE}
+Podatki <- read.delim("Podatki.txt", sep="\t", header=TRUE)
+Podatki$Polozaj <- factor(Podatki$Polozaj, levels=c("DF","MF","FW"))
+```
+
+Podatke katere bom uporabil za analizo sem pridobil na spletni strani [Football Statistics and History](https://fbref.com/en/). Podatki se nanašajo na statistične podatke nogometašev prve angleške nogometne lige t.i. Premier League, sezone 2019/20, pri čemer so vratarji izpuščeni.
+
+V Premier League vsaka ekipa v sezoni odigra 38 tekem pri čemer vsaka tekma traja 90 minut (plus sodniški dodatek). Zbral sem statistične podatke nogometašev v polju in jih shranil v skupen podatkovni okvir. Vzorec nogometašev je velikosti `r nrow(Podatki)` in za vsako enoto je upoštevanih `r ncol(Podatki)` spremenljivk izraženih na nogometaševih 900 odigranih minut kar pomeni 10 tekem.
+
+Spremenljivke so:
+
+* število zadetkov (Zadetki);
+* število strelov proti nasprotnikovem golu (Streli);
+* število dotikov žoge, kjer se kot dotik šteje vse kar je bilo od prejetja pa do oddaje žoge (Dotiki);
+* število prejetih prekrškov (Prekrski); 
+* število prepovedanih položajev (Offside);
+* razdalja (v metrih), ki jo igralec naredi z žogo (Razdalja);
+* igralna pozicija (Polozaj) z vrednostmi DF (obramba), MF (sredina) in WF (napad).
+
+Podatke sem prenesel z zgoraj omenjene spletne strani in sicer po kosih saj niso bili v skupni datoteki. Nato sem več tabel združil v skupni podatkovni okvir. Ker so bile številske spremenljivke podane v absolutni vrednosti kot aditivno tekom celotne sezone, sem jih delil s številom odigranih minut nogometaša ter pomnožil z 900 s čimer sem dobil željen format. Pretečena razdalja je bila izražena v yardih, pretvoril sem jo v nam razumljive enote, metre. Edina opisna spremenljvika Položaj je imela sicer 5 različnih vrednosti, jaz pa sem kombinacijo branilec-vezist spremenil v branilec in kombinacijo vezist-napadalec spremenil v vezist. 
+
+Oglejmo si nekatere osnovne statistične lastnosti podatkov, da si jih bomo lažje predstavljali in dobili vanje osnoven vpogled.
+
+```{r, echo=FALSE}
+DF <- sum(Podatki$Polozaj=="DF")
+MF <- sum(Podatki$Polozaj=="MF")
+FW <- sum(Podatki$Polozaj=="FW")
+St <- nrow(Podatki)
+TabelaPolozaj <- data.frame(Polozaj=levels(Podatki$Polozaj), Stevilo=c(DF,MF,FW), Delez=c(DF/St, MF/St, FW/St))
+kable(TabelaPolozaj, digits=3, caption="Igralni položaj", align="c")
+```
+
+```{r, echo=FALSE}
+Povprecje <- round(apply(X=Podatki[,1:6], 2, FUN=mean),3)
+Std.odklon <- round(apply(X=Podatki[,1:6], 2, FUN=sd),3)
+Kvant <- round(apply(X=Podatki[,1:6], 2, FUN=quantile),3)
+Minimum <- Kvant[1,]
+Prvi.kvantil <- Kvant[2,]
+Tretji.kvantil <- Kvant[4,]
+Maksimum <- Kvant[5,]
+
+GlavnaTabela <- data.frame(Minimum, Prvi.kvantil, Povprecje, Std.odklon, Tretji.kvantil, Maksimum)
+kable(GlavnaTabela, caption="Glavne opisne statistike številskih spremenljivk", align="c")
+```
+
+```{r, echo=FALSE, message=FALSE}
+Tabela <- Podatki %>% 
+  group_by(Pozicija=Polozaj) %>%
+  summarise( 
+    Zadetki=paste(round(mean(Zadetki),2)," (",round(sd(Zadetki),2),")",sep=""),
+            Streli=paste(round(mean(Streli),2)," (",round(sd(Streli),2),")",sep=""),
+            Offside=paste(round(mean(Offside),2)," (",round(sd(Offside),2),")",sep=""),
+            Prekrski=paste(round(mean(Prekrski),2)," (",round(sd(Prekrski),2),")",sep=""),
+            Razdalja=paste(round(mean(Razdalja),2)," (",round(sd(Razdalja),2),")",sep=""),
+            Dotiki=paste(round(mean(Dotiki),2)," (",round(sd(Dotiki),2),")",sep="")) %>%
+  as.data.frame() 
+Tabela <- Tabela[c(1,3,2),-1]
+row.names(Tabela) <- c("DF","MF","PF")
+
+kable(Tabela, caption="Opisna statistika po igralnem položaju; povprečje (odklon)" , align="c", nrow=2)
+```
+
+\newpage
+
+## 2. Linearen model
+
+V okviru multiple linearne regresije bom analiziral kako število zadetkov, prepovedanih položajev, pretečena razdalja z žogo ter igralni položaj vplivajo na število prejetih prekrškov. Interakcij med spremenljivkami ne bom upošteval. Izbira modela je povezana z razvojem novih metod preučevanja športne igre in raziskovanja športnih statistik. Linearen model torej lahko zapišemo kot: \newline
+$Prekrski = \beta_0 + \beta_1 \cdot PolozajMF + \beta_2 \cdot PolozajFW + \beta_3 \cdot Zadetki + \beta_4\cdot Offside + \beta_5 \cdot Razdalja + \epsilon$.
+
+```{r, echo=FALSE}
+set.seed(1312)
+model.bayesx <- bayesx(data = Podatki, Prekrski ~ Polozaj + Zadetki + Offside + Razdalja, 
+                     family = "gaussian", method = "MCMC")
+```
+
+### Preučevanje konvergence
+
+Za začetek si oglejmo slike verig parametrov $\beta_j$ za $j=0,\ldots,5$ in variance napake $\sigma^2$. Zraven bomo dodali še grafe njihovih porazdelitev.
+
+```{r, fig.height=3, fig.width=10, echo=FALSE}
+bayesx.beta <- attr(model.bayesx$fixed.effects, "sample")
+bayesx.sigma2 <- attr(model.bayesx$variance, "sample")
+
+par(mfrow=c(1,2))
+plot(bayesx.beta[,1], type="l",main = "beta0, veriga", ylab = "")
+hist(bayesx.beta[,1], prob = T,
+     main = "beta0, porazdelitev", breaks=50, xlab="")
+lines(density(bayesx.beta[,1]), col = "red", lwd = 2)
+
+plot(bayesx.beta[,2], type="l",main = "beta1, veriga", ylab = "")
+hist(bayesx.beta[,2], prob = T,
+     main = "beta1, porazdelitev", breaks=50, xlab="")
+lines(density(bayesx.beta[,2]), col = "red", lwd = 2)
+
+plot(bayesx.beta[,3], type="l",main = "beta2, veriga", ylab = "")
+hist(bayesx.beta[,3], prob = T,
+     main = "beta2, porazdelitev", breaks=50, xlab="")
+lines(density(bayesx.beta[,3]), col = "red", lwd = 2)
+
+plot(bayesx.beta[,4], type="l",main = "beta3, veriga", ylab = "")
+hist(bayesx.beta[,4], prob = T,
+     main = "beta3, porazdelitev", breaks=50, xlab="")
+lines(density(bayesx.beta[,4]), col = "red", lwd = 2)
+
+plot(bayesx.beta[,5], type="l",main = "beta4, veriga", ylab = "")
+hist(bayesx.beta[,5], prob = T,
+     main = "beta4, porazdelitev", breaks=50, xlab="")
+lines(density(bayesx.beta[,5]), col = "red", lwd = 2)
+
+plot(bayesx.beta[,6], type="l",main = "beta5, veriga", ylab = "")
+hist(bayesx.beta[,6], prob = T,
+     main = "beta5, porazdelitev", breaks=50, xlab="")
+lines(density(bayesx.beta[,6]), col = "red", lwd = 2)
+
+plot(bayesx.sigma2, type = "l", main = "varianca, veriga", ylab = "")
+hist(bayesx.sigma2, prob = T,
+     main = "varianca, porazdelitev", breaks=50, xlab="")
+lines(density(bayesx.sigma2), col = "red", lwd = 2)
+```
+
+
+Slike verig izgledajo v redu pri vseh parametrih, izgleda, da je konvergenca hitro dosežena in da ne bo potrebe po večjem burn-in kot je bil že narejen in sicer 2000. Da se resnično prepričamo o potrebi burn-in si oglejmo še slike prvih 100 iteracij parametrov.
+
+```{r, fig.height=3, fig.width=10, echo=FALSE}
+par(mfrow=c(1,2))
+plot(bayesx.beta[1:100,1], type="l",main = "beta0, prvih 100", ylab = "")
+plot(bayesx.beta[1:100,2], type="l",main = "beta1, prvih 100", ylab = "")
+plot(bayesx.beta[1:100,3], type="l",main = "beta2, prvih 100", ylab = "")
+plot(bayesx.beta[1:100,4], type="l",main = "beta3, prvih 100", ylab = "")
+plot(bayesx.beta[1:100,5], type="l",main = "beta4, prvih 100", ylab = "")
+plot(bayesx.beta[1:100,6], type="l",main = "beta5, prvih 100", ylab = "")
+plot(bayesx.sigma2[1:100], type = "l", main = "varianca, prvih 100", ylab = "")
+```
+
+Kakor smo predvideli zgoraj je konvergenca dosežena zelo hitro, tudi slike le prvih 100 iteracij izgledajo lepo in ni potrebe po dodatnem burn-in.
+
+Za preučevanje stabilnosti verig si lahko ogledamo porazdelitve podvzorcev. Torej ali se porazdelitve ujemajo po zaporednih odsekih.
+
+```{r, fig.height=12, fig.width=10, echo=FALSE}
+beta0pod <- data.frame(sample = bayesx.beta[,1], podvzorec = factor(sort(rep(1:10,100))))
+p1 <- ggplot(beta0pod, aes(x = podvzorec, y = sample)) +
+  geom_boxplot() + labs(title = "beta0")
+
+beta1pod <- data.frame(sample = bayesx.beta[,2], podvzorec = factor(sort(rep(1:10,100))))
+p2 <- ggplot(beta1pod, aes(x = podvzorec, y = sample)) +
+  geom_boxplot() + labs(title = "beta1")
+
+beta2pod <- data.frame(sample = bayesx.beta[,3], podvzorec = factor(sort(rep(1:10,100))))
+p3 <- ggplot(beta2pod, aes(x = podvzorec, y = sample)) +
+  geom_boxplot() + labs(title = "beta2")
+
+beta3pod <- data.frame(sample = bayesx.beta[,4], podvzorec = factor(sort(rep(1:10,100))))
+p4 <- ggplot(beta3pod, aes(x = podvzorec, y = sample)) +
+  geom_boxplot() + labs(title = "beta3")
+
+beta4pod <- data.frame(sample = bayesx.beta[,5], podvzorec = factor(sort(rep(1:10,100))))
+p5 <- ggplot(beta4pod, aes(x = podvzorec, y = sample)) +
+  geom_boxplot() + labs(title = "beta4")
+
+beta5pod <- data.frame(sample = bayesx.beta[,6], podvzorec = factor(sort(rep(1:10,100))))
+p6 <- ggplot(beta5pod, aes(x = podvzorec, y = sample)) +
+  geom_boxplot() + labs(title = "beta5")
+
+sigma2pod <- data.frame(sample = bayesx.sigma2, podvzorec = factor(sort(rep(1:10,100))))
+p7 <- ggplot(sigma2pod, aes(x = podvzorec, y = sample)) +
+  geom_boxplot() + labs(title = "varianca")
+
+grid.arrange(p1,p2,p3,p4,p5,p6,p7, ncol=2)
+```
+
+Podvzorci verig vseh parametrov so si precej podobni. Seveda prihaja do manjših odstopanj, saj vzorec resnično ni zelo veliko (100 v posameznem podvzorcu), vendar sam ne vidim večje težave. 
+
+Nadaljne si poglejmo grafe avtokorelacij za katere si želimo, da so (od 1 naprej) čim bližje 0 in izpišemo effective sample size.
+
+```{r, fig.height=12, fig.width=10, echo=FALSE}
+par(mfrow=c(4,2))
+acf(bayesx.beta[,1], ylim=c(-0.3,0.3),  main=paste("beta0, EFF =", round(effectiveSize(bayesx.beta[,1]),0)))
+acf(bayesx.beta[,2], ylim=c(-0.3,0.3),  main=paste("beta1, EFF =", round(effectiveSize(bayesx.beta[,2]),0)))
+acf(bayesx.beta[,3], ylim=c(-0.3,0.3),  main=paste("beta2, EFF =", round(effectiveSize(bayesx.beta[,3]),0)))
+acf(bayesx.beta[,4], ylim=c(-0.3,0.3),  main=paste("beta3, EFF =", round(effectiveSize(bayesx.beta[,4]),0)))
+acf(bayesx.beta[,5], ylim=c(-0.3,0.3),  main=paste("beta4, EFF =", round(effectiveSize(bayesx.beta[,5]),0)))
+acf(bayesx.beta[,6], ylim=c(-0.3,0.3),  main=paste("beta5, EFF =", round(effectiveSize(bayesx.beta[,6]),0)))
+acf(bayesx.sigma2, ylim=c(-0.3,0.3),  main=paste("varianca, EFF =", round(effectiveSize(bayesx.sigma2),0)))
+```
+
+Ker je že pri ustvarjanju sample uporabljen thinning 10 je seveda effective sample size vseh parametrov enak ali zelo blizu 1000 (kolikor je bilo tudi posledičnih iteracij ob burn-in 2000 in thinning 10). Posledično tudi pri avtokorelacijah ne opazimo nikakršnih težav (pri $\beta_0$ sicer je težava), vse je tako kot bi si želeli.
+
+Nazadnje pa si ponovno in natančneje kot zgoraj oglejmo še porazdelitve parametrov s pripadajočimi 95% intervali zaupanja
+
+```{r, fig.height=12, fig.width=10, echo=FALSE}
+par(mfrow=c(4,2))
+plot(density(bayesx.beta[,1]), type = "l", main = "beta0")
+abline(v = quantile(bayesx.beta[,1], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(bayesx.beta[,2]), type = "l", main = "beta1")
+abline(v = quantile(bayesx.beta[,2], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(bayesx.beta[,3]), type = "l", main = "beta2")
+abline(v = quantile(bayesx.beta[,3], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(bayesx.beta[,4]), type = "l", main = "beta3")
+abline(v = quantile(bayesx.beta[,4], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(bayesx.beta[,5]), type = "l", main = "beta4")
+abline(v = quantile(bayesx.beta[,5], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(bayesx.beta[,6]), type = "l", main = "beta5")
+abline(v = quantile(bayesx.beta[,6], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(bayesx.sigma2), type = "l", main = "varianca")
+abline(v = quantile(bayesx.sigma2, prob=c(0.025, 0.5, 0.975)), lty = 2)
+```
+
+
+Vse izgleda lepo, porazdelitve so približno normalne. Iz 95% intervalov zaupanja lahko že razberemo statistično značilnost parametrov. Razberemo pa lahko tudi že ocenjene vrednosti, ki jih predstavlja srednja črtkana črta.
+
+### Interpretacija rezultatov
+
+Poglejmo si povzetek modela in interpretirajmo rezultate, pri čemer kot statistično značilno vrednost upoštevamo p < 0.05, kar pri nas razberemo iz intervalov zaupanja za parametre.
+
+```{r, echo=FALSE}
+summary(model.bayesx)
+```
+
+* Na število prejetih prekrškov nogometaša ob upoštevanju vseh ostalih spremenljivk statistično značilno vplivata zgolj položaj nogometaša ter število zadetkov. 
+
+* Regresijske konstante, ki predstavlja število prejetih prekrškov igralca v obrambi, pri čemer so vse ostale vrednosti enake 0 ne bomo interpretirali saj bi preveč ekstrapolirali.
+
+* Ob upoštevanju ostalih spremenljivk velja, da je nad igralcem, ki igra v zvezni vrsti v povprečju storjenih 6.76 več prekrškov na 10 odigranih tekem kot nad igralcem, ki igra v obrambi. Pripadajoč 95% interval zaupanja je (2.7 prekrškov, 10.7 prekrškov).
+
+* Ob upoštevanju ostalih spremenljivk je nad igralcem, ki igra v napadu v povprečju storjenih 16.86 več prekrškov na 10 odigranih tekem kot nad tistim, ki igra v obrambi. Pripadajoč 95% interval zaupanja je (11.9 prekrškov, 22.3 prekrškov).
+
+* Kot sem sam pričakoval, zadetki statitistično značilno vplivajo na število storjenih prekrškov in sicer negativno. To se morda na prvi pogled zdi čudno, saj bi pričakovali, da je nad najnevarnejšimi igralci storjenih največ prekrškov. Razlaga pa je sledeča, zadetke dosegajo večinoma napadalci, kateri igrajo blizu nasprotnega gola in so pogosto v 16 metrskem prostoru, kjer je nad njimi zaradi posledične enajstmetrovke zelo nevarno delati prekrške in jih tako nasprotni igralci poskusijo zaustaviti drugače. Nad napadalci je tako storjenih najmanj prekrškov (poleg branilcev). Ob upoštevanju ostalih spremenljivk velja, da če igralcev doseže 1 gol na tekmo več, je nad njim v povprečju storjen 1.1 prekršek na tekmo manj. Pripadajoč 95% interval zaupanja je (0.2 prekrška, 2.1 prekška).
+
+* Ob upoštevanju ostalih spremenljivk število prepovedanih položajev (Offside) ne vpliva statistično značilno na število prejetih prekrškov. To je bilo morda za pričakovati, vendar po drugi strani če pogledamo, so v prepovedanem položaju večinoma napadalci in bi posledično prepovedan položaj lahko imel statistično značilen vpliv na prekrške.
+
+* Nazadnje pa si oglejmo še razdaljo pretečeno z žogo. Sam bi pričakoval, da je njen vpliv na število prekrškov močno statistično značilen, saj se v splošnem prekrški delajo nad igralcem z žogo v posesti in bi bila tako večja verjetnost za prekršek nad igralcem, ki ima žogo dlje v posesti kot ostali, pa to žal ob upoštevanju ostalih spremenljivk v modelu ne velja. Tako pretečena razdalja z žogo ob upoštevanju ostalih spremenljivk ne igra statistično značilne vloge pri prejetih prekrških.
+
+\newpage
+
+## 3. Hierarhična linearna regresija
+
+V zadnjem sklopu se bomo lotili hierarhičnega modela z enakimi variancami. 
+
+V namen hierarhične linearne regresije bomo uporabili malce drugačne podatke in sicer si bomo ogledali število zadetkov igralcev ločenih glede na klub oziroma ekipo v kateri igrajo. Upoštevali bomo igralce, ki so dosegli vsaj 1 zadetek in so (ne nujno skozi celotno sezono) nastopali za enega izmed dvajsetih klubov, ki je v sezoni 2019/20 igral v že omenjeni angleški Premier League. Podatki so prav tako pridobljeni s spletne strani [Football Statistics and History](https://fbref.com/en/).
+
+```{r, echo=FALSE, message=FALSE}
+Zadetki <- read.delim("Goals.txt", sep="\t", header=TRUE)
+
+ZadetkiKlub <- Zadetki %>%
+  group_by(Squad) %>%
+  summarise(povprecje = mean(Gls), 
+            n=length(Gls), 
+            varianca = var(Gls)) %>%
+  mutate(St.Klub = 1:20)
+
+Zadetki <- right_join(Zadetki, ZadetkiKlub, by=Zadetki$quad)
+Zadetki <- Zadetki[,c(1,2,6)]
+```
+
+Za začetek si oglejmo podatke oziroma del teh, ki jih bomo obravnavali. 
+
+```{r, echo=FALSE}
+unique(Zadetki$Squad)
+head(Zadetki[,1:2])
+head(table(Zadetki[,1:2]))
+```
+
+
+Imamo 20 različnih ekip, ki predstavljajo skupine in znotraj njih različno število igralcev, ki je doseglo določeno število zadetkov. Nazadnje pa si poglejmo še porazdelitev povprečnega števila zadetkov po ekipah.
+
+```{r, echo=FALSE}
+ggplot(data=ZadetkiKlub) + 
+  geom_density(aes(x=povprecje), lwd=1.3) +
+  geom_vline(xintercept=mean(ZadetkiKlub$povprecje), col="red", lty=2, lwd=1.3) +
+  ggtitle("Porazdelitev povprečnega števila zadetkov po ekipah")
+```
+
+Z metodami hierarhične regresije bomo ocenjevali aposteriorne porazdelitve parametrov in hiperparametrov. Parametre v našem primeru predstavljajo povprečna števila zadetkov igralcev znotraj kluba $\mu_j$ za $j = 1,\ldots,20$, ki so vzorčena iz normalne porazdelitve s povprečjem $\mu$ in varianco $\eta^2$, ki predstavljata hiperparametra in sta vzorčena vsak iz svoje porazdelitve. Tretji parameter je še varianca $\sigma^2$, ki določa variabilnost zadetkov igralcev znotraj kluba in je enaka v vsaki skupini oziroma klubu. Zadetki igralcev v j-ti ekipi so tako vzorčeni iz $N(\mu_j, \sigma^2)$ porazdelitve.
+
+```{r, echo=FALSE, results=FALSE, message=FALSE}
+set.seed(1312)
+# V namen regresije naredimo vrednosti odzivne spremenljivke. To bomo naredili tako, da bomo število zadetkov v vsaki ekipi dali v svoj stolpec. Ker pa imamo po ekipah različno število strelcev, bodo imeli nekateri stolpci na koncu NA, vendar bo to delovalo v redu.
+
+m <- length(ZadetkiKlub$Squad) # Število ekip
+n <- ZadetkiKlub$n # Število strelcev znotraj ekipe
+# Matrika v kateri so v stolpcih zapisani zadetki v posameznih klubih
+yMatrix <- matrix(NA, ncol = m, nrow = max(n))
+for (j in 1:m) {
+  yMatrix[1:n[j],j] <- Zadetki[Zadetki$St.Klub==j,]$Gls
+}
+
+# 1) Določimo apriorne porazdelitve (hiper)parametrov in odzive. Za vse hiperparametre izberemo nekaj zelo neinformativnega. S primernostjo družine porazdelitev se ne obremenjujemo saj ne bomo ničesar teoretično izračunali.
+code <- nimbleCode({
+  # Apriorna porazdelitev za hiperparametra, ki določata povprečja znotraj ekip tj. N(mu, eta^2).
+  mu ~ dnorm(0, sd=100); 
+  eta ~ dunif(0, 100)
+  
+  # Apriorna porazdelitev za parameter sigma, ki določa variabilnost zadetkov znotraj ekipe
+  sigma ~ dunif(0, 100)   
+  
+  # Apriorne porazdelitve parametrov mu_j tj. povprečij po posameznih ekipah
+  for (j in 1:m) {
+    muGroups[j] ~ dnorm(mu, sd=eta) 
+    # Odzivi v modelu tj. število zadetkov
+    for (i in 1:n[j]) {
+      y[i, j] ~ dnorm(muGroups[j], sd=sigma);
+    }
+  }
+})
+
+# 2) Določimo konstante, torej število ekip in število strelcev znotraj ekipe.
+constants <- list(m=m, n=n)
+
+# 3) Določimo začetne vrednosti (hiper)parametrov.
+inits <- list(mu = mean(ZadetkiKlub$povprecje),
+              eta = sd(Zadetki$povprecje),
+              sigma = mean(sqrt(ZadetkiKlub$varianca)),
+              muGroups = ZadetkiKlub$povprecje)
+
+# 4) Določimo podatke oziroma odzive tj. število zadetkov (vseh povsod).
+data <- list(y=yMatrix)
+
+# Ustvarimo, naredimo model in poženemo vzorčenje. Sproti ugotovimo, da si program vzorčenja za parametre $\mu_j$ ne bo zapomnil, zato jih dodamo v pomnilnik.
+
+Rmodel <- nimbleModel(code=code, constants=constants, inits = inits, data = data)
+Rmodel$initializeInfo() 
+# Dobili smo opozorilo zaradi NA v podatkih, vendar bo vseeno v redu.
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$printMonitors() # Ne zapomne si mu_j
+conf$addMonitors('muGroups') # Dodano pomnenje mu_j
+
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project=Cmodel)
+samples <- runMCMC(Cmcmc, niter=12000, nburnin=2000)
+```
+
+
+V ozadju smo pognali hierarhično regresijo, sedaj pa bomo preučili konvergenco in interpretirali rezultate. 
+
+Oglejmo si povzetke ter grafe verig in aposteriornih porazdelitev nekaterih (hiper)parametrov.
+
+```{r, echo=FALSE, fig.height=3}
+samplesSummary(samples)[c(2,3,12), ]
+samplesPlot(samples, var=c("mu","muGroups[1]","muGroups[10]"))
+```
+
+Z aposteriornimi porazdelitvami $\mu, \mu_1 \: \text{in}\: \mu_{10}$ smo lahko zadovoljni. So dovolj ozke, lepo konvergirajo in standardni odkloni niso preveliki. Vse izgleda v redu.
+
+```{r, echo=FALSE, fig.height=3}
+samplesSummary(samples)[c(1, 23), ]
+samplesPlot(samples, var = c("eta","sigma"))
+```
+
+Tudi z aposteriornima porazdelitvama $\eta$ in $\sigma$ smo v večji meri zadovoljni. Morda bi bila lahko veriga $\eta$ z nekoliko manj odstopanji oziroma ožja, vendar ni tako slabo in lahko rečemo, da smo dobili kar smo želeli.
+
+Sledeče si oglejmo grafični prikaz aposteriornih porazdelitev (hiper)parametrov.
+
+```{r, echo=FALSE, fig.height=8}
+par(mfrow=c(3, 2))
+
+plot(density(samples[ , 2]), type = "l", main = "mu")
+abline(v = quantile(samples[ , 2], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(samples[ , 1]**2), type = "l", main = "eta2")
+abline(v = quantile(samples[ , 1]**2, prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(samples[ , 3]), type = "l", main = "mu_1")
+abline(v = quantile(samples[ , 3], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(samples[ , 13]), type = "l", main = "mu_10")
+abline(v = quantile(samples[ , 3], prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+plot(density(samples[ , 23]**2), type = "l", main = "sigma2")
+abline(v = quantile(samples[ , 23]**2, prob=c(0.025, 0.5, 0.975)), lty = 2)
+
+par(mfrow = c(1, 1))
+```
+
+
+Aposteriorni porazdelitvi $\mu_1$ in $\mu_{10}$ sta približno normalni ($\mu_{10}$ sicer ne popolnoma) s pričakovanima vrednostima 3.7 oziroma 4.1, pri čemer je povprečno število zadetkov v teh dveh ekipah v podatkih enako 3.3 oziroma 4.9. Tudi porazdelitev $\mu$ je normalna s pričakovano vrednostjo 3.8, kolikor je tudi povprečno število zadetkov po klubih v naših podatkih. Podobna je tudi porazdelitev $\sigma^2$ katere pričakovana vrednost je 18.5 medtem ko je bila povprečna varibialnost v podatkih enaka 18.0, Porazdelitev $\eta^2$ je močno asimetrična v desno, morda podobna $\chi^2$ z eno ali dvema stopinjama prostosti. Njena pričakovana vrednost je 0.45, v naših podatkih pa je bila variabilnost med ekipami enaka 1.63.
+
+Oglejmo si še effective sample size verig, ki pri večini (hiper)parametrov izgleda v redu, najmanjši je pri $\eta$, kjer je enak ``r min(effectiveSize(samples)) ``. Z EFF smo v večini lahko zadovoljni.
+
+```{r, echo=FALSE}
+effectiveSize(samples)
+min(effectiveSize(samples))
+```
+
+Največja izmed korelacij je enaka ``r max(abs( cor(samples)[cor(samples)!=1] ))``, kar ni problematično, saj se v splošnem pojavi težava šele nekje pri r > 0.9.
+
+```{r, echo=FALSE}
+max(abs( cor(samples)[cor(samples)!=1] ))
+```
+
+```{r, echo=FALSE}
+# Poskusim dodatno analizo, nevem če bom vključil
+MuGroups <- data.frame(AposteriornoUpanje=samplesSummary(samples)[3:22, 1],
+                               VzorčnoPovprečje=ZadetkiKlub$povprecje, VelikostVzorca=ZadetkiKlub$n)
+```
+

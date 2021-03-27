@@ -1,0 +1,634 @@
+---
+title: "Predavanje 3 - Uvoz in u podatkov easySHARE"
+author: "Lara Lusa"
+date: "2020/21"
+params:
+  printcode: no
+  printresults: hide
+  figshow: hide
+  displaywarnings : FALSE
+  evalForSol: TRUE
+  d: !r Sys.Date() 
+  displaymessage : FALSE
+  
+  
+output:
+  html_document: default
+  pdf_document: default  
+---
+
+Ukvarjali se bomo z uporabljanje s pravimi podatki. Razikava SHARE se ukvarja s staranjem populacije v Evropi. Podatki raziskave so prosto dostopni raziskovalcem. Studentom so (po registraciji predmeta) prosto dostopni podatki zbirke easySHARE, ki poenostavi uporabo SHARE podatkov. 
+
+http://www.share-project.org/special-data-sets/easyshare.html.
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = params$printcode, results= params$printresults, fig.show = params$figshow, warning = params$displaywarnings, eval=params$evalForSol, message = params$displaymessage)
+```
+
+
+## Ustvarite projekt v RStudio
+
+
+Ustvarite **projekt** za to nalogo v mapi, kjer ste shranili ta dokument (V RStudio - File -> New project, izberite obstojeco mapo, kjer ste shranili to datoteko). Nalozite spodnje knjiznice.
+
+```{r, message = FALSE, warning = FALSE, echo = TRUE}
+library(ggplot2) #for plotting
+library(foreign) #used to read data saved in Stata format
+library(here)  #to deal more efficiently with data access, without using setwd 
+               #and other commands that are dependent on the local settings
+library(magrittr) #for the pipe operator
+library(dplyr)    #for data management
+library(lubridate) #to deal with dates
+library(knitr) #to use the kable command to diplay tables,...
+library(reshape2) #to transform data (for example: long to wide format in longitudinal data)
+
+``` 
+
+
+
+Najprej nalozite projekt (V RStudio - File -> Open project, izberite obstojeco mapo, kjer ste shranili to datoteko). (To naredite preden prvic tvorite porocilo ali poskusite ukaze za uvoz podatkov). 
+
+Koda uporablja knjiznico **here**, ki ste jo predhodno nalozili in ki poenostavi delo z relativnimi naslovi datotek. 
+
+Lahko preverite, ali se nahajate v pravilnem projektu z uporabo ukaza `here::dr_here()`. Morali bi dobiti naslov mape, kjer ste shranili ta dokument. 
+
+
+
+## Uvoz podatkov
+
+
+Na spletni ucilnici najdete easySHARE podatke (v formatu za R (.RDA) in za program STATA (.DTA)). Podatke pridobite tudi s svojim uporabniskim imenom preko spletne strani projekta SHARE http://www.share-project.org/special-data-sets/easyshare.html. 
+
+
+Shranite easyshare podatke (R in STATA format) v pod-mapi (glede mape, ki vsebuje projekt) z imenom data/. 
+
+Ker so podatki za STATA bolje opisani (na primer, vsebujejo nivoje faktorjev, ki niso kodirani samo kot stevilke), bomo uvozili obe podatkovni bazi in jih zdruzili s spodnjimi ukazi. Prednost podatkov v R-u: manjkajoce vrednosti so vse kodirane z negativnimi stevilkami, kar poenostavi pretvorbo kod za manjkajoce podatke. 
+
+
+```{r, cache=TRUE, echo=TRUE}
+
+#read data in R format
+#load("share/easySHARE_rel7_0_0.RDA")
+load(here::here("data", "easySHARE_rel7_1_0.RDA"))
+
+#read data in STATA format
+#ES.data.STATA <- read.dta("data/easySHARE_rel7_1_0.dta")
+ES.data.STATA <- read.dta(here::here("data", "easySHARE_rel7-1-0.dta"))
+
+```
+
+
+### Priprava koncnih datotek
+
+Uporabite spodnjo kodo s katero boste tvorili koncno datoteko, kjer bodo manjkajoce vrednosti kodirane z NA (in R jih bo prepoznal kot manjkajoce vrednosti) in nivoji faktorjev bodo opisani z besedami.
+
+
+```{r, echo=TRUE}
+ES.data <- ES.data.STATA #naredimo kopijo statovih podatkov
+ES.data[easySHARE_rel7_1_0<0] <- NA #nastavimo na NA vse negativne vrednosti iz R-ove datoteke
+ES.data <- droplevels(ES.data) #odstranimo nivoje faktorjev, kjer so frekvence 0
+```
+
+Datoteka vsebuje `r nrow(ES.data)` odgovorov. Spremenljivka `mergeid` je osebna identifikacijska stevika (drzava-gostpodinstvo-posameznik). Vrstice, ki imajo isti `mergeid` se nanasajo na isto osebo. Podatki so v **dolgem formatu** (long format); posamezniki, ki so bili vkljuceni v raziskavo veckrat (v razlicnih valovih, Waves) so prisotni (z isto identifikacijsko stevilko mergeid) v vec vrstic. 
+
+
+V nadaljevanju bomo podatke uredili tudi v **sirokem formatu** (wide format); v tem primeru so podatki o posameznikih v eni sami vrstici in vrednosti spremenljivk, ki se nanasajo na meritve v razlicnih valovih, so zavelezene v razlicnih stolpcih. To pomeni, da ima datoteka manj vrstic in vec stolpcev. 
+
+
+
+
+### Naloga 
+
+Tvorite spremenljivko `int_date`, ki vsebuje datum intervjuja (privzemite, da je bil dan v mesecu 15., ker samo mesec (`int_month`) in leto (`int_year`) sta podana).
+
+```{r}
+ES.data$int_date <- lubridate::make_date(year=ES.data$int_year, month = ES.data$int_month, day=15)
+```
+
+
+
+Graficno preucujite tudi, ali je starost ob intervjuju povezana z valom. Kako si razlagate rezultate? 
+
+```{r}
+
+ggplot(ES.data, aes(age)) + geom_histogram(binwidth = 1) + facet_grid(wave~.)
+
+
+```
+
+Graficno preucujite tudi, ali je starost ob intervjuju povezana s spolom preiskovancev (`female`). Kako si razlagate rezultate? 
+
+```{r}
+ggplot(ES.data, aes(age)) + geom_histogram(binwidth = 1) + facet_grid(wave~female)
+```
+
+
+```{r, eval=FALSE}
+#Odstranimo te osebe iz podatkovne baze, podatke shranimo v datoteki `ES.data`, v nadaljevanju uporabimo to podskupino podatkov. 
+
+ES.data <- subset(ES.data, age>=50)
+
+```
+
+
+
+
+### Naloga 
+
+Pripravimo tudi datoteko (`ES.data.baseline`), ki vsebuje samo prvi intervju vsakega preiskovanca (na podlagi odgovora na vprasanje `int_version`, odgovor "0. Baseline questionnaire").
+
+```{r, eval=FALSE}
+#Pripravimo tudi datoteko (`ES.data.baseline`), ki vsebuje samo prvi intervju vsakega preiskovanca in omeji analizo na osebe, ki so stare vsaj 50 let ali pri katerih je starost neznana.
+
+
+
+#vsi vprasalniki pridobljeni s prvim intervjujem
+ES.data.baseline <- ES.data[which(ES.data$int_version=="0. Baseline questionnaire"), ] 
+
+#za osebe, ki so stare vsaj 50 let
+ES.data.baseline <- ES.data.baseline[ES.data.baseline$age>=50,]
+
+#ali 
+#ES.data.baseline <- dplyr::filter(ES.data, int_version=="0. Baseline questionnaire" & (age>=50 | is.na(age)))
+
+
+#odstranimo neuprabljene nivoje
+ES.data.baseline <- droplevels(ES.data.baseline)
+```
+
+
+```{r}
+
+
+
+
+#vsi vprasalniki pridobljeni s prvim intervjujem
+ES.data.baseline <- ES.data[which(ES.data$int_version=="0. Baseline questionnaire"), ] 
+
+
+#odstranimo neuprabljene nivoje
+ES.data.baseline <- droplevels(ES.data.baseline)
+```
+
+
+Datoteka vsebuje `r nrow(ES.data.baseline)` odgovorov. Spremenljivka `mergeid` je osebna identifikacijska stevika (drzava-gostpodinstvo-posameznik), vsaka oseba naj bi bila vsebovana samo enkrat. 
+
+
+
+Kako bi spremenili ukaze, ce bi zeleli odstraniti preiskovance, ki so stari vsaj 50 let ali imajo manjkajoco vrednost za starost? (Ne spremenite vsebino datoteke ES.data.baseline!)
+
+
+```{r, eval=FALSE}
+#vsi vprasalniki pridobljeni s prvim intervjujem
+ES.data.baseline2 <- ES.data[which(ES.data$int_version=="0. Baseline questionnaire"), ] 
+
+#za osebe, ki so stare vsaj 50 let
+ES.data.baseline2 <- ES.data.baseline2[which(ES.data.baseline2$age>=50),]
+
+#ali 
+#ES.data.baseline2 <- dplyr::filter(ES.data, int_version=="0. Baseline questionnaire" & age>=50)
+
+
+#odstranimo neuprabljene nivoje
+ES.data.baseline2 <- droplevels(ES.data.baseline2)
+```
+
+
+Preverite, ali je vsak preiskovanec vkljucen natanko enkrat v datoteki s prvim intervjujem `ES.data.baseline`. Za koliko preiskovancev to ne drzi?
+
+
+```{r}
+table(table(ES.data.baseline$mergeid))
+```
+
+
+
+Ker to ne drzi, odstranite intervjuje, ki niso dejansko prvi intervju. Namig, najprej dolocite kateri je prvi val, kjer je bil preiskovanec vkljucen (lahko si pomagate s spremenljivko `wavepart`) in ohranite intervjuje, kjer je val enak prvem valu, kjer je bil preiskovanec vkljucen. 
+
+
+
+
+```{r}
+
+#determine the first wave when the subject was included
+ES.data.baseline$first.wave <- as.numeric(sapply(strsplit(as.character(ES.data.baseline$wavepart), split=NULL), 
+                                function(x) x[1]))
+
+#remove the rows where the wave does not match the first wave
+ES.data.baseline <- filter(ES.data.baseline, first.wave==wave)
+
+```
+
+Uporabite to precisceno datoteko v naslednjih nalogah, kjer je namen uporabiti prvi (baseline) intervju.
+
+
+
+## Opisne statistike
+
+### Naloga 
+
+Za vsakega posameznika (razlicen `mergeid`) dolocite koliko krat je bil vkljucen v raziskavo.
+
+Namig: uporabite funkcije `tapply` in/ali `reshape2::dcast`.
+
+
+```{r}
+
+#lahko dobimo rezultate na razlicne nacine, spodaj je podano nekaj primerov
+
+#lahko uporabimo funkcijo osnovnega R tapply, oglejte si sintakso, za spremenljivko X (tukaj bi lahko izbrali katerokoli spremenljivko v datoteki)
+tmp <- tapply(X=ES.data[,2], INDEX=ES.data$mergeid, FUN=length)
+
+#lahko uporabimo funkcijo dcast iz knjiznice reshape2, oglejte si sintakso
+#zdruzimo glede mergeid, prestejemo stevilo vrstic (2. stolpec)
+#to funkcijo bomo uporabili tudi za pretvorobo longutudinalnih podatkov iz dolgega v sirok format
+num.obs <- reshape2::dcast(ES.data, mergeid~.,  fun.aggregate = length)
+
+
+#agregirano: dobimo iste rezultate kot s table of table
+table(num.obs[,2]) 
+knitr::kable(table(table(ES.data$mergeid)))
+
+
+
+kable(table(`Stevilo intervjujev`=table(ES.data$mergeid)), caption="Frekvencna porazdelitev stevila intervjujev")
+
+
+```
+
+
+### Naloga 
+
+Opisite sodelovanje drzav (`country`) v raziskavo preko valov (`wave`) s tabelo.
+
+
+
+
+```{r}
+kable(table(ES.data$country, ES.data$wave), caption="Stevilo preiskovancev vkljuceni za vsako drzavo")
+```
+
+
+Napisite ukaz, ki na podlagi prejsnje tabele izpise, katere drzave so bile prvic vkljucene v raziskavo v 7. valu. 
+
+
+```{r, echo=FALSE}
+my.table <- table(ES.data$country, ES.data$wave)
+dimnames(my.table[apply(my.table[,-7], 1, function(x) all(x==0)),])[[1]]
+```
+
+
+
+
+
+### Naloga 
+
+Oglejte si, ali je bil kaksen intervju izveden, ko so bili preiskovanci mlajsi od 50 let (`age`). Porazdelitev starosti prikazite tudi graficno in z opisnimi statistiki. 
+
+
+```{r}
+summary(ES.data$age)
+mean(ES.data$age<50, na.rm = TRUE)
+``` 
+
+```{r}
+ggplot(ES.data, aes(age)) + geom_histogram(binwidth = 1) 
+```
+
+
+### Naloga 
+
+Uporabite se naprej podatke v dolgem formatu in za vse intervjuje (`ES.data`) in za vsakega posameznika dolocite starost ob vkljucitvi (vrednost v prvem valu, kjer je bila oseba vkljucena).
+
+```{r, warning=FALSE}
+
+
+#uredimo glede (mergeid in) val, ocenimo prvo starost
+#Opomba: uporabimo %$% namesto %>% v drugem delu: to pocnemo zato, ker funkcija
+age.first <- ES.data %>% arrange(mergeid, wave) %$% tapply(age, INDEX = mergeid, FUN = function(x) x[1])
+
+#alternativni nacin
+age.first <- tapply(ES.data$age, INDEX=ES.data$mergeid, FUN=function(x) min(x, na.rm=TRUE))
+
+
+```
+
+Primerjajte rezultate s podatkom, ki ga imate na voljo v datoteki `ES.data.baseline`. 
+
+Ali ste dobili starost za natanko iste preiskovance? Ali se vrednost sklada za tiste, ki so vkljucene v obeh datotekah?
+
+Kaj bi lahko bil razlog za razlike?
+
+
+```{r}
+
+#stevilo preiskovancev za katere ste dobili starost ob prvem intervjujem
+length(age.first)
+
+#stevilo preiskovancev z "baseline interview"
+nrow(ES.data.baseline)
+
+#delez preiskovancev iz ES.data.baseline, ki so vkljuceni tudi v age.first
+mean(is.element(ES.data.baseline$mergeid, names(age.first)))
+
+#delez preiskovancev iz age.first, ki so vkljuceni tudi v ES.data.baseline
+mean(is.element(names(age.first), ES.data.baseline$mergeid))
+
+#primerjava skupnih podatkov, ali je starost ista?
+
+#zdruzimo podatke o izracunani starosti in baseline podatki na podlagi "mergeid"
+tmp <- dplyr::left_join(ES.data.baseline, data.frame(mergeid = names(age.first), age.first), by="mergeid")
+
+#preverimo, ali obstajajo razlike
+table(tmp$age-tmp$age.first)
+rm(tmp)
+
+
+
+
+```
+
+
+
+## Pretvorba longitudinalnih podatkov iz dolgega v sirokem formatu
+
+
+### Naloga
+
+Pretvorite podatke datoteke `ES.data` v sirokem formatu. Shranite mergeid, spol, starost ob vkljucitivi in (samo se) vrednost spremenljivke `maxgrip` (povprecna moc stiska v kg) iz razlicnih valov (poimenovana kot maxgrip.W1, maxgrip.W2, ...)
+
+
+```{r, warning= FALSE}
+
+ES.data.wide <- reshape2::dcast(ES.data, mergeid+female+country ~wave, value.var="maxgrip")
+
+
+#pretvorimo imena za lazjo berljivost
+
+for(i in 1:7)
+  names(ES.data.wide)[names(ES.data.wide)==i] <- paste0("maxgrip.W", i)
+
+#ker se starost spreminja uporabimo left_join() funkcijo za zdruzitev.
+ES.data.wide <- dplyr::left_join(ES.data.wide, data.frame(mergeid = names(age.first), age.first), by="mergeid")
+
+
+```
+
+
+V SHARE raziskavi so lahko posamezniki prvic vkljuceni v razlicnih valovih. Za vecino analiz je bolj smiselno upostevati vrstni red intervjuja namesto vala. Na primer, lahko nas bo zanimalo, ali je povprecna vrednost se maxgripa med prvim in drugim intervjujem v povprecju zmanjsa; to je lahko bolj relevantno kot primerjava med vrednostimi 1. in 2. vala, kjer se vsi posamezniki niso bili vkljuceni. 
+
+Ustvarite novo datoteko, kjer se bodo podatki o maxgrip nanasli na vrstni red intervjuja za posameznika; nove spremenljivke poimenujte  maxgrip.I1, maxgrip.I2, ...). Na primer, preiskovanec, ki je vkljucen v 4. valu in ima 3 veljavne vrednosti spremenljivke maxgripa (a,b,c), bo maxgrip.I1=1, maxgrip.I2=b, maxgrip.I3=c, maxgrip.I4=NA, ... maxgrip.I7=NA.
+
+Pri tem lahko privzamemo, da je bil posameznik vkljucen v raziskavo, ce ima nemanjkajoco vrednost za maxgrip v tistem valu (to ni povsem res). 
+
+
+Ali lahko uporabimo podatkek o valu ob prvi vkljucitvi, podobno kot smo ga dolocili v eni od prejsnjih nalog. 
+
+Prvi pristop je lazji, v resitvah so podane obe varianti, druga nekoliko bolj zakomplicirana. Ce ne boste sami kodirali druge resitve, jo poskusajte vsaj razumeti iz podane kode. Ce najdete bolj preprosto resitev, sporocite (za bonus tocke prvim, ki sporoci odgovor).
+
+
+
+
+### Naloga
+
+```{r}
+
+#uporabimo samo ne-manjkajoce vrednosti, nekoliko poenostavljeno
+
+tmp <- ES.data.wide %>% 
+      select(starts_with("maxgrip")) %>% #izberemo samo maxgrip spremenljivke
+        apply(1, function(x) c(x[!is.na(x)], rep(NA, sum(is.na(x))))) %>% 
+          t() #transponiramo matriko rezultatov
+
+
+
+#sledi alternativna resitev, prvi interview je vkljucitveni val
+
+num.waves <- 7
+
+#prvi val
+#ES.data$first.wave <- 
+# as.numeric(sapply(strsplit(as.character(ES.data$wavepart), split=NULL), 
+#                                function(x) x[1]))
+
+
+# razberemo prvi val, kjer oseba vkljucena od podatkov, ne od spremenljivke wavepart, kot smo naredili prejsnjic   
+  tmp <- tapply(ES.data$wave, ES.data$mergeid, min, na.rm=TRUE) 
+#shranimo v df, ki vsebuje tudi mergeid
+  tmp <- data.frame(mergeid=names(tmp), first.wave=as.numeric(tmp))
+  
+  
+
+#uporabimo left_join() funkcijo za zdruzitev prvega vala v siroki obliki
+ES.data.wide <- dplyr::left_join(ES.data.wide, tmp, by="mergeid")
+
+
+
+#### opozorilo glede uporabe join funkcij: 
+#lahko preverite, zakaj spodnji ukazi niso delovali pravilo
+#NAMIG: For all joins, rows will be duplicated if one or more rows in x matches multiple rows in y.
+
+
+#ES.data$first.wave <- 
+# as.numeric(sapply(strsplit(as.character(ES.data$wavepart), split=NULL), 
+#                                function(x) x[1]))
+
+#ES.data.wide <- dplyr::left_join(ES.data.wide, select(ES.data, "mergeid", "first.wave"), by="mergeid")
+
+
+#pripravimo datoteko, kjer so podatki urejeni glede vrstni red intervjuja
+
+maxgrip.MO <- matrix(NA, ncol=7, nrow=nrow(ES.data.wide))
+
+
+
+
+for(i in 1:num.waves)
+  maxgrip.MO[,i] <- cbind.data.frame(select(ES.data.wide, starts_with("maxgrip")), maxgrip.MO)[cbind(seq_along(ES.data.wide$first.wave), ES.data.wide$first.wave+i-1)]
+
+
+
+ES.data.wide.MO <- cbind.data.frame(select(ES.data.wide, "mergeid", "female", "country", "age.first", "first.wave"), all_of(maxgrip.MO))
+
+
+#pretvorimo imena za lazjo berljivost
+
+for(i in 1:7)
+  names(ES.data.wide.MO)[names(ES.data.wide.MO)==i] <- paste0("maxgrip.MO", i)
+
+
+
+```
+
+
+## Naloga 
+
+S pomocjo podatkov, ki ste jih uredili v prejsnji tocki, primerjajte povprecni maxgrip med prvo in drugo meritev.
+
+
+
+
+```{r}
+t.test(ES.data.wide.MO$maxgrip.MO1, ES.data.wide.MO$maxgrip.MO2, paired=TRUE)
+
+```
+
+V povprecju, koliko casa je potekalo med prvo in drugo meritev?
+
+```{r}
+#poskusite sami, prilagodite kodo, ki ste jo uporabili za ustvarjanje datoteke ES.data.wide.MO.
+```
+
+
+## Dodatne naloge
+
+
+
+
+### Naloga 
+Primerjejte (statisticno) maxgrip med moskimi in zenskami na prvi meritvi. Opisite rezultate s stavkom in graficno. 
+
+```{r}
+t.test(maxgrip~female, data=ES.data.baseline)
+with(ES.data.baseline, boxplot(maxgrip~female))
+
+
+```
+
+Kako bi izvedli analizo, ce bi zeleli uporabiti vse pridobljene meritve posameznikov?
+
+
+
+### Naloga
+
+Ocenite model linearne regresije za oceno povezanosti med starostjo, spolom, drzavo z  `maxgrip`. (Uporabite standardno kodiranje opisnih spremenjlivk (dummy coding), kjer primerjate vsako drzavo z referencno drzavo. )
+
+```{r}
+my.mod  <- lm(maxgrip ~ female + age + country, data=ES.data.baseline)
+```
+
+Uredite rezultate v tabelo, interpretirajte konstanto, ocenjeni parametri za vse spremenljivke, za drzavo osredotocite se samo na Slovenijo. Za drzavo `country` ocenite tudi skupno vrednost p in jo interpretirajte (nicelna domneva, sklep, itd) (Namig: uporabite funkcijo `anova`, kako interpretiramo izpis? Ali so rezultati odvisni od vrstnega reda spremenljivk?). 
+
+
+
+### Naloga
+
+Vkljucite v gorni model tudi interakcijo med starostjo in spolom. 
+
+```{r}
+my.mod.int  <- lm(maxgrip ~ female + age + country + female:age, data=ES.data.baseline)
+```
+
+Interpretirajte rezultate in jih prikazite tudi graficno. 
+
+
+
+### Naloga
+
+Uporabili smo test t za dva neodvisna vzorca za oceno povezanosti med dohodkom (`thinc_m`) in spolom in smo nasli veliko razliko med spoloma (P<0.00001). 
+
+```{r, echo=TRUE}
+t.test(ES.data.baseline$thinc_m~ES.data.baseline$female)
+```
+
+Zakaj je ta analiza neustrezna?   - Namig: katere predpostavke za uporabo testa niso izpolnjene?
+
+
+### Naloga
+
+Preberite dokumentacijo o kodiranju kontrastov opisnih spremenljivk v regresijskih modelih  [CONTRAST CODING SYSTEMS FOR CATEGORICAL VARIABLES in R][https://stats.idre.ucla.edu/r/library/r-library-contrast-coding-systems-for-categorical-variables/]
+
+Kateri pristop za kodiranje bi izboljsal interpretacijo rezultatov o drzavi?
+
+Ocenite se enkrat model s tem kodiranjem in interpretirajte koeficient za Slovenijo. Kako se ocene tega modela razlikujejo od prejsnjega (z privzeto kodiranje)  (poleg razlik za koeficiente za drzavo).
+
+
+### Naloga
+
+Defirajte prisotnost depresije kot ocena 4 ali vec pri vprasalniku euroD (spremenljivka `eurod`). 
+Ali je pristotnost depresije povezana s spolom? Uporabite univariatni statisticni test. Opisite rezultate. 
+
+
+
+
+```{r, echo=FALSE}
+
+ES.data.baseline$eurod_cat <- ifelse(ES.data.baseline$eurod>=4, 1, 0)
+
+
+chisq.test(ES.data.baseline$eurod_cat, ES.data.baseline$female)
+
+table(ES.data.baseline$eurod_cat, ES.data.baseline$female)
+prop.table(table(ES.data.baseline$eurod_cat, ES.data.baseline$female),2)
+
+``` 
+
+
+
+
+
+### Naloga
+
+Uporabite tudi logisticno regresijo za prejsnjo analizo.  Ali so rezultati razlicni? Kako interpretiramo ocenjene koeficiente?
+
+HINT: uporabite funkcijo `glm` in izberite binomsko druzino (`glm(y~x, family="binomial")`).
+
+
+
+
+### Naloga
+
+Graficno in z opisnimi statistikami opisite povezanost depresije s starostjo, stratificirate analizo glede spola. Ali mislite, da je starost povezana z depresijo. In da obstaja interakcija med spolom in starostjo? 
+
+```{r, echo=FALSE, eval=FALSE}
+
+ggplot(ES.data.baseline, aes(age, eurod_cat, fill=female)) + geom_smooth()
+
+
+my.mod <- glm(eurod_cat~female, data=ES.data.baseline, family="binomial")
+
+ES.data.baseline$eurod_cat <- ifelse(ES.data.baseline$eurod>=4, 1, 0)
+
+
+chisq.test(ES.data.baseline$eurod_cat, ES.data.baseline$female)
+
+table(ES.data.baseline$eurod_cat, ES.data.baseline$female)
+prop.table(table(ES.data.baseline$eurod_cat, ES.data.baseline$female),2)
+
+``` 
+
+
+
+### Naloga
+Ocenite model, ki odgovori na prejsnjo vprasanje.
+
+```{r, echo=FALSE, eval=FALSE}
+my.mod2 <- glm(eurod_cat~female+age + age:female , data=ES.data.baseline, family="binomial")
+my.mod1 <- glm(eurod_cat~female+age , data=ES.data.baseline, family="binomial", x=T, y=T)
+anova(my.mod2, my.mod1)
+
+
+``` 
+
+
+
+
+### Naloga
+
+Restrict the attention to the Slovenian baseline interviews.
+
+```{r}
+ES.data.baseline.SLO <- subset(ES.data.baseline, country=="34. Slovenia")
+``` 
+
+Consider the  $12$ items that constitute the euroD score (`euro1` to `euro12`) and evaluate their association with the the number of books present at home when the participants were  were $10$ years old (`books_age10`). Use  a univariate statistical test for each of the questions and report the (overall) p-value obtained from each of the analyses.
+
+
+```{r, echo=FALSE, eval=FALSE}
+ chisq.test(table(ES.data.baseline.SLO$books_age10, ES.data.baseline.SLO$euro1))
+```
+
+
+Adjust the overall p-values from each analysis for multiple comparisons using the Bonferroni adjustment, report and interpret the results.
+
