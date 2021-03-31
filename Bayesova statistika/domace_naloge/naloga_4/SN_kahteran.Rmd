@@ -26,6 +26,8 @@ library(nimble)
 library(R2BayesX)
 library(basicMCMCplots)
 library(matrixStats)
+library(psych)
+library(GGally)
 ```
 
 \newpage
@@ -88,8 +90,8 @@ set.seed(8)
 # n = velikost enega vzorca
 n <- 100
 # reps = stevilo ponovitev za simuliranje
-reps <- 3
-# reps <- 1000
+# reps <- 3
+reps <- 1000
 
 # koeficienti
 # naj bodo prastevila z izjemo beta_2 ki je brez efekta
@@ -605,11 +607,11 @@ grid.arrange(ggs, ggl, gga, ncol=3)
 
 Pomemben del za preveriti je še če mogoče prihaja do avtokorelacije.
 
-```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3, fig.width=10}
 
 tmp <- acf(norm_sml_var$X.Intercept., plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+ggs <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -620,11 +622,47 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                color="blue") +
     labs(x="Zamik",
          y="Korelacija",
-         title = expression(paste("Avtokorelacijski graf za ", beta[0])))
+         title = expression(paste("Avtokorelacijski graf za ", beta[0])),
+         subtitle="Normalna, majhna varianca")
+
+tmp <- acf(norm_lar_var$X.Intercept., plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+ggl <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[0])),
+         subtitle="Normalna, velika varianca")
+
+
+tmp <- acf(asy_var$X.Intercept., plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+gga <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[0])),
+         subtitle="Asimetrična")
+
+grid.arrange(ggs, ggl, gga, ncol=3)
 
 tmp <- acf(norm_sml_var$x_1, plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+ggs <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -635,11 +673,47 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                color="blue") +
     labs(x="Zamik",
          y="Korelacija",
-         title = expression(paste("Avtokorelacijski graf za ", beta[1])))
+         title = expression(paste("Avtokorelacijski graf za ", beta[1])),
+         subtitle="Normalna, majhna varianca")
+
+tmp <- acf(norm_lar_var$x_1, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+ggl <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[1])),
+         subtitle="Normalna, velika varianca")
+
+
+tmp <- acf(asy_var$x_1, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+gga <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[1])),
+         subtitle="Asimetrična")
+
+grid.arrange(ggs, ggl, gga, ncol=3)
 
 tmp <- acf(norm_sml_var$x_2, plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+ggs <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -650,11 +724,47 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                color="blue") +
     labs(x="Zamik",
          y="Korelacija",
-         title = expression(paste("Avtokorelacijski graf za ", beta[2])))
+         title = expression(paste("Avtokorelacijski graf za ", beta[2])),
+         subtitle="Normalna, majhna varianca")
+
+tmp <- acf(norm_lar_var$x_2, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+ggl <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[2])),
+         subtitle="Normalna, velika varianca")
+
+
+tmp <- acf(asy_var$x_2, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+gga <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[2])),
+         subtitle="Asimetrična")
+
+grid.arrange(ggs, ggl, gga, ncol=3)
 
 tmp <- acf(norm_sml_var$x_3, plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+ggs <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -665,11 +775,47 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                color="blue") +
     labs(x="Zamik",
          y="Korelacija",
-         title = expression(paste("Avtokorelacijski graf za ", beta[3])))
+         title = expression(paste("Avtokorelacijski graf za ", beta[3])),
+         subtitle="Normalna, majhna varianca")
+
+tmp <- acf(norm_lar_var$x_3, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+ggl <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[3])),
+         subtitle="Normalna, velika varianca")
+
+
+tmp <- acf(asy_var$x_3, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+gga <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[3])),
+         subtitle="Asimetrična")
+
+grid.arrange(ggs, ggl, gga, ncol=3)
 
 tmp <- acf(norm_sml_var$x_4, plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+ggs <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -680,11 +826,47 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                color="blue") +
     labs(x="Zamik",
          y="Korelacija",
-         title = expression(paste("Avtokorelacijski graf za ", beta[4])))
+         title = expression(paste("Avtokorelacijski graf za ", beta[4])),
+         subtitle="Normalna, majhna varianca")
+
+tmp <- acf(norm_lar_var$x_4, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+ggl <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[4])),
+         subtitle="Normalna, velika varianca")
+
+
+tmp <- acf(asy_var$x_4, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+gga <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[4])),
+         subtitle="Asimetrična")
+
+grid.arrange(ggs, ggl, gga, ncol=3)
 
 tmp <- acf(norm_sml_var$x_5, plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+ggs <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -695,39 +877,59 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                color="blue") +
     labs(x="Zamik",
          y="Korelacija",
-         title = expression(paste("Avtokorelacijski graf za ", beta[5])))
+         title = expression(paste("Avtokorelacijski graf za ", beta[5])),
+         subtitle="Normalna, majhna varianca")
+
+tmp <- acf(norm_lar_var$x_5, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+ggl <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[5])),
+         subtitle="Normalna, velika varianca")
+
+
+tmp <- acf(asy_var$x_5, plot=FALSE)
+tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
+gga <- ggplot(tmp, aes(x=lag, y=acf)) +
+    geom_hline(aes(yintercept = 0)) +
+    geom_segment(aes(xend=lag, yend=0)) +
+    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") + 
+    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
+               linetype=2, 
+               color="blue") +
+    labs(x="Zamik",
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[5])),
+         subtitle="Asimetrična")
+
+grid.arrange(ggs, ggl, gga, ncol=3)
 
 ```
 
 Vidimo da nimamo težav s privzetimi nastavitvami `bayesx()` funkcije, zato jih ne bomo spreminjali.
 
-Sedaj 
+Sedaj si poglejmo primerjave med načinoma linearne regresije. Pri vseh treh primerih bomo merili pristranost kot absolutno razliko med izračunanim koeficientom iz simulacij in pravo vrednostjo koeficienta. Poleg tega bomo preverjali še standardno napako in RMSE ocen koeficientov ter povprečno ocenjeno standardno napako.
 
-```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+## Normalna napaka z majhno varianco
 
-
-
-# nonbayes model
-# lm_non_bayes <- lm(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
-#                    data=data.frame(data_bayes))
-# 
-# # coefficients
-# coefficients(summary(lm_non_bayes))[ ,1]
-# # se
-# coefficients(summary(lm_non_bayes))[ ,2]
-# 
-# 
-# attr(lm_bayes$fixed.effects, "sample")
-# 
-
-
-
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.height=3}
 
 smlt_sml <- function(){
 
     x_1 <- rnorm(n, mean=10, sd=3)
-    x_2 <- rnorm(n, mean=10, sd=4)
-    x_3 <- rbinom(n, size=1, prob=0.6)
+    x_2 <- rbinom(n, size=1, prob=0.6)
+    x_3 <- rnorm(n, mean=10, sd=4)
     x_4 <- rchisq(n, df=2)
     x_5 <- rnorm(n, mean=10, sd=5)
     
@@ -751,15 +953,13 @@ smlt_sml <- function(){
                        family = "gaussian",
                        method = "MCMC")
     
-    norm_sml_var <- attr(lm_bayes$fixed.effects, "sample")
+    attr_bayes <- attr(lm_bayes$fixed.effects, "sample")
     
     lm_non_bayes <- lm(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
                    data=data.frame(data_bayes))
-        # colMeans(norm_sml_var)
-    # colSds(norm_sml_var)
-    
-    return(list("koeficienti_bayes"=colMeans(norm_sml_var), 
-                "se_bayes"=colSds(norm_sml_var),
+
+    return(list("koeficienti_bayes"=colMeans(attr_bayes), 
+                "se_bayes"=colSds(attr_bayes),
                 "koeficienti_lm"=coefficients(summary(lm_non_bayes))[, 1],
                 "se_lm"=coefficients(summary(lm_non_bayes))[, 2]))
 }
@@ -767,66 +967,456 @@ smlt_sml <- function(){
 storage <- t(replicate(reps, smlt_sml()))
 
 # koeficienti bayes
-coef_bayes <- do.call(rbind, storage[, 1])
+coef_bayes_s <- do.call(rbind, storage[, 1])
 # se bayes
-se_bayes <- do.call(rbind, storage[, 2])
+se_bayes_s <- do.call(rbind, storage[, 2])
 # koeficienti lm
-coef_lm <- do.call(rbind, storage[, 3])
+coef_lm_s <- do.call(rbind, storage[, 3])
 # se lm
-se_lm <- do.call(rbind, storage[, 4])
+se_lm_s <- do.call(rbind, storage[, 4])
 
 ```
 
-# normalna napaka velika varianca
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
 
-```{r, echo=TRUE, eval=TRUE, results="markup"}
-epsilon <- rnorm(n, mean=0, sd=50)
+beta_0 <- 23 # intercept
+beta_1 <- 41 # mocna
+beta_2 <- 3 # med brez in sibko 1
+beta_3 <- 0.01 # brez
+beta_4 <- 5 # med brez in sibko 2
+beta_5 <- 13 # sibka
 
-x_1 <- rnorm(n, mean=10, sd=3)
-x_2 <- rnorm(n, mean=10, sd=4)
-x_3 <- rbinom(n, size=1, prob=0.6)
-x_4 <- rchisq(n, df=2)
-x_5 <- rnorm(n, mean=10, sd=5)
+bete <- c(beta_0,
+          beta_1,
+          beta_2,
+          beta_3,
+          beta_4,
+          beta_5)
 
-y <- beta_0 + beta_1*x_1 + beta_2*x_2 + beta_3*x_3 + beta_4*x_4 + beta_5*x_5 + epsilon
+df_s <- data.frame("Beta"=0:5, 
+                   "Točne vrednosti"=bete, 
+                   "lm() ocena"=colMeans(coef_lm_s),
+                   "absolutna razlika lm()"=abs(colMeans(coef_lm_s)-bete), 
+                   "bayesx() ocena"=colMeans(coef_bayes_s),
+                   "absolutna razlika bayesx()"=abs(colMeans(coef_bayes_s)-bete))
 
-data_bayes <- cbind(y,
-                    x_1,
-                    x_2,
-                    x_3,
-                    x_4,
-                    x_5)
+row.names(df_s) <- NULL
+
+colnames(df_s) <- c("Beta", 
+                    "Točne vrednosti", 
+                    "lm() ocena", 
+                    "Absolutna razlika lm()", 
+                    "bayesx() ocena", 
+                    "Absolutna razlika bayesx()")
+
+kable(df_s, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+Vidimo da pri nobenem koeficientu ni večjih odstopanj (z izjemo $\beta_0$). Oba načina pri vseh koeficientih odstopata v enako smer, in razlike so vidne šele na tretjem ali več decimalnem mestu. Tu težko razglasim "zmagovalca", vendar je tu opaziti da `bayesx()` nekoliko manj odstopa kot `lm()`. Poglejmo si še standardno napako in RMSE za oba načina.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+df_s <- data.frame("Beta"=0:5, 
+                   "lm() SE"=colSds(coef_lm_s),
+                   "lm() RMSE"=sqrt(colSds(coef_lm_s)^2 + (colMeans(coef_lm_s)-bete)^2), 
+                   "bayesx() SE"=colSds(coef_bayes_s),
+                   "bayesx() RMSE"=sqrt(colSds(coef_lm_s)^2 + (colMeans(coef_lm_s)-bete)^2))
+
+row.names(df_s) <- NULL
+
+colnames(df_s) <- c("Beta", 
+                    "lm() SE", 
+                    "lm() RMSE", 
+                    "bayesx() SE", 
+                    "bayesx() RMSE")
+
+kable(df_s, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+df_s <- data.frame("Beta"=0:5, 
+                   "Povprečje lm() SE"=colMeans(se_lm_s),
+                   "Povprečje bayesx() SE"=colMeans(se_bayes_s))
+
+row.names(df_s) <- NULL
+
+colnames(df_s) <- c("Beta", 
+                    "Povprečje lm() SE", 
+                    "Povprečje bayesx() SE")
+
+kable(df_s, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+Ponovno vidimo da večjih razlik med načinoma ni. Pri `lm()` je SE napaka v večini primerov nižja.  RMSE je praktično enak v vseh treh primerih. Mogoče bo zgodba drugačna pri normalni napaki z veliko varianco.
+
+## Normalna napaka z veliko varianco
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.height=3}
+
+smlt_lar <- function(){
+
+    x_1 <- rnorm(n, mean=10, sd=3)
+    x_2 <- rbinom(n, size=1, prob=0.6)
+    x_3 <- rnorm(n, mean=10, sd=4)
+    x_4 <- rchisq(n, df=2)
+    x_5 <- rnorm(n, mean=10, sd=5)
+    
+    # shum
+    epsilon <- rnorm(n, mean=0, sd=50)
+    
+    # izracunan y
+    y <- beta_0 + beta_1*x_1 + beta_2*x_2 + beta_3*x_3 + beta_4*x_4 + beta_5*x_5 + epsilon
+    
+    
+    data_bayes <- cbind(y,
+                        x_1,
+                        x_2,
+                        x_3,
+                        x_4,
+                        x_5)
+    
+    # bayesx model
+    lm_bayes <- bayesx(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
+                       data=data_bayes,
+                       family = "gaussian",
+                       method = "MCMC")
+    
+    attr_bayes <- attr(lm_bayes$fixed.effects, "sample")
+    
+    lm_non_bayes <- lm(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
+                   data=data.frame(data_bayes))
+        # colMeans(norm_sml_var)
+    # colSds(norm_sml_var)
+    
+    return(list("koeficienti_bayes"=colMeans(attr_bayes), 
+                "se_bayes"=colSds(attr_bayes),
+                "koeficienti_lm"=coefficients(summary(lm_non_bayes))[, 1],
+                "se_lm"=coefficients(summary(lm_non_bayes))[, 2]))
+}
+
+storage <- t(replicate(reps, smlt_lar()))
+
+# koeficienti bayes
+coef_bayes_l <- do.call(rbind, storage[, 1])
+# se bayes
+se_bayes_l <- do.call(rbind, storage[, 2])
+# koeficienti lm
+coef_lm_l <- do.call(rbind, storage[, 3])
+# se lm
+se_lm_l <- do.call(rbind, storage[, 4])
 
 
-lm_bayes <- bayesx(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
-                   data=data_bayes,
+
+
+
+```
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+df_l <- data.frame("Beta"=0:5, 
+                   "Točne vrednosti"=bete, 
+                   "lm() ocena"=colMeans(coef_lm_l),
+                   "absolutna razlika lm()"=abs(colMeans(coef_lm_l)-bete), 
+                   "bayesx() ocena"=colMeans(coef_bayes_l),
+                   "absolutna razlika bayesx()"=abs(colMeans(coef_bayes_l)-bete))
+
+row.names(df_l) <- NULL
+
+colnames(df_l) <- c("Beta", 
+                    "Točne vrednosti", 
+                    "lm() ocena", 
+                    "Absolutna razlika lm()", 
+                    "bayesx() ocena", 
+                    "Absolutna razlika bayesx()")
+
+kable(df_l, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+Podobno kot prej, tudi tu sta si oba načina zelo blizu. Ponovno oboje odstopa v enako smer. Nekoliko boljši rezultati so pri `lm()` vendar večjih razlik ni videti.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+df_l <- data.frame("Beta"=0:5, 
+                   "lm() SE"=colSds(coef_lm_l),
+                   "lm() RMSE"=sqrt(colSds(coef_lm_l)^2 + (colMeans(coef_lm_l)-bete)^2), 
+                   "bayesx() SE"=colSds(coef_bayes_l),
+                   "bayesx() RMSE"=sqrt(colSds(coef_lm_l)^2 + (colMeans(coef_lm_l)-bete)^2))
+
+row.names(df_l) <- NULL
+
+colnames(df_l) <- c("Beta", 
+                    "lm() SE", 
+                    "lm() RMSE", 
+                    "bayesx() SE", 
+                    "bayesx() RMSE")
+
+kable(df_l, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+df_l <- data.frame("Beta"=0:5, 
+                   "Povprečje lm() SE"=colMeans(se_lm_l),
+                   "Povprečje bayesx() SE"=colMeans(se_bayes_l))
+
+row.names(df_l) <- NULL
+
+colnames(df_l) <- c("Beta", 
+                    "Povprečje lm() SE", 
+                    "Povprečje bayesx() SE")
+
+kable(df_l, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+Večjih razlik ni videti. RMSE je zopet praktično enak, medtem ko so standardne napake v 4ih primerih nižje pri `lm()`. Povprečna SE je bila v vseh primerih nižja kot pri `bayesx()`.
+
+## Asimetrična napaka
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.height=3}
+
+smlt_asy <- function(){
+
+    x_1 <- rnorm(n, mean=10, sd=3)
+    x_2 <- rbinom(n, size=1, prob=0.6)
+    x_3 <- rnorm(n, mean=10, sd=4)
+    x_4 <- rchisq(n, df=2)
+    x_5 <- rnorm(n, mean=10, sd=5)
+    
+    # shum
+    epsilon <- rchisq(n, df=1)
+    
+    # izracunan y
+    y <- beta_0 + beta_1*x_1 + beta_2*x_2 + beta_3*x_3 + beta_4*x_4 + beta_5*x_5 + epsilon
+    
+    
+    data_bayes <- cbind(y,
+                        x_1,
+                        x_2,
+                        x_3,
+                        x_4,
+                        x_5)
+    
+    # bayesx model
+    lm_bayes <- bayesx(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
+                       data=data_bayes,
+                       family = "gaussian",
+                       method = "MCMC")
+    
+    attr_bayes <- attr(lm_bayes$fixed.effects, "sample")
+    
+    # linearni
+    lm_non_bayes <- lm(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
+                   data=data.frame(data_bayes))
+
+    return(list("koeficienti_bayes"=colMeans(attr_bayes), 
+                "se_bayes"=colSds(attr_bayes),
+                "koeficienti_lm"=coefficients(summary(lm_non_bayes))[, 1],
+                "se_lm"=coefficients(summary(lm_non_bayes))[, 2]))
+}
+
+storage <- t(replicate(reps, smlt_asy()))
+
+# koeficienti bayes
+coef_bayes_a <- do.call(rbind, storage[, 1])
+# se bayes
+se_bayes_a <- do.call(rbind, storage[, 2])
+# koeficienti lm
+coef_lm_a <- do.call(rbind, storage[, 3])
+# se lm
+se_lm_a <- do.call(rbind, storage[, 4])
+
+```
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+df_a <- data.frame("Beta"=0:5, 
+                   "Točne vrednosti"=bete, 
+                   "lm() ocena"=colMeans(coef_lm_a),
+                   "absolutna razlika lm()"=abs(colMeans(coef_lm_a)-bete), 
+                   "bayesx() ocena"=colMeans(coef_bayes_a),
+                   "absolutna razlika bayesx()"=abs(colMeans(coef_bayes_a)-bete))
+
+row.names(df_a) <- NULL
+
+colnames(df_a) <- c("Beta", 
+                    "Točne vrednosti", 
+                    "lm() ocena", 
+                    "Absolutna razlika lm()", 
+                    "bayesx() ocena", 
+                    "Absolutna razlika bayesx()")
+
+kable(df_a, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+Pri asimetrični napaki prevlada `bayesx()`, saj v vseh primerih z izjemo $\beta_5$ bolj natančno ocenimo koeficiente. Podobno kot prej vsi koeficienti odstopajo v enako smer.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+df_a <- data.frame("Beta"=0:5, 
+                   "lm() SE"=colSds(coef_lm_a),
+                   "lm() RMSE"=sqrt(colSds(coef_lm_a)^2 + (colMeans(coef_lm_a)-bete)^2), 
+                   "bayesx() SE"=colSds(coef_bayes_a),
+                   "bayesx() RMSE"=sqrt(colSds(coef_lm_a)^2 + (colMeans(coef_lm_a)-bete)^2))
+
+row.names(df_a) <- NULL
+
+colnames(df_a) <- c("Beta", 
+                    "lm() SE", 
+                    "lm() RMSE", 
+                    "bayesx() SE", 
+                    "bayesx() RMSE")
+
+kable(df_a, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+df_a <- data.frame("Beta"=0:5, 
+                   "Povprečje lm() SE"=colMeans(se_lm_a),
+                   "Povprečje bayesx() SE"=colMeans(se_bayes_a))
+
+row.names(df_a) <- NULL
+
+colnames(df_a) <- c("Beta", 
+                    "Povprečje lm() SE", 
+                    "Povprečje bayesx() SE")
+
+kable(df_a, digits=5, align = "c")  %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+SE in povprečna standardna napaka je zopet boljša pri `lm()`, vendar sumim, da je vzrok za to majhno št. simulacij. 
+
+`bayesx()` se pokaže kot boljša izbira za ocenjevanje $\beta$ koeficientov pri asimetrični porazdelitvi napake, medtem ko je `lm()` način boljši z vidika standardne napake, ter v primerih normalne napake.
+
+Kar se tiče uporabnosti metod se mi zdi da je, glede na te rezultate, `lm()` boljši način (za linearno regresijo). Osebno se mi zdi da so Bayesovi načini precej boljši pri drugačnih problemih, kot npr. že obdelani hierarhični modeli.
+
+# Analiza podatkov
+
+Podatke sem po naključju našel, ko sem razmišljal kakšne podatke uporabiti za predstavitev pri predmetu _Napredni pristopi v programskem okolju R_. Podatki so dosegljivi na profilu RodolfoViana na spletni strani github. (https://github.com/RodolfoViana/exploratory-data-analysis-dataset-cars). Kasneje sem se odločil da bom te podatke uporabil za ta predmet, saj se mi zdi da so bili dober primer podatkov za hierarhični model.
+
+Podatki predstavljajo modele avtomobilov med leti 1970 in 1982, saj se je ameriška proizvodnja avtomobilov v tem obdobju začela premikati stran od $6$ in $8$ valjnikov s predvsem slabo ekonomičnostjo na k lažjim, manj močnim in bolj ekonomičnimi $4$ valjnimi motorji. Podatki vsebujejo naslednje spremenljivke:
+
+* _ID_ - zaporedna oznaka avtomobila v podatkih
+* _mpg_ - ekonomičnost/poraba avtomobila (v miljah na galono)
+* _cylinders_ - št. cilindrov
+* _displacement_ - prostornina motorja
+* _horsepower_ - Moč motorja (v konjskih močeh)
+* _weight_ - Teža avtomobila
+* _acceleration_ - Pospešek avtomobila
+* _model_ - Letnik avtomobila (modelsko leto)
+* _origin_ - Poreklo avtomobila
+* _car-name_ - Ime avtomobila
+* _price_ - Cena avtomobila (v dolarjih)
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+cars_m <- as_tibble(read.csv("cars_multi.csv",
+                   header = TRUE))
+cars_p <- read.csv("cars_price.csv",
+                   header = TRUE)
+
+# sam skupej
+cars_full <- left_join(cars_m, cars_p, by="ID")
+
+# odstranimo missing horsepower
+cars_full <- cars_full[cars_full$horsepower != "?",]
+
+cars_full$horsepower <- as.integer(cars_full$horsepower)
+
+cars_full$origin <- as.factor(cars_full$origin)
+cars_full$cylinders <- as.factor(cars_full$cylinders)
+cars_full$weight_ <- cars_full$weight
+cars_full$model <- as.factor(cars_full$model)
+
+cars_full <- mutate(cars_full, car_brand = str_extract(car_name, pattern="(abarth|aev|aixam|alfa romeo|alpine|amc|artega|aston martin|audi|austin|autobianchi|bentley|bmw|borgward|brilliance|bugatti|buick|cadillac|casalini|chatenet|chevrolet|chrysler|citroen|cobra|cupra|dacia|daewoo|daf|daihatsu|datsun|dkw|dodge|donkervoort|ds automobiles|ev|ferrari|fiat|fisker|ford|gmc|greatwall|grecav|hansa|honda|hummer|hyundai|infiniti|iso|isuzu|iveco|jac|jaguar|jdm|jeep|kia|ktm|lada|lamborghini|lancia|landRover|landWind|lexus|ligier|lincoln|london taxi|lotus|luaz|mahindra|maruti|maserati|maybach|mazda|mclaren|mercedes-benz|mercury|mg|microcar|mini|mitsubishi|morgan|moskvič|nissan|nsu|oldsmobile|opel|peugeot|piaggio|plymouth|polestar|pontiac|porsche|proton|puch|renault|replica|rolls-royce|rosengart|rover|saab|saturn|seat|shuanghuan|simca|smart|spyker|ssangyong|subaru|suzuki|skoda|talbot|tata|tavria|tazzari|tesla|toyota|trabant|triumph|tvr|uaz|vauxhall|venturi|volga|volvo|volkswagen|vw|wartburg|westfield|wiesmann|zastava|zaz|zhidou)")) %>% filter(!is.na(car_brand))
+    
+```
+
+
+Kar se samega čiščenja podatkov tiče, nekaj zapisov je imelo v spremenljivki _horsepower_ zapis "?" ter nekaj zapisov pri spremenljivki _car-name_ je imelo tiskarske napake. Takšne zapise sem odstranil. Avtomobile sem nekoliko "poenostavil" do te mere, da ne gledamo specifičnega avtomobila, temveč le znamko (npr. Toyota, Ford, ...). Po čiščenju ostane `r nrow(cars_full)` zapisov.
+
+Z linearnim modelom bomo poskušali napovedati ceno (_price_) avtomobila na podlagi spremenljivk _mpg_, _horsepower_ in _weight_. Te spremenljivke sem si izbral, saj sumim da sta _mpg_ in _horsepower_ korelirana (večji _mpg_ pomeni manjši _horsepower_) in me posledično zanima kako se Bayesov linearni model obnese v takšni situaciji. Predpostavljam da je _weight_ nekoliko povezan tudi z velikostjo avtomobila in mislim da so večji avtomobili v večini primerov tudi dražji. Poglejmo si najprej opisne statistike izbranih spremenljivk ter njihove porazdelitve
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=3}
+
+kable(describe(cars_full %>% select(price, mpg, horsepower, weight)) %>% select(mean, sd, median, mad, min, max, range, skew, kurtosis, se),
+      align = "c",
+      digits=2) %>%
+    kable_styling(full_width=FALSE)
+
+```
+
+Vidimo da je cena skoraj normalno porazdeljena (_skewness_ in _kurtosis_) medtem ko so napovedne spremenljivke nekoliko asimetrične, kjer je _weight_ tudi nekoliko sploščena. Poglejmo si še porazdelitve ter posamezne kombinacije spremenljivk.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=10, fig.width=10}
+
+ggpairs(cars_full %>% select(price, mpg, horsepower, weight))
+```
+
+Vidimo da je _price_ precej nekoreliran z ostalimi spremenljivkami, medtem ko so ostale zelo korelirane. Izgleda da sta _mpg_ in _horsepower_ precej bolj linearno povezana v logaritemskem prostoru, vendar se ne bom spuščal v to.
+
+Linearen model bo oblike
+
+$$
+price = \beta_0 + \beta_1mpg + \beta_2horsepower + \beta_3weight
+$$
+Torej poskusili bomo določiti ceno na podlagi ekonomičnosti, moči motorja in teže avtomobila. Najprej si poglejmo grafe verig za naše koeficiente.
+
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.height=3, fig.width=13}
+
+lm_bayes <- bayesx(price ~ mpg + horsepower + weight_,
+                   data=cars_full,
                    family = "gaussian",
                    method = "MCMC")
 
+chain <- attr(lm_bayes$fixed.effects, "sample")
 
-norm_big_var <- data.frame(attr(lm_bayes$fixed.effects, "sample")) %>%
+results <- data.frame(chain) %>%
     mutate(podvzorec=factor(sort(rep(1:10, 100))))
 
-colMeans(attr(lm_bayes$fixed.effects, "sample"))
-colSds(attr(lm_bayes$fixed.effects, "sample"))
-
-g1 <- ggplot(norm_big_var)
-g2 <- ggplot(norm_big_var[1:100,])
-
-
-g1 + geom_line(aes(x=as.numeric(row.names(norm_big_var)),
-                   y=X.Intercept.)) +
+gb0 <- ggplot(results) + 
+    geom_line(aes(x=as.numeric(row.names(results)),
+                  y=X.Intercept.)) +
     labs(x="Indeks",
-         y=expression(beta[0]))
+         y=expression(beta[0]),
+         title=expression(paste("Prikaz konvergence za ", beta[0])))
 
-g2 + geom_line(aes(x=as.numeric(row.names(norm_big_var[1:100,])),
-                   y=X.Intercept.)) +
+gb0s <- ggplot(results[1:100,]) + 
+    geom_line(aes(x=as.numeric(row.names(results[1:100,])),
+                  y=X.Intercept.)) +
     labs(x="Indeks",
-         y=expression(beta[0]))
+         y=expression(beta[0]),
+         title=expression(paste("Prikaz konvergence za ", beta[0])))
 
-tmp <- acf(norm_big_var$X.Intercept., plot=FALSE)
+gb0p <- ggplot(results) + 
+    geom_boxplot(aes(x=podvzorec, y=X.Intercept.)) +
+    labs(x="Podvzorec",
+         y=expression(beta[0]),
+         title = expression(paste("Podvzorci za ", beta[0])))
+
+tmp <- acf(results$X.Intercept., plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+gb0a <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -836,21 +1426,34 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                linetype=2, 
                color="blue") +
     labs(x="Zamik",
-         y="Korelacija")
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[0])))
 
-g1 + geom_line(aes(x=as.numeric(row.names(norm_big_var)),
-                   y=x_1)) +
+grid.arrange(gb0, gb0s, gb0p, gb0a, ncol=4)
+
+gb1 <- ggplot(results) + 
+    geom_line(aes(x=as.numeric(row.names(results)),
+                  y=mpg)) +
     labs(x="Indeks",
-         y=expression(beta[1]))
+         y=expression(beta[1]),
+         title=expression(paste("Prikaz konvergence za ", beta[1])))
 
-g2 + geom_line(aes(x=as.numeric(row.names(norm_big_var[1:100,])),
-                   y=x_1)) +
+gb1s <- ggplot(results[1:100,]) + 
+    geom_line(aes(x=as.numeric(row.names(results[1:100,])),
+                  y=mpg)) +
     labs(x="Indeks",
-         y=expression(beta[1]))
+         y=expression(beta[1]),
+         title=expression(paste("Prikaz konvergence za ", beta[1])))
 
-tmp <- acf(norm_big_var$x_1, plot=FALSE)
+gb1p <- ggplot(results) + 
+    geom_boxplot(aes(x=podvzorec, y=mpg)) +
+    labs(x="Podvzorec",
+         y=expression(beta[1]),
+         title = expression(paste("Podvzorci za ", beta[1])))
+
+tmp <- acf(results$mpg, plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+gb1a <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -860,21 +1463,34 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                linetype=2, 
                color="blue") +
     labs(x="Zamik",
-         y="Korelacija")
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[1])))
 
-g1 + geom_line(aes(x=as.numeric(row.names(norm_big_var)),
-                   y=x_2)) +
+grid.arrange(gb1, gb1s, gb1p, gb1a, ncol=4)
+
+gb2 <- ggplot(results) + 
+    geom_line(aes(x=as.numeric(row.names(results)),
+                  y=horsepower)) +
     labs(x="Indeks",
-         y=expression(beta[2]))
+         y=expression(beta[2]),
+         title=expression(paste("Prikaz konvergence za ", beta[2])))
 
-g2 + geom_line(aes(x=as.numeric(row.names(norm_big_var[1:100,])),
-                   y=x_2)) +
+gb2s <- ggplot(results[1:100,]) + 
+    geom_line(aes(x=as.numeric(row.names(results[1:100,])),
+                  y=horsepower)) +
     labs(x="Indeks",
-         y=expression(beta[2]))
+         y=expression(beta[2]),
+         title=expression(paste("Prikaz konvergence za ", beta[2])))
 
-tmp <- acf(norm_big_var$x_2, plot=FALSE)
+gb2p <- ggplot(results) + 
+    geom_boxplot(aes(x=podvzorec, y=horsepower)) +
+    labs(x="Podvzorec",
+         y=expression(beta[2]),
+         title = expression(paste("Podvzorci za ", beta[2])))
+
+tmp <- acf(results$horsepower, plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+gb2a <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -884,21 +1500,34 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                linetype=2, 
                color="blue") +
     labs(x="Zamik",
-         y="Korelacija")
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[2])))
 
-g1 + geom_line(aes(x=as.numeric(row.names(norm_big_var)),
-                   y=x_3)) +
+grid.arrange(gb2, gb2s, gb2p, gb2a, ncol=4)
+
+gb3 <- ggplot(results) + 
+    geom_line(aes(x=as.numeric(row.names(results)),
+                  y=weight_)) +
     labs(x="Indeks",
-         y=expression(beta[3]))
+         y=expression(beta[3]),
+         title=expression(paste("Prikaz konvergence za ", beta[3])))
 
-g2 + geom_line(aes(x=as.numeric(row.names(norm_big_var[1:100,])),
-                   y=x_3)) +
+gb3s <- ggplot(results[1:100,]) + 
+    geom_line(aes(x=as.numeric(row.names(results[1:100,])),
+                  y=weight_)) +
     labs(x="Indeks",
-         y=expression(beta[3]))
+         y=expression(beta[3]),
+         title=expression(paste("Prikaz konvergence za ", beta[3])))
 
-tmp <- acf(norm_big_var$x_3, plot=FALSE)
+gb3p <- ggplot(results) + 
+    geom_boxplot(aes(x=podvzorec, y=weight_)) +
+    labs(x="Podvzorec",
+         y=expression(beta[3]),
+         title = expression(paste("Podvzorci za ", beta[3])))
+
+tmp <- acf(results$weight_, plot=FALSE)
 tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
+gb3a <- ggplot(tmp, aes(x=lag, y=acf)) +
     geom_hline(aes(yintercept = 0)) +
     geom_segment(aes(xend=lag, yend=0)) +
     geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
@@ -908,273 +1537,224 @@ ggplot(tmp, aes(x=lag, y=acf)) +
                linetype=2, 
                color="blue") +
     labs(x="Zamik",
-         y="Korelacija")
+         y="Korelacija",
+         title = expression(paste("Avtokorelacijski graf za ", beta[3])))
 
-g1 + geom_line(aes(x=as.numeric(row.names(norm_big_var)),
-                   y=x_4)) +
-    labs(x="Indeks",
-         y=expression(beta[4]))
+grid.arrange(gb3, gb3s, gb3p, gb3a, ncol=4)
+```
 
-g2 + geom_line(aes(x=as.numeric(row.names(norm_big_var[1:100,])),
-                   y=x_4)) +
-    labs(x="Indeks",
-         y=expression(beta[4]))
+Vidimo da so vsi grafi vredu in ni potrebno dodatno spreminjati parametrov zato si poglejmo porazdelitve in vrednosti naših koeficientov.
 
-tmp <- acf(norm_big_var$x_4, plot=FALSE)
-tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_segment(aes(xend=lag, yend=0)) +
-    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") + 
-    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") +
-    labs(x="Zamik",
-         y="Korelacija")
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.height=5, fig.width=6}
 
-g1 + geom_line(aes(x=as.numeric(row.names(norm_big_var)),
-                   y=x_5)) +
-    labs(x="Indeks",
-         y=expression(beta[5]))
+meja_b0 <- quantile(results$X.Intercept., probs = c(0.025, 0.975))
+meja_b1 <- quantile(results$mpg, probs = c(0.025, 0.975))
+meja_b2 <- quantile(results$horsepower, probs = c(0.025, 0.975))
+meja_b3 <- quantile(results$weight_, probs = c(0.025, 0.975))
 
-g2 + geom_line(aes(x=as.numeric(row.names(norm_big_var[1:100,])),
-                   y=x_5)) +
-    labs(x="Indeks",
-         y=expression(beta[5]))
+ggplot(results, aes(x=X.Intercept.)) +
+    geom_density() +
+    geom_vline(xintercept = meja_b0[[1]], color="red", linetype="longdash") +
+    geom_vline(xintercept = meja_b0[[2]], color="red", linetype="longdash") +
+    labs(x=expression(beta[0]),
+         y="Gostota",
+         title=expression(paste("Porazdelitev koeficienta ", beta[0])),
+         subtitle=paste0("Povprečje = ", mean(results$X.Intercept.)))
 
-tmp <- acf(norm_big_var$x_5, plot=FALSE)
-tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_segment(aes(xend=lag, yend=0)) +
-    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") + 
-    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") +
-    labs(x="Zamik",
-         y="Korelacija")
+ggplot(results, aes(x=mpg)) +
+    geom_density() +
+    geom_vline(xintercept = meja_b1[[1]], color="red", linetype="longdash") +
+    geom_vline(xintercept = meja_b1[[2]], color="red", linetype="longdash") +
+    labs(x=expression(beta[1]),
+         y="Gostota",
+         title=expression(paste("Porazdelitev koeficienta ", beta[1])),
+         subtitle=paste0("Povprečje = ", mean(results$mpg)))
 
+ggplot(results, aes(x=horsepower)) +
+    geom_density() +
+    geom_vline(xintercept = meja_b2[[1]], color="red", linetype="longdash") +
+    geom_vline(xintercept = meja_b2[[2]], color="red", linetype="longdash") +
+    labs(x=expression(beta[2]),
+         y="Gostota",
+         title=expression(paste("Porazdelitev koeficienta ", beta[2])),
+         subtitle=paste0("Povprečje = ", mean(results$horsepower)))
 
-
-# nonbayes model
-lm_non_bayes <- lm(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
-                   data=data.frame(data_bayes))
-
-# means
-coefficients(summary(lm_non_bayes))[ ,1]
-# se
-coefficients(summary(lm_non_bayes))[ ,2]
-
-
-attr(lm_bayes$fixed.effects, "sample")
-
-
-
+ggplot(results, aes(x=weight_)) +
+    geom_density() +
+    geom_vline(xintercept = meja_b3[[1]], color="red", linetype="longdash") +
+    geom_vline(xintercept = meja_b3[[2]], color="red", linetype="longdash") +
+    labs(x=expression(beta[3]),
+         y="Gostota",
+         title=expression(paste("Porazdelitev koeficienta ", beta[3])),
+         subtitle=paste0("Povprečje = ", mean(results$weight_)))
 
 ```
 
-# Asimetricna napaka
+Poglejmo si še tabelo, kjer so zapisane meje in povprečja porazdelitev.
 
-```{r, echo=TRUE, eval=TRUE, results="markup"}
-epsilon <- rchisq(n, df=1)
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5, fig.width=6}
 
-x_1 <- rnorm(n, mean=10, sd=3)
-x_2 <- rnorm(n, mean=10, sd=4)
-x_3 <- rbinom(n, size=1, prob=0.6)
-x_4 <- rchisq(n, df=2)
-x_5 <- rnorm(n, mean=10, sd=5)
+r0 <- c(0, mean(results$X.Intercept.), meja_b0)
+r1 <- c(1, mean(results$mpg), meja_b1)
+r2 <- c(2, mean(results$horsepower), meja_b2)
+r3 <- c(3, mean(results$weight_), meja_b3)
 
-y <- beta_0 + beta_1*x_1 + beta_2*x_2 + beta_3*x_3 + beta_4*x_4 + beta_5*x_5 + epsilon
+tmp <- rbind(r0, r1, r2, r3)
+rownames(tmp) <- c("(Intercept)", "mpg", "horsepower", "weight")
+colnames(tmp) <- c("Beta", "Povprečje", "2.5%", "97.5%")
 
-data_bayes <- cbind(y,
-                    x_1,
-                    x_2,
-                    x_3,
-                    x_4,
-                    x_5)
-
-
-lm_bayes <- bayesx(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
-                   data=data_bayes,
-                   family = "gaussian",
-                   method = "MCMC")
-
-
-chi_var <- data.frame(attr(lm_bayes$fixed.effects, "sample")) %>%
-    mutate(podvzorec=factor(sort(rep(1:10, 100))))
-
-colMeans(attr(lm_bayes$fixed.effects, "sample"))
-colSds(attr(lm_bayes$fixed.effects, "sample"))
-
-g1 <- ggplot(chi_var)
-g2 <- ggplot(chi_var[1:100,])
-
-
-g1 + geom_line(aes(x=as.numeric(row.names(chi_var)),
-                   y=X.Intercept.)) +
-    labs(x="Indeks",
-         y=expression(beta[0]))
-
-g2 + geom_line(aes(x=as.numeric(row.names(chi_var[1:100,])),
-                   y=X.Intercept.)) +
-    labs(x="Indeks",
-         y=expression(beta[0]))
-
-tmp <- acf(chi_var$X.Intercept., plot=FALSE)
-tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_segment(aes(xend=lag, yend=0)) +
-    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") + 
-    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") +
-    labs(x="Zamik",
-         y="Korelacija")
-
-g1 + geom_line(aes(x=as.numeric(row.names(chi_var)),
-                   y=x_1)) +
-    labs(x="Indeks",
-         y=expression(beta[1]))
-
-g2 + geom_line(aes(x=as.numeric(row.names(chi_var[1:100,])),
-                   y=x_1)) +
-    labs(x="Indeks",
-         y=expression(beta[1]))
-
-tmp <- acf(chi_var$x_1, plot=FALSE)
-tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_segment(aes(xend=lag, yend=0)) +
-    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") + 
-    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") +
-    labs(x="Zamik",
-         y="Korelacija")
-
-g1 + geom_line(aes(x=as.numeric(row.names(chi_var)),
-                   y=x_2)) +
-    labs(x="Indeks",
-         y=expression(beta[2]))
-
-g2 + geom_line(aes(x=as.numeric(row.names(chi_var[1:100,])),
-                   y=x_2)) +
-    labs(x="Indeks",
-         y=expression(beta[2]))
-
-tmp <- acf(chi_var$x_2, plot=FALSE)
-tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_segment(aes(xend=lag, yend=0)) +
-    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") + 
-    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") +
-    labs(x="Zamik",
-         y="Korelacija")
-
-g1 + geom_line(aes(x=as.numeric(row.names(chi_var)),
-                   y=x_3)) +
-    labs(x="Indeks",
-         y=expression(beta[3]))
-
-g2 + geom_line(aes(x=as.numeric(row.names(chi_var[1:100,])),
-                   y=x_3)) +
-    labs(x="Indeks",
-         y=expression(beta[3]))
-
-tmp <- acf(chi_var$x_3, plot=FALSE)
-tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_segment(aes(xend=lag, yend=0)) +
-    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") + 
-    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") +
-    labs(x="Zamik",
-         y="Korelacija")
-
-g1 + geom_line(aes(x=as.numeric(row.names(chi_var)),
-                   y=x_4)) +
-    labs(x="Indeks",
-         y=expression(beta[4]))
-
-g2 + geom_line(aes(x=as.numeric(row.names(chi_var[1:100,])),
-                   y=x_4)) +
-    labs(x="Indeks",
-         y=expression(beta[4]))
-
-tmp <- acf(chi_var$x_4, plot=FALSE)
-tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_segment(aes(xend=lag, yend=0)) +
-    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") + 
-    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") +
-    labs(x="Zamik",
-         y="Korelacija")
-
-g1 + geom_line(aes(x=as.numeric(row.names(chi_var)),
-                   y=x_5)) +
-    labs(x="Indeks",
-         y=expression(beta[5]))
-
-g2 + geom_line(aes(x=as.numeric(row.names(chi_var[1:100,])),
-                   y=x_5)) +
-    labs(x="Indeks",
-         y=expression(beta[5]))
-
-tmp <- acf(chi_var$x_5, plot=FALSE)
-tmp <- data.frame(acf=tmp$acf, lag=tmp$lag)
-ggplot(tmp, aes(x=lag, y=acf)) +
-    geom_hline(aes(yintercept = 0)) +
-    geom_segment(aes(xend=lag, yend=0)) +
-    geom_hline(aes(yintercept=qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") + 
-    geom_hline(aes(yintercept=-qnorm((1 + 0.95)/2)/sqrt(1000)), 
-               linetype=2, 
-               color="blue") +
-    labs(x="Zamik",
-         y="Korelacija")
-
-
-
-# nonbayes model
-lm_non_bayes <- lm(y ~ x_1 + x_2 + x_3 + x_4 + x_5,
-                   data=data.frame(data_bayes))
-
-# means
-coefficients(summary(lm_non_bayes))[ ,1]
-# se
-coefficients(summary(lm_non_bayes))[ ,2]
-
-
-attr(lm_bayes$fixed.effects, "sample")
-
-
-
+kable(tmp, digits = 2, align = "c") %>%
+    kable_styling(full_width = FALSE)
 
 ```
 
+Pričakoval sem, da bo vsaj ena izmed spremenljivk statistično značilna, vendar se izkaže da je v najboljšem primeru mogoče le _mpg_ mejno statistično značilna. Torej, glede na interval kredibilnosti ($0$ v intervalu), vidimo da je pri $\alpha=0.05$ statistično značilen le $\beta_0$, kar pomeni da ne moremo trditi da katerakoli izmed spremenljivk glede na ostale spremenljivke vpliva na _price_. Statistično značilnost $\beta_0$ si lahko nekako razložimo kot da je cena v povprečju približno $23672.40$, saj nobena izmed ostalih spremenljivk ni vplivala na strmino (je, vendar ne dovolj, da bi lahko to trdili). 
 
+Če se pretvarjamo da je _mpg_ vsaj mejno statistično značilna spremenljivka, bi lahko rekli da ob upoštevanju ostalih spremenljivk v modelu, višja ekonomičnost predstavlja višjo ceno in sicer ko je ekonomičnost višja za $1$ miljo na galono se cena v povprečju poveča za $189$ dolarjev.
+
+# Hierarhični model
+
+Podobno kot prej si bomo ogledovali vrednost spremenljivke _price_, tokrat po modelskem letu. Imamo 13 skupin in sicer za posamično leto med 1970 in 1982. Torej preverjali bomo kako se je _price_ spreminjala v času. V spodnji tabeli lahko razberemo velikosti skupin po modelskem letu.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5, fig.width=6}
+
+tmp <- t(table(cars_full$model))
+rownames(tmp) <- c("št. zapisov")
+
+kable(tmp, digits = 2, align = "c") %>%
+    kable_styling(full_width = FALSE)
+
+```
+
+Poglejmo si še porazdelitev cene, kjer rdeča črta predstavlja povprečje.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5, fig.width=6}
+
+ggplot(cars_full, aes(x=price)) +
+    geom_density() +
+    geom_vline(xintercept = mean(cars_full$price), color="red", linetype="longdash") +
+    labs(x="price",
+         y="Gostota",
+         title="porazdelitev spremenljivke price",
+         subtitle=paste0("Povprečje = ", round(mean(cars_full$price))))
+
+```
+
+Videti je manjše "stopnice" pri vrednostih $20000$ in $40000$, kar je posledica tega da je veliko cen bilo ravno takšnega zneska. S hierarhičnim modelom bomo poskusili oceniti aposteriorne porazdelitve (hiper)parametrov podobno kot v prejšnji domači nalogi. Takrat so skupine predstavljale šole tokrat pa predstavljajo posamezno modelsko leto. Takrat smo "merili" ocene po šolah, tokrat bomo pa poskusili ovrednotiti ceno po modelskem letu.
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.height=5, fig.width=8}
+
+cars_ <-  cars_full %>%
+    group_by(model) %>%
+    summarise(povprecje = mean(price), n=length(price), varianca = var(price))
+
+# stevilo modelskih let
+m <- length(cars_$model)
+# velikosti skupin
+n <- cars_$n
+
+yMatrix <- matrix(NA, ncol = m, nrow = max(n))
+for (j in 1:m) {
+    # +69 due to model starting with 70 and j starting with 1
+    yMatrix[1:n[j],j] <- cars_full[cars_full$model==j+69, ]$price
+}
+
+code <- nimbleCode({
+    # neinformativne apriorne
+    mu ~ dnorm(0, sd = 100000); #apriorna za hiperparameter
+    eta ~ dunif(0, 100000)      #apriorna za hiperparameter
+    sigma ~ dunif(0, 100000)    #apriorna za parameter
+
+    for (j in 1:m) {
+        muGroups[j] ~ dnorm(mu, sd = eta) #porazdelitve parametrov
+        for (i in 1:n[j]) {
+            y[i, j] ~ dnorm(muGroups[j], sd = sigma); #model
+        }
+    }
+})
+
+constants <- list(m = m, n = n)
+
+inits <- list(mu = mean(cars_$povprecje),
+              eta = sd(cars_$povprecje),
+              sigma = mean(sqrt(cars_$varianca)),
+              muGroups = cars_$povprecje)
+
+data <- list(y = yMatrix)
+
+Rmodel <- nimbleModel(code = code, constants = constants,
+                      inits = inits, data = data)
+Rmodel$initializeInfo() #smo dobili opozorilo zaradi NA v podatkih, bo vseeno v redu
+
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$printMonitors() #vzorcenj za parametre mu_i si ne bo zapomnil, zato to spodaj dodamo
+conf$addMonitors('muGroups') #dodamo shranjevanje muGroups
+conf$printMonitors() #je dodano
+
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Cmodel)
+samples <- runMCMC(Cmcmc, niter = 17000, nburnin = 2000)
+
+# Si ogledamo nekatere (hiper)parametre
+# samplesSummary(samples)[c(2, 3), ]
+samplesPlot(samples, var = c("mu","muGroups[1]","muGroups[8]"))
+
+# samplesSummary(samples)[c(1, 10), ]
+samplesPlot(samples, var = c("eta","sigma"))
+
+```
+
+Izgleda da smo dosegli konvergenco v vseh primerih $\mu$, $\eta^2$, $\sigma^2$ in posamezne skupine $\mu_j$. $\mu$ predstavlja skupno povprečje cene, $\eta^2$ predstavlja skupno varianco cene, $\sigma^2$ pa predstavlja varianco cene znotraj modelskega leta. Št. iteracij v MCMC algoritmu je bilo `r nrow(samples)`.
+
+Poglejmo si aposteriorne porazdelitve hiperparametrov, kjer so označene mediana in 95% interval zaupanja.
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.height=5, fig.width=8}
+
+tb_samples <- as_tibble(samples)
+
+gg <- ggplot(tb_samples)
+
+gg + geom_density(aes(x=mu)) +
+    geom_vline(xintercept = quantile(tb_samples$mu, probs = 0.025), col="blue", linetype="dashed") +
+    geom_vline(xintercept = median(tb_samples$mu), col="red") +
+    geom_vline(xintercept = quantile(tb_samples$mu, probs = 0.975), col="blue", linetype="dashed") +
+    labs(x=expression(mu),
+         y="Gostota",
+         title=expression(paste("Aposteriorna porazdelitev koeficienta ", mu)))
+
+gg + geom_density(aes(x=eta)) +
+    geom_vline(xintercept = quantile(tb_samples$eta, probs = 0.025), col="blue", linetype="dashed") +
+    geom_vline(xintercept = median(tb_samples$eta), col="red") +
+    geom_vline(xintercept = quantile(tb_samples$eta, probs = 0.975), col="blue", linetype="dashed") +
+    labs(x=expression(eta),
+         y="Gostota",
+         title=expression(paste("Aposteriorna porazdelitev koeficienta ", eta)))
+
+gg + geom_density(aes(x=sigma)) +
+    geom_vline(xintercept = quantile(tb_samples$sigma, probs = 0.025), col="blue", linetype="dashed") +
+    geom_vline(xintercept = median(tb_samples$sigma), col="red") +
+    geom_vline(xintercept = quantile(tb_samples$sigma, probs = 0.975), col="blue", linetype="dashed") +
+    labs(x=expression(sigma),
+         y="Gostota",
+         title=expression(paste("Aposteriorna porazdelitev koeficienta ", sigma)))
+
+```
+
+Porazdelitve so pričakovane, vidimo da je mediana $\mu$ nekoliko manj od $30000$ ($29565.67$). Mediane cen po posameznih modelskih letih se gibljejo od $28673$ do $30605$, tako da večjih odstopanj od skupnega povprečja ni videti. Pogledamo si lahko še _effective sample size_ ter največjo korelacijo med skupinami.
+
+```{r, echo=FALSE, eval=TRUE, results="markup", fig.align="center", fig.height=5, fig.width=8}
+
+tmp <- matrix(effectiveSize(samples))
+rownames(tmp) <- colnames(samples)
+colnames(tmp) <- c("Effective sample size")
+
+kable(tmp, digits = 2, align = "c") %>%
+    kable_styling(full_width = FALSE)
+
+```
+
+Pričakoval bi nekoliko višje vrednosti, saj je št. iteracij bilo `r nrow(samples)`. Predvsem so nizke za $\eta$ in nekatere $\mu_j$ ($j=1, 6, 9 \ \mathrm{in}\ 11$). Ostali so v najboljšem primeru približno tretjina vseh iteracij. Maksimalna korelacija med parametri je bila `r max(abs(cor(samples)[cor(samples)!=1]))` kar je še vedno vredu. Tu bi bilo smiselno razmisliti o uporabi drugačnega algoritma če bi bila korelacija nad $0.9$.
+
+Med modelskimi leti vidimo da ni večjih razlik in tako težko rečemo da je modelsko leto bistveno vplivalo na ceno avtomobilov (inflacija, spremembe avtomobilov, itd.).

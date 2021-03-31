@@ -1,0 +1,51 @@
+---
+title: "Domača naloga 3"
+subtitle: "Viri podatkov"
+author: "Alen Kahteran"
+date: "31. 12. 2020"
+output:
+  pdf_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+```
+
+
+Članek _Developing a Research Data Policy Framework for All Journals and Publishers_ opiše problem podatkovnih politik v različnih založbah/revijah. Namreč različne revije so do sedaj imele različne politike glede podatkov in sicer so postavili različna pravila glede obravnave, vključitve, dostopnosti in še več drugih stvari okrog podatkov. To je privedlo do ogromno težav pri raziskovalcih, saj je vsaka revija zahtevala nekaj drugega (struktura, opis, shramba, itd). V članku predlagajo poenotenje teh pravil za lažje delo s podatki za vse vključene. To se jim zdi pomembno, saj če so podatki v vseh revijah pripravljeni na enak način je pot do ponovljivosti in _peer-review_ enostaven in celo zaželjen.
+
+Tega so se lotili tako, da so najprej pregledali že obstoječe politike različnih revij in kar je bilo dokaj enotno so združili pod skupno politiko. Kasneje so se zbrali z nekaj posamezniki v Berlinu da so predebatirali omenjene politike in naknadno dodali tudi nove. Definicije (pravilo/politika) se dotaknejo različnih področij.
+
+* Definicija raziskovalnih podatkov - kaj raziskovalni podatki so, čemu so namenjeni, kaj revija pričakuje, itd.
+* Definicija izjem - mora opisati za kakšne podatke je pričakovano da niso javno dostopni, kateri podatki niso pokriti s celotno politiko, itd.
+* Morebitni primeri embarga - Mora vsebovati izjavo revije ali založnika glede njihovega mnenja o embargu.
+* Dovoljeno objavljanje prek "drugih poti" - Ker so repozitoriji najbolj zaželen način deljenja podatkov, mora revija ali založnik opisati če je dovoljeno deljenje podatkov na drugačne načine.
+* Repozitoriji - mora vsebovati repozitorije ki so zaupljivi kot je npr. FAIRsharing.org. V članku predlagajo uporabo javnih repozitorijev saj so v večini primerov strukturirani tako da zahtevajo kar nekaj (meta)podatkov, ki omogočijo lažje brskanje/iskanje podatkov.
+* Citiranje - revije naj bi vsaj omogočile če ne celo zahtevale primer kako naj se citira uporaba objavljenih podatkov. Poleg tega morajo revije ponuditi zgled.
+* Licenciranje - Mora opisovati kakšna licenca je uporabljena za objavljene podatke v reviji. Naj bi vsebovala tudi izjavo da avtorske pravice podatkov niso prenesene na revijo oz. založnika ob objavi članka.
+* Podpora za avtorje člankov - Mora vsebovati kdo je kontaktna oseba za vprašanja glede podatkovne politike oz. vprašanja pri deljenju podatkov
+* Izjave o dostopnosti podatkov - Mora vsebovati definicijo izjave o dostopnosti podatkov in kje naj bo vključena znotraj objave podatkov, ter če lahko avtorji naredijo podatke dostopne ob upravičeni zahtevi.
+* Standardi in formati podatkov - Naj vsebujejo podporo odprtim/javnim standardom in formatov in kje so ti zahtevani. Naj vsebuje tudi več različnih primerov.
+* Obvezno deljenje podatkov - Opisati mora v kakšnih primerih je deljenje podatkov obvezno.
+* _peer review_ - Vsebovati mora različne stvari glede tega ali so podatki dostopni drugim raziskovalcem, do česa lahko dostopajo, če morajo opraviti pregled tudi samih podatkov, itd.
+* Načrt upravljanja podatkov - mora definirati če in kako so inkorporirane priprave in deljenje načrtov upravljanja podatkov
+
+V članku predlagajo 6 različnih politik. Te se razlikujejo po implementacijski in denarni zahtevnosti. Tako predlagajo, da revija ali založba inkorporira za njih najbolj primerno politiko. S tem dosežejo da podatki za revije ki imajo možnost bolj stroge politike, so še vedno skladni tudi z milejšo politiko. Dodatno priložijo še osnovna navodila kot predlog kaj naj vsebujejo določene politike.
+
+Cilj je bil s standardizacijo poenostaviti življenje raziskovalcem kot tudi omogočiti lažje raziskave o ponovljivosti eksperimentov. Poleg tega se poenostavi tudi proces _peer review_-a.
+
+Moji prvi "aha" moment je bil, da sploh nisem vedel da naj bi obstajalo kaj takega kot je podatkovna politika. Sicer sem se do neke mere srečal s podobnimi zadevami v službi, vendar si nikoli nisem vzel časa da bi preučil to.
+
+Drugi "aha" moment je bil da sem odkril portal FAIRsharing.org.
+
+Tretji moment je da sem presenečen da to ni obstajalo že prej. Sicer mi je nekoliko jasno, da zaradi relativno velikega razmaha tehnologije v kratkem času, lahko da ni še nihče pomislil na to.
+
+Moje vprašanje se pa veže na sam _peer review_ proces. Pričakoval sem da vsi objavljeni članki po revijah/založbah gredo skozi proces _peer review_-a, saj nekdo mora pregledati vsebino ali je smiselna za objavo. Glede na tekst se mi zdi da temu ni tako, torej zakaj ne? A ne bi s tem izboljšali kvaliteto člankov?
