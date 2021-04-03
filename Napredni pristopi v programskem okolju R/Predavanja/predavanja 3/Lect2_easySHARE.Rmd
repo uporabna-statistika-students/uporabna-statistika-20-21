@@ -308,6 +308,9 @@ Uporabite se naprej podatke v dolgem formatu in za vse intervjuje (`ES.data`) in
 #Opomba: uporabimo %$% namesto %>% v drugem delu: to pocnemo zato, ker funkcija
 age.first <- ES.data %>% arrange(mergeid, wave) %$% tapply(age, INDEX = mergeid, FUN = function(x) x[1])
 
+arrange(ES.data, mergeid, wave)
+
+
 #alternativni nacin
 age.first <- tapply(ES.data$age, INDEX=ES.data$mergeid, FUN=function(x) min(x, na.rm=TRUE))
 
@@ -439,13 +442,12 @@ ES.data.wide <- dplyr::left_join(ES.data.wide, tmp, by="mergeid")
 
 #pripravimo datoteko, kjer so podatki urejeni glede vrstni red intervjuja
 
-maxgrip.MO <- matrix(NA, ncol=7, nrow=nrow(ES.data.wide))
-
+matrix.na <- maxgrip.MO <- matrix(NA, ncol=7, nrow=nrow(ES.data.wide))
 
 
 
 for(i in 1:num.waves)
-  maxgrip.MO[,i] <- cbind.data.frame(select(ES.data.wide, starts_with("maxgrip")), maxgrip.MO)[cbind(seq_along(ES.data.wide$first.wave), ES.data.wide$first.wave+i-1)]
+  maxgrip.MO[,i] <- cbind.data.frame(select(ES.data.wide, starts_with("maxgrip")), matrix.na)[cbind(seq_along(ES.data.wide$first.wave), ES.data.wide$first.wave+i-1)]
 
 
 
@@ -631,4 +633,3 @@ Consider the  $12$ items that constitute the euroD score (`euro1` to `euro12`) a
 
 
 Adjust the overall p-values from each analysis for multiple comparisons using the Bonferroni adjustment, report and interpret the results.
-
