@@ -1,0 +1,85 @@
+---
+title: "Domača naloga 3"
+subtitle: "Napredni pristopi v programskem okolju R"
+author: "Alen Kahteran"
+date: "4. 4. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+
+library(ggplot2)
+
+set.seed(1234)
+
+```
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+f_sampleNumbers <-function(vector_objects=101:105){
+    #number of objects
+    #ukaz 1
+    num_objects <- length(vector_objects)
+    
+    #samples one of the element of vector_objects
+    #ukaz 2
+    num_sampled <- sample(vector_objects, 1)
+    
+    #if(num_sampled==1) browser()
+
+    #obtain a random sample of size num_sampled
+    #output of the function
+    #ukaz 3
+    random_sample <- sample(vector_objects[vector_objects <= num_sampled], 1)
+}
+
+
+set.seed(1234)
+
+tmp_res <- replicate(1000, f_sampleNumbers()) # 92.518
+
+mean(tmp_res)
+
+```
+
+```{r, echo=TRUE, eval=TRUE, results="markup", fig.align="center"}
+
+f_sampleNumbers_fixed <-function(vector_objects=101:105){
+    resample <- function(x, ...) x[sample.int(length(x), ...)]
+    
+    #number of objects
+    #ukaz 1
+    num_objects <- length(vector_objects)
+    
+    #samples one of the element of vector_objects
+    #ukaz 2
+    num_sampled <- resample(vector_objects, 1)
+    
+    #if(num_sampled==1) browser()
+
+    #obtain a random sample of size num_sampled
+    #output of the function
+    #ukaz 3
+    random_sample <- resample(vector_objects[vector_objects <= num_sampled], 1)
+}
+
+set.seed(1234)
+
+tmp_res2 <- replicate(1000, f_sampleNumbers_fixed())
+
+mean(tmp_res2)
+
+ggplot(data.frame(x=tmp_res2), aes(x=x)) +
+    geom_bar()
+
+```

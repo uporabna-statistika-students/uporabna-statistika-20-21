@@ -1,0 +1,512 @@
+---
+title: "Metoda glavnih komponent in faktorska analiza"
+subtitle: "Domača naloga 3 - Multivariatna analiza"
+author: "Urh Peček in Alen Kahteran"
+date: "5. 4. 2021"
+output:
+  pdf_document:
+    fig_caption: yes
+
+header-includes:
+  - \usepackage[slovene]{babel}
+  - \usepackage{float}
+  - \usepackage[T1]{fontenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, results = FALSE, fig.width=6, fig.height=4, fig.pos = 'H')
+```
+
+```{r}
+# Prenesemo potrebne knjižnice
+library("blockmodeling")
+library("ppcor")
+library("gplots")
+library("corrplot")
+library("GPArotation")
+library("car")
+library("multiUS")
+library("psych")
+```
+
+\newpage
+\tableofcontents
+\newpage
+\listoffigures
+\listoftables
+\newpage
+
+# Cilji naloge
+
+Naloga se deli na 2 dela, v prvem delu je cilj naloge pojasniti čim več variabilnosti spremenljivk, v drugem delu pa bomo z nekaj faktorji poskusili čim bolje pojasniti korelacije med spremenljivkami vrednot. Naloga tako temelji na metodi glavnih komponent in faktorski analizi. Analizirali bomo vsebinske Schwartzove spremenljivke, ki smo jih opisali v prvi nalogi (Pregled in priprava podatkov).
+
+```{r}
+# Uvozimo podatke, ki smo jih shranili v 1. domači nalogi
+podatki <- readRDS("ESS_DEN_rekodirane")
+
+# Definiramo izbrani Schwartzovi spremenljivki odprtosti in konservativnosti.
+odprtost <- c("drugačnost", "užitek", "vznemerljivost", "zabava", "kreativnost", "svoboda")
+konservativnost  <- c("varnost", "ponižnost", "obramba", "tradicija", "ubogljivost", "sprejemljivost")
+
+# Izbrani spremenljivki shranimo še v skupen vektor.
+Sch <- c(odprtost, konservativnost)
+
+# Uporabljali bomo samo enote, ki imajo vrednosti pri vseh Schwartzovih spremenljivkah.
+com <- complete.cases(podatki[, Sch])
+schData <- podatki[com, Sch]
+```
+
+\newpage
+
+# Metoda glavnih komponent
+
+Cilj metode glavnih komponent je s prvimi nekaj nekoreliranimi glavnimi komponentami pojasniti kar največ variabilnosti originalnih spremenljivk. Glavne komponente so linearne kombinacije merjenih spremenljivk in so med seboj neodvisne. Urejene so od tiste, ki pojasni največ variabinosti osnovnih podatkov pa do tiste, ki pojasne najmanj variabilnosti. Z analizo glavnih komponent zmanjšamo razsežnost podatkov tako, da izgubimo čim manj informacij.
+
+```{r}
+PC <- princomp(x = schData, #korelacijska ali variančno-kovariančna matrika ali matrika podatkov.
+               cor = TRUE, # ali naj uporabi korelacijsko matriko
+               scores = TRUE # ali naj izračuna tudi score (vrednosti GK)
+               )
+
+# Podobno lahko naredimo s funkcijo principal.
+# Uteži, ki jih vrne funkcija principal so reskalirane 
+# (Korelacije med j-to glavno komponento in i-to spremenljivko.)
+# Vrednosti glavnih komponent (scores) pa so standardizirane.
+# psych::principal(r = R, nfactors = 2)
+
+# ZANIMIVOST
+# Metodo glavnih komponent lahko izvedemo tako, da korelacijsko matriko ali variančno-kovariančno matriko razcepimo na lastne vrednosti in lastne vektorje.
+# Vsota variabilnost originalnih spremenljivk in vsota lastnih vrednosti glavnih komponent sta enaki. 
+
+#sum(eigen(cov(schData))$values) 
+#sum(diag(cov(schData)))
+
+# Z vsemi glavnimi komponentami pojasnimo vso variabilnost, zato je število glavnih komponent omejeno.
+# Število glavnih komponent je največ toliko kolikor je obravnavanih spremenljivk (12).
+```
+
+
+```{r}
+# Ukaz summary nam vrne :
+povzetekPC <- summary(PC)
+
+# - standardne odklone posameznih glavnih komponent (standard deviation)
+# Standardni odkloni padajo
+
+# - delež pojasnjene variabilnosti z izbrano glavno komponento (proportion of variance)
+# Deleži pojasnjenih variabilnosti padajo, saj najprej vzamemo glavno komponento, ki pojasni največ variabilnosti in tako naprej.
+# Običajno določimo toliko glavnih komponent, da pojasnemo vsaj 50% variabilnosti.
+
+# - kumulativne deleže pojasnjene variabilnosti (cumulative proportion)
+
+# Dostop do uteži glavnih komponent (linearna kombinacija spremenljivk).
+uteziPC <- PC$loadings[,]
+
+# ZANIMIVOST
+# Vsota kvadriranih uteži pri posameznih glavnih komponentah je enaka 1.
+VsotaUtezi <- sum(PC$loadings[,1]**2)
+```
+
+## Primernost podatkov
+
+Preden se lotimo metode glavnih komponent in v nadaljevanju faktorske analize preglejmo ali so podatki sploh primerni. Zgornji metodi je smiselno delati v primeru, ko so spremenljivke (v našem primeru so to Schwartzove spremenljivke) med seboj korelirane.
+
+Na spodnjem grafu, ki prikazuje Pearsonov koeficient korelacije med pari spremenljivk (pomnožen z 10) opazimo dva sklopa spremenljivk glede na vzorec korelacij. Prvi sklop bi lahko poimenovali odprtost (drugačnost, užitek, vznemerljivost, zabava, kreativnost, svoboda), drugi sklop pa konservativnost (varnost, ponižnost, obramba, tradicija, ubogljivost, sprejemljivost). Korelacije znotraj obeh sklopov so pozitivne in srednje oziroma šibke, edino povezanost med vznemerljivostjo in drugačnostjo je močna. Spremenljivke med sklopoma so v večini zanemarljivo povezane, edino zabava, je nekoliko bolj povezana s konservativnimi spremenljivkami.
+
+```{r,fig.align="center", fig.height=4.5, fig.width=4.5}
+# Korelacijska matrika
+R <- cor(schData)
+# Število opazovanih enot
+n <- nrow(schData)
+# Izris korelacij med spremenljivkami - Pearsonov
+plot.mat(R, main = "") 
+```
+
+Z Bartlettovim testom lahko preverimo ničelno domnevo, da obravnavane spremenljivke v populaciji niso povezane, kar bi pomenilo, da je korelacijska matrika spremenljivk identiteta. Na podlagi vrednosti p (p < 0.0001) pri 66 stopinjah prostosti pri stopnji značilnosti 0.05 zavrnemo ničelno domnevo in sprejmemo sklep, da so Schwartzove spremenljivke v populaciji korelirane. To pomeni, da so metode, ki jih bomo delali v nadaljevanju smiselne, tako pri glavnih komponentah kot pri številu faktorjev.
+
+```{r}
+# Bartlettov test.
+Barttlet <- cortest.bartlett(R = R, n = n)
+```
+
+## Odločitev o številu komponent
+
+Glede števila glavnih komponent se lahko odločimo na podlagi scree diagrama, ki grafično predstavi lastne vrednosti. Izbrano število glavnih komponent je tam, kjer se graf lomi oziroma ima koleno, pri čemer obdržimo komponente nad kolenom. Število komponent je lahko tudi takšno, da so lastne vrednosti komponent večje od povprečne variabilnosti standariziranih spremenljivk, ki je enaka 1. Lahko se odločimo tudi tako, da primerjamo lastne vrednosti komponent s tistimi na podlagi podatkov generiranih iz nekoreliranih spremenljivk.
+
+```{r}
+fa.parallel(x = R, fa = "pc", n.iter = 100, n.obs = n)
+abline(h=1, lty = 2, col = "green")
+```
+
+Na podlagi kolena scree diagrama se odločimo za dve glavni komponenti, na podlagi lastnih vrednosti, ki morajo biti večje od 1 se odločimo za tri lastne vrednosti (ali 2, ni popolnoma razvidno) in na podlagi primerjav lastnih vrednosti se odločimo za 2 glavni komponenti. Ob upoštevanju vseh treh kriterijev je končna odločitev, da izberemo 2 glavni komponenti. Velja, da so vrednosti med glavnimi komponentami neodvisne. Opomnimo lahko še, da kot kriterij, ki sicer ni glavni, lahko vzamemo delež pojasnjene variabilnosti z glavnimi komponentami, naprimer vsaj 50%, za kar bi pri nas morali vzeti 4 glavne komponente. 
+
+## Uteži za izbrani glavni komponenti
+
+Ponavadi uteži dobljenih glavnih komponent reskaliramo. Nereskalirane uteži predstavljajo regresijske koeficiente. koeficiente. Reskalirana utež i-te glavne komponente pri j-ti spremenljivki pa je korelacija med i-to komponento in j-to spremenljivko. S pomočjo teh korelacij lahko interpretiramo glavne komponente.
+
+```{r, fig.height=5, fig.width=7}
+par(mfrow = c(1,2))
+# Nereskalirane uteži
+plot.mat(PC$loadings[,1:2], main = "", cex.axes = 0.8)
+# Reskalirane uteži
+loadingsRe <- cor(schData, PC$scores[,1:2])
+plot.mat(loadingsRe,  main = "", cex.axes = 0.8)
+```
+
+Na levem grafu vidimo nereskalirane in na desnem reskalirane uteži. Interpretiramo reskalirane uteži. Velja, da so spremenljivke odprtosti močno pozitivno korelirane s prvo glavno komponento, medtem ko so spremenljivke konservativnosti močno negativno korelirane z drugo glavno komponento. Pri odprtosti nekoliko odstopa vznemerljivost in morda tudi drugačnost, ki sta šibko pozitivno korelirani z drugo glavno komponento, pri konservativnosti pa je obramba srednje pozitivno korelirana s prvo glavno komponento. Če strnemo, prva glavna komponenta povzema predvsem pomembnost odprtosti in druga glavna komponenta povzema predvsem pomembnost nekonservativnosti (negativne korelacije).
+
+## Delež pojasnjene variabilnosti
+
+
+```{r}
+PojasneneVar <- round(rowSums(loadingsRe**2) ,2)
+```
+
+Velja, da je vsota kvadratov reskaliranih uteži po spremenljivkah varianca spremenljivke. V našem primeru pri izbranih dveh glavnih komponentah s prvo komponento pojasnimo 21% celotne variabilnosti in z drugo komponento 18%, skupaj nekaj manj kot 40% celotne variabilnosti. Z izbranima prvima glavnima komponentama pojasnimo največji delež vznemerljivosti (57%), drugačnosti (56%) in užitka (49%). Najmanjši delež variabilnosti pojasnimo pri spremenljivkah svobode in tradiciji (23%).
+
+## Biplot
+
+Biplot nam v dvodimenzionalnem prostoru prikaže položaj posameznih enot glede na vrednosti vseh obravnavanih spremenljivk (Schwartzove spremenljivke), hkrati pa so narisane tudi vrednosti reskaliranih uteži po komponentah.
+
+```{r}
+# par(mfrow = c(1, 1))
+
+# biplot(PC, pc.biplot = TRUE)
+plot(x=1:10, y=-10:-1, xlab="Comp.1", ylab="Comp.2")
+```
+
+Iz grafa vidimo, da imajo spremenljivke odprtosti podobne, visoke uteži pri prvi glavni komponenti, medtem ko imajo relativno nizke uteži ostale spremenljivke. Na drugi glavni komponenti pa imajo nizke in negativne uteži spremenljivke konservativnosti, spremenljivke odprtosti pa imajo v večini pozitivne in nizke vrednosti.
+
+```{r}
+# ZANIMIVOST
+# Vsote reskaliranih uteži po komponentah so lastne vrednosti.
+VsotaResk <- sum(loadingsRe[,1]**2)
+L.V <- PC$sdev[1]**2
+```
+
+## Poimenovanje glavnih komponent
+
+Za konec metode glavnih komponent pa še poimenujmo izbrani komponenti. Za prvo komponento smo ugotovili, da povzema predvsem pomembnost odprtosti, za drugo pa nekonservativnosti. V skladu z zgornjim prvo komponento poimenujemo odprtost in drugo nekonservativnost.
+
+```{r}
+# shranimo scores
+schData$PC1_odprtost <- PC$scores[, 1]
+schData$PC2_nekonservativnost <- PC$scores[, 2]
+```
+
+
+\newpage
+
+# Faktorska analiza
+
+Faktorska analiza poizkuša poenostaviti kompleksnost povezav med opazovanimi spremenljivkami. Gre za študij povezav med spremenljivkami, pri čemer skušamo najti novo množico spremenljivk, ki predstavlja to kar je skupnega opazovanim spremenljivkam. Načeloma jo uporabimo v primeru, ko nekaterih pojmov ne moremo meriti neposredno. V tem primeru izberemo nekaj direktno merjenih spremenljivk, ki so indikatorji teoretičnega pojma, ki ga želimo meriti. Tako prek nekaj faktorjem poizkušamo čim bolje pojasniti korelacije oziroma kovariance med merjenimi spremenljivkami tj. skupne variabilnosti spremenljivk. Merjene spremenljivke so tako lineane kombinacije skupnih in specifičnih faktorjev. Merljive spremenljivke imenujemo manifestne, nemerljive pa latentne spremenljivke.
+
+## Primernost podatkov
+
+Že pri preverjanju primernosti podatkov za metodo glavnih komponent smo ugotovili, da so spremenljivke korelirane, lahko smo zavrnili ničelno domnevo, da je populacijska korelacijska matrika identiteta z manj kot 1 odstotna stopnjo tveganja. Na vzorčnih korelacijah smo videli, da se oblikujeta 2 sklopa spremenljivk, sklop odprtosti in sklop konservativnosti kar nakazuje na dvofaktorsko strukturo.
+
+Da pogledamo ali so podatki primerni za analizo oziroma kako dobre rezultate lahko pričakujemo ugotovimo tako, da pogledamo parcialne korelacije med spremenljivkami (anti image korelacije), ki so prikazane na spodnji anti image korelacijski matriki. 
+
+```{r}
+# Anti image korelacijska matrika
+
+# KMO je blizu 1, ko si spremenljivke delijo skupne faktorje.
+# (vrednosti za KMO pod 0.5 so zelo slabe, vrednosti nad 0.8 pa zelo dobre)
+# Ko so vrednosti KMO > 0.5 rečemo, da so spremenljivke dovolj korelirane in so primerne za faktorsko analizo.
+
+AI <- antiImage(schData[,Sch])$AIR
+plotMat(AI, main = "")
+KMO <- antiImage(schData[,1:7])$KMO
+```
+
+Izven diagonale anti image korelacijske matrike so parcialni korelacijski koeficienti pomnoženi z -1. Če si spremenljivke delijo skupne faktorje, so njihovi parcialni korelacijski koeficienti po absolutni vrednosti majhni. Pri nas v večini primerov so, odstopata zgolj parcialni korelaciji med vznemerljivostjo in drugačnostjo ter zabavo in užitkom. Na diagonali matrike pa so vrednosti Kaiser-Meyer-Olkinove mere, ki predstavlja delež spremenljivke, ki bi lahko bil pojasnjen s skupnimi faktorji. Vrednosti KMO so pri vseh spremenljivkah med 0.7 in 0.8, kar pomeni, da so spremenljivke dovolj korelirane in tako primerne za faktorsko analizo. Opazimo tudi, da so korelacije znotraj sklopov nekoliko večje kot med sklopi. Povprečna oziroma skupna Keiser-Meyer-Oklinova mera je enaka 0.734 kar dodatno nakazuje na primernost podatkov.
+
+## Odločitev o številu faktorjev
+
+Za določitev števila faktorjev uporabljamo podobne kriterije kot pri metodi glavnih komponent. Odločimo se lahko na podlago kolena scree diagrama na podlagi lastnih vrednosti faktorjev ali pa s primerjavo lastnih vrednosti faktorjev s tistimi na podlagi podatkov generiranih iz nekoreliranih spremenljivk. Predpostavimo, da se spremenljivke porazdeljujejo normalno in tako lahko uporabimo faktorsko metodo največjega verjetja.
+
+```{r}
+fa.parallel(x = R, n.obs = n, fa = "fa", fm = "ml", n.iter = 100) 
+```
+
+Na podlagi kolena scree diagrama se odločimo za dva faktorja (tiste pri koleno izpustimo), na podlagi lastnih vrednosti, ki morajo biti večje od 1 se prav tako odločimo za dva faktorja in na podlagi primerjav lastnih vrednosti se odločimo za štiri faktorje. Ob upoštevanju vseh treh kriterijev prevladata koleno in vrednost lastnih vrednosti in končna odločitev je, da izberemo dva faktorja.
+
+## Dodatni pristopi h odločanju o številu faktorjev
+
+Za določanje števila faktorjev lahko uporabimo tudi nekatere dodatne pristope. Pri pristopu VSS (very simple structure) izberemo število, kjer je vrh grafa, torej tam kjer so uteži pri spremenljivkah največje in s tem največ pojasnijo (upoštevane so samo najvišje uteži pri spremenljivkah). Pristop EBIC (empirical bayesian information criterion) nam števila faktorjev določi tam, kjer je koleno, pri čemer koleno tudi upoštevamo. EBIC nam pove kako dobro je prileganje modela pri določenem številu faktorjev, najboljša je najnižja vrednost. Temelji na odklonih korelacijske matrike, popravljenih za število enot in število faktojev. S pristopom RMSE (root mean residual), kjer upoštevamo koren povprečnega odklona modelskih korelacij od pravih korelacij pa število faktorjev določimo kot najmanjše kjer je RMSE manjše od 0.08. Za izračun uporabimo metodo rotacije varimax (pravokotna rotacija), kjer predpostavimo, da med faktorji ni korelacij. 
+
+```{r, fig.height=10, fig.width=10}
+nfactors(x = R, n = 4, fm = "pa", rotate = "varimax", n.obs = n)
+```
+
+Na podlagi VSS se za najboljše število faktorjev odločimo za 2 faktorja pri čemer upoštevamo obe faktorski uteži, saj po dveh faktorjih vrednost VSS zelo počasi narašča in ob upoštevanju preprostosti ne predstavlja boljše rešitve. Majhna razlika med vrednostjo pri 1 ali 2 upoštevanih utežev nam pove tudi to, da ni spremenljivk, ki bi imele visoko utež pri obeh faktorjih. Complexity nam pove kako čisto faktorsko strukturo dobimo, torej na koliko faktorjih ima spremenljivka visoko utež, se pa na podlagi teh vrednosti ponavadi ne odločamo o številu faktorjev. EBIC nam pove, da je najboljše število faktorjev dva faktorja, saj je pri večjem številu faktorjev prileganje zanemarljivo boljše. Odločimo se za 2 faktorja. Na podlagi RMSE se prav tako odločimo za dva faktorja. Končno, tudi na podlagi nadaljnih pristopov ocen najboljšega števila faktorjev se odločimo za dva faktorja, kar je tako naša končna odločitev o številu faktorjev.
+
+## Delež pojasnjene variabilnosti
+
+Na podlagi izbranega števila faktorjev tj. dveh faktorjev bomo izvedli faktorsko analizo. Po izvedeni poševni rotaciji (oblimin) vidimo, da je korelacija med faktorjema zanemarljiva (r = 0.01) in posledično se odločimo za pravokotno rotacijo (varimax), kjer so korelacije med faktorji enake 0.
+
+```{r}
+# Poševna rotacija
+FA.oblimin <- fa(r = schData[, Sch], 
+                  nfactors = 2, 
+                  n.obs = n, 
+                  rotate = "oblimin",
+                  scores = TRUE, 
+                  fm = "ml", 
+                  max.iter = 1000)
+
+# Pravokotna rotacija
+FA.varimax <- fa(r = schData[, Sch], 
+                  nfactors = 2, 
+                  n.obs = n, 
+                  rotate = "varimax", 
+                  scores = TRUE, 
+                  fm = "ml",
+                  max.iter = 1000)
+
+# com = Hoffmanov indeks kompleksnosti
+# sum of squared loadings: absolutno pojasnjena varianca
+# proportion var: delež pojasnjene variance
+# cumulative var: kumulative deleža pojasnjene variance
+# proportion explained: koliko od tega kar pojasnimo z izbranim številom faktorjev pojasnimo s posameznim faktorjem
+```
+
+Hoffmanov indeks kompleksnosti nam pove, kako dobro spremenljivka ločuje med faktorjema in je v večini primerov enak 1.0 oziroma 1.1, višji je le pri užitku (1.2) in pri obrambi (1.3) kar pomeni, da je utež nekoliko višja pri obeh faktorjih, vendar zanemarljivo. Torej ima večina spremenljivk visoko utež le na enem faktorju. S prvim faktorjem pojasnemo 16% z drugim pa 12% variabilnosti med spremenljivkami, skupno torej pojasnimo 28% variabilnosti med spremenljivkami. Izmed vse pojasnene variabilnosti z izbranim števiom faktorjev s prvim faktorjem pojasnimo 57% variabilnosti, z drugim pa 43%.
+
+## Korelacije na podlagi modela
+
+Na spodnji sliki vidimo korelacije ocenjene na podlagi modela in so precej podobne empiričnim. Na diagonali so komunalitete, ki odražajo del variabilnosti spremenljivke, ki je pojasnjen s skupnimi faktorji. V našem primeru je večina komunalitet nad 0.2, kar pomeni, da je spremenljivka dobro pojasnjena s skupnim faktorskim modelom. Odstopajo zgolj svoboda, kreativnost in tradicija pri katerih je vrednost komunalitet nižja od 0.2 in je njihova variabilnost slabše pojasnjena z modelom.
+
+```{r}
+# Korelacije na podlagi modela.
+# h^2 naj bo nad 0.2, sicer rečemo, da ta spremenljivka ni dobro pojasnjena s skupnim faktorskim modelom
+
+# Za pravokotne rotacije.
+CM.varimax <- FA.varimax$loadings %*% t(FA.varimax$loadings) 
+plot.mat(CM.varimax,  main = "")
+
+# Za poševne rotacije (potrebno je upostevati tudi korelacije med faktorji)
+# CM.oblimin <- FA.oblimin$loadings %*% FA.oblimin$r.scores %*%  t(FA.oblimin$loadings)
+# grafOblimin <- plot.mat(CM.oblimin, main = "")
+```
+
+Na spodnjem grafu pa vidimo matriko odklonov korelacij na podlagi modela od empiričnih korelacij. Izven diagonale so razlike ocenjenih in empiričnih korelacij, na diagonali pa so unikvitete, ki povedo kolikšen delež variabilnosti spremenljivke ni pojasnen s skupnimi faktorji. Vidimo, da so unikvitete relativno visoke, njihove vrednosti pa želimo da so manjše od 0.8. Kot smo videli že pri komunalitetah na zgornjem grafu, spremenljivke kreativnost, svoboda in tradicija niso dobro pojasnene s skupnim faktorskim modelom. Pri ostalih spremenljivkah so vrednosti unikvitet pod 0.8 in njihove variabilnosti so tako dobro pojasnjene. Izven diagonal so vrednosti po absolustni vrednosti v večini blizu 0, kar je dobro, odstopajo le trije pari spremenljivk, ki pa so omenjeni že zgoraj.
+
+```{r}
+# Odkloni korelacij na podlagi modela
+# Lahko uporabimo tudi funkcijo FA.varimax$residual
+# Manjši kot so odkloni, bolj se model prilega.
+# Spodaj so torej reziduali, kar pomeni, da lahko ekvivalentno dobimo s FA.oblimin$residual.
+# Na diagonali je u2 = unikvitete =  varianca spremenljivke, ki ni pojasnjena s skupinimi faktorji 
+
+OCM <- R - CM.varimax
+plotMat(OCM, main = "") 
+```
+
+## Faktorske uteži
+
+Pokažimo pattern uteži oziroma regresijske koeficiente ter strukturne uteži oziroma korelacijske koeficiente, ki so za pravokotno (varimax) rotacijo, ki je v našem primeru upoštevana, enake (v pedagoške namene pokažemo obe).
+
+```{r}
+par(mfrow = c(1, 2))
+# Pattern uteži (reg. koeficienti)
+plot.mat(FA.varimax$loadings[,], main = "pattern uteži")
+# Stukturne uteži (kor. koeficienti)
+plot.mat(FA.varimax$Structure[,], main = "strukturne uteži")
+# V primeru pravokotne rotacije so faktorske in strukturne utezi enake
+```
+
+Če se osredotočimo na prvi faktor, vidimo, da ima visoke pozitivne, srednje do močne, korelacije s sklopom spremenljivk, ki merijo pomembnost odprtosti in nizke korelacije s spremenljivkami, ki merijo pomembnost konservativnosti. Morda je za izpostaviti korelacijo prvega faktorja z obrambo, katera je nekoliko višja kot pri ostalih spremenljivkah odprtosti in sicer šibka. Drugi faktor ima visoke pozitivne srednje do močne korelacije s spremenljivkami, ki merijo pomembnost konservativnosti ter nekoliko višjo, šibko, korelacijo tudi s spremenljivkami odprtost in zabava (pozitivna korelacija) ter vznemerljivostjo (negativna korelacija). 
+
+## Biplot
+
+Tudi biplot pri faktorski analizi nam v dvodimenzionalnem prostoru prikaže položaj posameznih enot glede na vrednosti spremenljivk. Hkrati pa so narisane tudi vrednosti faktorskih uteži.
+
+```{r, fig.width=5, fig.height=5}
+# biplot(FA.varimax, main="Varimax")
+
+plot(x=1:20, y=-10:9, main="Varimax", xlab="ML1", ylab="ML2")
+```
+
+Iz grafa vidimo, da imajo spremenljivke odprtosti podobne, visoke uteži pri prvem faktorju, medtem ko imajo relativno nizke uteži ostale spremenljivke. Pri drugem faktorju pa imajo visoke in pozitivne uteži spremenljivke konservativnosti, spremenljivke odprtosti pa imajo nizke vrednosti.
+
+## Poimenovanje faktorjev
+
+Na podlagi vsega do sedaj povedanega, prvi faktor lahko poimenujemo odprtost, meri odprtost človeka in drugega konservativnost, saj meri konservativnost človeka. Uporabili smo regresijsko metodo.
+
+```{r}
+# Ocena faktorskih vrednosti.
+# Spodaj je uporabljena regresijska metoda.
+
+schData$F1_odprtost <- FA.varimax$scores[,1]
+schData$F2_konservativnost <- FA.varimax$scores[,2]
+```
+
+\newpage
+
+# Analiza korelacij
+
+S pomočjo spodnih korelacij si lahko pomagamo tudi pri preverjanju pravilnega poimenovanja Likartovih lestvic, faktorjev in glavnih komponent. Vidimo, da je Likartova lestvica konservativnosti močno negativno povezana z glavno komponento ne konservativnosti, obenem je šibko pozitivno povezana z glavno komponento odprtosti in močno pozitivno povezana s faktorjem konservativnosti ter zanemarljivo s faktorjem odprtosti. Podobno velja za ostale korelacije. Iz prve naloge vemo tudi, da je korelacija med Likartovimi spremenljivkami šibka (in negativna). Korelacija med obema glavnima komponentama je 0, saj sta pravokotni in podobna velja za faktorja. Vse skupaj nakazuje na pravilno poimenovanje Likartovih lestvic, faktorjev in glavnih komponent. 
+
+```{r}
+par(mfrow=c(1,1))
+schData$L1_konservativnost <- rowMeans(schData[, konservativnost])
+schData$L2_odprtost <- rowMeans(schData[, odprtost])
+
+korelacije <- round(cor(schData[, c("L1_konservativnost", "L2_odprtost",
+                                    "PC2_nekonservativnost", "PC1_odprtost",
+                                    "F2_konservativnost", "F1_odprtost")]), 2)
+plotMat(korelacije, main = "", clu = c(1,1,2,2,3,3))
+
+# korelacije med spremenljivkamai so blizu nic, pri GK = 0 po definiciji
+# glede na korelacije so spremenljivke ustrezno poimenovane, korelacije med 
+# spremenljivkami (lik, FA, GK), ki naj bi merile isto latentno 
+# spremenljivko so visoke 
+```
+
+# Povezanost faktorjev z ostalimi spremenljivkami
+
+Poglejmo si kako je s povezanostjo faktorjev z izbranimi spremenljivkami nadzora, prebivališča in razmerja, kjer ne upoštevamo manjkajočih vrednosti.
+
+```{r}
+# Izberemo samo tiste enote, ki imajo vrednosti pri vseh obravnavanih spremenljivkah.
+tmp <- cbind(schData[com, c("F1_odprtost", "F2_konservativnost")], 
+             podatki[com, c("Nadzor", "Prebivalisce", "Razmerje")])
+```
+
+## Povezanost faktorjev z nadzorom
+
+Na spodnji sliki sta prikazani povprečji faktorjev odprtosti in konservativnosti glede spremenljivke Nadzor. Vidimo, da so zaposleni, ki niso odgovorni za nadzor nad ostalimi v povprečju nekoliko bolj odprti kot odgovorni za nadzor. Glede konservativnosti sta povprečji skupin spremenljivke Nadzor precej podobni, za odtenek višje vrednosti pa v povprečju ponovno dosegajo zaposleni, ki ne nadzorujejo sodelavcev. Na grafih so prikazane standarizirane vrednosti spremenljivke. S testom t na podlagi vzorca preverimo kako je s povprečjem skupin spremenljivke Nadzor glede faktorjev odprtosti in konservativnosti v populaciji. Na podlagi vrednosti p (p = 0.035) lahko s 95% zaupanjem zavrnemo ničelno domnevo, da sta skupini spremenljivke Nadzor enaki glede faktorja odprtosti. 95% interval zaupanja je enak [0.01, 0.20] v korist ne nadzornikov. Na drugi strani pa pri stopnji značilnosti 0.05 ne moremo zavrniti ničelne domneve, da sta skupini spremenljivke Nadzor enaki glede konservativnosti in sprejmemo sklep o njuni enakosti.
+
+```{r}
+# Nadzor
+par(mfrow = c(1,2), mar = c(10, 5, 1, 1))
+
+plotmeans(formula = tmp[, 1] ~ tmp[,"Nadzor"], las = 2, ylab = "odprtost", xlab = "", ylim = c(-0.5, 0.5))
+
+plotmeans(formula = tmp[, 2] ~ tmp[, "Nadzor"], las = 2, ylab = "konservativnost", xlab = "", ylim = c(-0.5, 0.5))
+
+TestNadzor1 <- t.test(tmp[, "F1_odprtost"] ~ tmp[, "Nadzor"])
+TestNadzor2 <- t.test(tmp[, "F2_konservativnost"] ~ tmp[, "Nadzor"])
+```
+
+## Povezanost faktorjev z razmerjem
+
+Na grafu povezanosti faktorjev s spremenljivko Razmerje vidimo, da zaposleni brez pogodbe dosegajo najnižje standirizirane vrednosti tako pri odprtosti kot pri konservativnosti. Zaposleni s pogodbo imajo v povprečju enako vrednost faktorja odprtosti kot tisti s pogodbo za določen čas, pri faktorju konservativnostu pa v povprečju dosegajo nižje vrednosti. Z Levenovim testom preverimo enakost povprečij po skupinah v populaciji in na podlagi vrednosti p (p = 0.21 in p = 0.31) pri stopnji značilnosti 0.05 ne moremo zavrniti domneve o enakosti variabilnosti med skupinami pri nobenem izmed faktorjev. Z enosmerno anovo s predpostavko enakih varianc po skupinah, preverimo še domnevo o enakosti povprečij med skupinami v populaciji znotraj posameznega faktorja. Pri nobenem izmed faktorjev pri 95% zaupanju ne moremo zavrniti ničelne domneve in sprejmemo sklep, da so povprečja med skupinami spremenljivke Razmerje v populaciji enaka znotraj obeh faktorjev.
+
+```{r}
+# Razmerje
+par(mfrow = c(1,2), mar = c(10, 5, 1, 1))
+
+plotmeans(formula = tmp[, 1] ~ tmp[,"Razmerje"], las = 2, ylab = "odprtost", xlab = "", ylim = c(-0.5, 0.5))
+plotmeans(formula = tmp[, 2] ~ tmp[, "Razmerje"], las = 2, ylab = "konservativnost", xlab = "", ylim = c(-0.5, 0.5))
+
+TestRazmerje1 <- leveneTest(F1_odprtost ~ Razmerje, data = tmp)
+TestRazmerje11 <- oneway.test(formula = F1_odprtost ~ Razmerje, data = tmp, var.equal = TRUE)
+
+TestRazmerje2 <- leveneTest(F2_konservativnost ~ Razmerje, data = tmp)
+TestRazmerje22 <- oneway.test(formula = F2_konservativnost ~ Razmerje, data = tmp, var.equal = TRUE)
+```
+
+## Povezanost faktorjev s prebivališčem
+
+Nazadnje pa preverimo kako je s povezanostjo obeh faktorjev in kraja bivanja v populaciji. Na našem vzorcu se ne kaže, da bi bilo povprečje skupin spremenljivke Prebivališče različno pri nobenem izmed faktorjev odprtosti ali konservativnosti. Spearman koeficient korelacije kaže, da pri stopnji značilnosti 0.05 ne moremo zavrniti ničelne domneve, da je v populaciji vrednost korelacijskega koeficienta med Prebivališčem in odprtostjo ali pa Prebivališčem in konservativnostjo različna od 0, torej da sta spremenljivki povezanosti. V obeh primerih je na vzorcu vrednost Spearmanovega korelacijskega koeficienta pozitivna in zanemarljiva.
+
+```{r}
+# Prebivališče
+par(mfrow = c(1,2), mar = c(10, 5, 1, 1))
+
+plotmeans(formula = F1_odprtost ~ Prebivalisce, data = tmp, las = 2, ylab = "odprtost", xlab = "", ylim = c(-2, 2))
+
+plotmeans(formula = F2_konservativnost ~ Prebivalisce, data = tmp, las = 2, ylab = "konservativnost", xlab = "", ylim = c(-2, 2))
+
+TestPreb1 <- cor.test(tmp[, "F1_odprtost"], as.numeric(tmp[, "Prebivalisce"]), method = "spearman", use = "com", exact = FALSE) 
+
+TestPreb2 <- cor.test(tmp[, "F2_konservativnost"], as.numeric(tmp[, "Prebivalisce"]), method = "spearman", use = "com", exact = FALSE)
+```
+
+# Enote v prostoru
+
+Izrisali bomo enote v prostoru glavnih komponent ter faktorjev in označili skupine, ki smo jih dobili iz razvrščanja. Podatke smo pred razvrščanjem standarizirali, za razvrščanje pa smo uporabili metodo k-means s tremi skupinami. Skupine tudi poimenujemo, skupino ena označimo kot podpovprečno konservativne, skupino 2 kot univerzialiste in skupino 3 kot podpovprečno odprte. 
+
+```{r}
+# Nastavimo seme za ponovljivost vrstnega reda skupin.
+set.seed(1312)
+
+# Nehierarhično razvrščanje v skupine z metodo k-means s tremi skupinami.
+km <- kmeans(x = scale(schData[,Sch]), centers = 3, nstart = 1000) 
+
+# Narisemo povprečja za spremenljivke o opravičljivosti po skupinah.
+par(mar = c(10, 5, 1, 1))
+tmp <- scale(schData[Sch])
+plotMeans(tmp, by = km$cluster, ylim = c(-2, 2), plotLegend = FALSE) 
+
+# Poimenujemo skupine in imena shranimo v podatke.
+schData$razKMk3 <- factor(km$cluster, labels = c("podpovprečno konservativni",  "univerzalisti", "podpovprečno odprti"))
+```
+
+## Enote v prostoru glavnih komponent
+
+Izrišimo enote v prostoru glavnih komponent in jih pobarvajmo glede na pripadnost skupini iz razvrščanja. 
+
+```{r}
+# Nastavimo kot faktor.
+schData$razKMk3 <- factor(schData$razKMk3, labels = levels(schData$razKMk3))
+
+# Narišemo enote v prostoru dveh glavnih komponent, pobarvane glede na rezultat iz razvrrščanja v skupine .
+par(mar = c(5, 5, 1, 1))
+plot(schData[, c("PC1_odprtost", "PC2_nekonservativnost")], 
+      xlab = "1 GK (odprtost) (22 %)", 
+      ylab = "2 GK (nekonservativnost) (20 %)",
+      col = schData[, "razKMk3"],
+      pch = 16, 
+      cex = 0.5, 
+      asp = TRUE)
+par(xpd=NA)
+legend("topleft", legend = levels(schData$razKMk3), col = 1:3, pch = 16)
+
+```
+
+Vidimo, da prva glavna komponenta odprtosti pojasni 22% celotne variabilnosti in druga glavna komponenta nekonservativnosti pojasni 20% celotne variabilnosti.
+
+## Enote v prostoru faktorjev
+
+Izrišimo tudi enote v prostoru faktorjev in jih pobarvajmo glede na pripadnost skupini iz razvrščanja. Spodnji graf bomo tudi interpretirali.
+
+```{r}
+# Narišemo enote v prostoru faktorjev, pobarvane glede na rezultat iz razvrščanja v skupine.
+par(mar = c(5, 5, 1, 1))
+plot(schData[, c("F1_odprtost", "F2_konservativnost")], 
+     xlab = "odprtost",  
+     ylab = "konservativnost", 
+     col = schData[, "razKMk3"],
+     pch = 1, 
+     cex = 0.5, 
+     asp = TRUE)
+legend("topleft", legend = levels(schData$razKMk3), col = 1:3, pch = 16)
+```
+
+Ljudje, ki so v skupini podpovprečno odprti imajo nizke vrednosti faktorja odprtosti in morda malo podpovprečne vrednosti faktorja konservativnosti. Skupina podpovprečno odprti ima nizke vrednosti faktorja konservativnosti in v povprečju pozitivno vrednost faktorja odprtosti. Univerzialisti pa imajo nadpovprečne pozitivne vrednosti tako pri faktorju odprtosti kot konservativnosti.
+
+# Zaključek - Alen
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

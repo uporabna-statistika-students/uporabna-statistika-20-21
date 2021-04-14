@@ -1,0 +1,36 @@
+---
+title: "Seminarska naloga 2"
+subtitle: "Napredni pristopi v programskem okolju R"
+author: "Alen Kahteran"
+date: "14. 4. 2020"
+output:
+    html_document:
+    fig_caption: no
+toc: no
+toc_depth: '3'
+params:
+    printcode: no
+printresults: hide
+editor_options:
+    chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+
+library(microbenchmark)
+
+```
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+set.seed(1234)
+m <- 1000
+n <- 100
+X <- matrix(rnorm(m * n, mean = 0, sd = 1), nrow = n)
+skupina <- rep(1:2, each = n / 2)
+
+system.time(for(i in 1:m) t.test(X[ , i] ~ skupina)$stat)
+
+```

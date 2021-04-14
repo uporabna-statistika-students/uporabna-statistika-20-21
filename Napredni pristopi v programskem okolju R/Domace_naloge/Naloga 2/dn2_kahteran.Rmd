@@ -1,0 +1,294 @@
+---
+title: "Domača naloga 2"
+subtitle: "Napredni pristopi v programskem okolju R"
+author: "Alen Kahteran"
+date: "4. 4. 2020"
+output:
+  html_document:
+    fig_caption: no
+    toc: no
+    toc_depth: '3'
+params:
+  printcode: no
+  printresults: hide
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
+library(ggplot2) #for plotting
+library(foreign) #used to read data saved in Stata format
+library(here)  #to deal more efficiently with data access, without using setwd 
+               #and other commands that are dependent on the local settings
+library(magrittr) #for the pipe operator
+library(dplyr)    #for data management
+library(lubridate) #to deal with dates
+library(knitr) #to use the kable command to diplay tables,...
+library(reshape2) #to transform data (for example: long to wide format in longitudinal data)
+library(tidyr)
+```
+
+# Naloga 1
+
+```{r, echo=FALSE, eval=TRUE, results="hide"}
+#read data in R format
+#load("share/easySHARE_rel7_0_0.RDA")
+load("data/easySHARE_rel7_1_0.rda")
+
+#read data in STATA format
+ES.data.STATA <- read.dta("data/easySHARE_rel7-1-0.dta")
+# ES.data.STATA <- read.dta(here::here("data", "easySHARE_rel7-1-0.dta"))
+
+ES.data <- ES.data.STATA #naredimo kopijo statovih podatkov
+ES.data[easySHARE_rel7_1_0<0] <- NA #nastavimo na NA vse negativne vrednosti iz R-ove datoteke
+ES.data <- droplevels(ES.data) #odstranimo nivoje faktorjev, kjer so frekvence 0
+
+
+
+#Pripravimo tudi datoteko (`ES.data.baseline`), ki vsebuje samo prvi intervju vsakega preiskovanca in omeji analizo na osebe, ki so stare vsaj 50 let ali pri katerih je starost neznana.
+
+
+
+#vsi vprasalniki pridobljeni s prvim intervjujem
+ES.data.baseline <- ES.data[which(ES.data$int_version=="0. Baseline questionnaire"), ] 
+
+
+
+#determine the first wave when the subject was included
+ES.data.baseline$first.wave <- as.numeric(sapply(strsplit(as.character(ES.data.baseline$wavepart), split=NULL), 
+                                function(x) x[1]))
+
+#remove the rows where the wave does not match the first wave
+ES.data.baseline <- filter(ES.data.baseline, first.wave==wave)
+
+
+
+
+#odstranimo neuprabljene nivoje
+ES.data.baseline <- droplevels(ES.data.baseline)
+
+
+#definiramo prisotnost depresije
+ES.data.baseline$eurod_cat <- ifelse(ES.data.baseline$eurod>=4, 1, 0)
+
+```
+
+Sam sem najprej opazil da se vrednosti $Z$ statistike gibljejo podobno kot razmerje depresivnih in nedepresivnih, kar mi je dalo misliti da je velikost vzorca lahko problematična, saj je $Z$ statistika odvisna od velikosti vzorca. Preveril sem število samih intervjujev po mesecih in sem opazil, da je v zimskih mesecih v splošnem manj intervjujev. To mi je potrdilo da lahko že zaradi tega prihaja do manjših odstopanj, ker je lahko bilo po naključju zajetih manj nedepresivnih v zimskih mesecih. Nato sem opazil še, da je bilo odstranjenih $22996$ zapisov ker so imeli vrednosti `NA`. Spodnja slika prikazuje porazdelitve po posameznih kategorijah, kjer vidimo da je največ `NA` vrednosti ravno v poletnih mesecih (maj - avgust, gledano tako absolutno kot relativno). Torej obstaja možnost da je nekaj "deleža" depresivnih tudi v `NA` vrednostih, saj posameznikom ni bilo potrebno odgovoriti na vprašanja če to niso želeli. Pomoje je težava v temu.
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.width=10}
+
+ggplot(ES.data.baseline, aes(x=int_month, fill=factor(eurod_cat))) +
+    geom_bar(position="dodge") +
+    labs(x="Mesec intervjuja",
+         y="Frekvenca",
+         fill="Oznaka za depresijo") +
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+# Naloga 2
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.width=10}
+
+ggplot(ES.data.baseline, aes(x=country, y=age, fill=factor(female))) +
+    geom_boxplot() +
+    labs(x="Država",
+         y="Starost",
+         fill="Spol") +
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+# Naloga 3
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.width=10, fig.height=12}
+
+missing.values <- ES.data.baseline %>%
+  gather(key = "key", value = "val") %>%
+  mutate(isna = is.na(val)) %>%
+  group_by(key) %>%
+  mutate(total = n()) %>%
+  group_by(key, total, isna) %>%
+  summarise(num.isna = n()) %>%
+  mutate(pct = num.isna / total * 100)
+
+levels <- (missing.values  %>% filter(isna == T) %>% arrange(desc(pct)))$key
+
+ggplot(missing.values) +
+    geom_bar(aes(x = reorder(key, desc(pct)),
+                 y = pct,
+                 fill=isna),
+             stat = "identity",
+             alpha=0.8) +
+    scale_x_discrete(limits = levels) +
+    scale_fill_manual(name = "Vrednost",
+                      values = c("steelblue", "tomato3"), 
+                      labels = c("Prisotna", "Manjkajoča")) +
+    coord_flip() +
+    labs(x = "Spremenljivka",
+         y = "% manjkajočih vrednosti")
+
+```
+
+# Naloga 4
+
+V splošnem bi pričakoval da so `NA` vrednosti naključno porazdeljene in neodvisne od ostalih spremenljivk. Sicer je pa videti, da je starost takšnih posameznikov ki so imeli `NA` v spremenljivki `maxgrip` v splošnem višja za vse države kar je videti na sliki zgoraj levo. Pri spolu velja podobno, starost je višja pri `NA` vrednostih za oba spola (Zgoraj desno). Pri spremenljivki `sphus` sicer pri vseh z izjemo dveh ni videti nekih razlik, medtem ko pri dveh vrednostih (`4. Fair` in `5. Poor`) je pa opazno višja starost za `NA` vrednosti (Spodaj levo). Pri spremenljivki `eurod` vidimo pravzaprav večanje odstopanja v starosti ko se veča tudi vrednosti `eurod` (Do vrednosti 11). Tako da lahko zaključimo da so v splošnem starejše osebe imele več `NA` vrednosti pri spremenljivki `maxgrip`.
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.width=12, fig.height=16}
+
+# ggplot(ES.data.baseline %>% mutate(isna_grip = is.na(maxgrip)), 
+#        aes(x=age,
+#            y=country,
+#            fill=isna_grip)) +
+#     geom_boxplot(cols=vars(sphus),
+#                rows = vars(female))
+# 
+# ggplot(ES.data.baseline %>% mutate(isna_grip = is.na(maxgrip)), 
+#        aes(x=age,
+#            y=eurod,
+#            col=country)) +
+#     geom_point(aes(shape=female)) +
+#     facet_grid(cols=vars(isna_grip),
+#                rows=vars(sphus))
+
+g1 <- ggplot(ES.data.baseline %>% mutate(isna_grip = is.na(maxgrip)), 
+       aes(x=country,
+           y=age,
+           fill=isna_grip)) +
+    geom_boxplot() +
+    coord_flip() +
+    labs(x="Starost",
+         y="Država",
+         fill="maxgrip = NA")
+
+g2 <- ggplot(ES.data.baseline %>% mutate(isna_grip = is.na(maxgrip)), 
+       aes(x=female,
+           y=age,
+           fill=isna_grip)) +
+    geom_boxplot() +
+    labs(x="Spol",
+         y="Starost",
+         fill="maxgrip = NA")
+
+g3 <- ggplot(ES.data.baseline %>% mutate(isna_grip = is.na(maxgrip)), 
+       aes(x=sphus,
+           y=age,
+           fill=isna_grip)) +
+    geom_boxplot() +
+    labs(x="sphus",
+         y="Starost",
+         fill="maxgrip = NA")
+
+g4 <- ggplot(ES.data.baseline %>% mutate(isna_grip = is.na(maxgrip)), 
+       aes(x=factor(eurod),
+           y=age,
+           fill=isna_grip)) +
+    geom_boxplot() +
+    labs(x="eurod",
+         y="Starost",
+         fill="maxgrip = NA")
+
+gridExtra::grid.arrange(g1,g2,g3,g4, ncol=2)
+
+```
+
+# Naloga 5
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+x <-1
+z <-2
+
+ES.data.baseline.xz <- ES.data.baseline[unique(c(seq(x,
+                                                     nrow(ES.data.baseline), by=10), seq(z, nrow(ES.data.baseline), by=10),
+                                                 seq(7, nrow(ES.data.baseline), by=10))),]
+
+# 1 // num of samples - people
+nrow(ES.data.baseline.xz) # 41301
+
+# 2 // number of women
+table(ES.data.baseline.xz$female) # 22990
+
+# 3 // percentage of women
+table(ES.data.baseline.xz$female)[[2]]/nrow(ES.data.baseline.xz) # 0.5566451
+
+# 4 & 5// avg maxgrip for women and males
+group_by(ES.data.baseline.xz, female)%>%
+    summarise(mean_maxgrip = mean(maxgrip, na.rm = TRUE)) # 26.83109 - F, 43.26905 - M
+
+# 6 // percentage of missings for maxgrip, entire dataset
+missing.values %>% filter(key == "maxgrip") # 0.089301 oz. 0.09
+
+```
+
+Odgovor na 7. vprašanje je `b`.
+
+```{r, echo=FALSE, eval=TRUE, results="hide", fig.align="center", fig.width=8}
+# 7 //
+ggplot(ES.data.baseline.xz, aes(x=factor(female), y=maxgrip)) +
+    geom_boxplot() +
+    labs(x="Spol",
+         y="Povprečna moč stiska [kg]")
+
+```
+
+Odgovor na 8. vprašanje je `e`.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# 8 //
+t.test(maxgrip ~ female, 
+       data = ES.data.baseline.xz, 
+       paired=FALSE, 
+       var.equal=FALSE, 
+       conf.level=0.95)
+
+```
+
+Odgovor na 9. vprašanje je `b`.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# 10 //
+lm_1 <- lm(maxgrip ~ female, 
+           data = ES.data.baseline.xz)
+lm_1 # 43.27 za moske (43.27-16.44) za zenske 
+```
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# 11 & 12//
+lm_2 <- lm(maxgrip ~ female + age, 
+           data = ES.data.baseline.xz)
+
+lm_2 # -16.8175 spol // -0.4309 starost
+
+
+
+```
+
+Odgovor na 13. vprašanje je `c`.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# 14 //
+lm_3 <- lm(maxgrip ~ female + age + country, 
+           data = ES.data.baseline.xz)
+
+# 28 dodatnih parametrov, pac 3 - (intercept), spol, starost so "osnovni" model in se 28 parametrov ki premikajo gor ali dol glede na drzavo.
+
+
+
+```
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+# 15 //
+
+# Da, anova potrdi, sicer je videti tudi po r^2 vrednostih
+summary(lm_2)$r.squared
+summary(lm_3)$r.squared
+
+anova(lm_2, lm_3)
+
+```
+
+Odgovor na 16. vprašanje je `c`.
+
