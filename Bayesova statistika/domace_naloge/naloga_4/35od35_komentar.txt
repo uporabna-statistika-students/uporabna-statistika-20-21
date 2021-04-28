@@ -1,0 +1,23 @@
+Živjo!
+
+Spodaj so komentarji k seminarski nalogi, kjer je z - označena manjša pripomba, z -- večja napaka, s + pa, če ste kakšen del naredili res dobro. Pri ocenjevanju je + izenačil kakšen -- :)
+
++ Pregledno poročilo in ustrezni, premišljeni komentarji.
+
+1. naloga:
+
+ - Spremenljivka je brez učinka, če je pripadajoči beta enak 0. To je splošno pravilo, kako se v simulacijo vključi spremenljivko brez učinka.
+
+ - Pristranost je razlika med pričakovano vrednostjo parametra in parametrom, vključno s predznakom, saj nas v splošnem zanima, v katero smer je odstopanje (ali pravo vrednost precenjujemo ali podcenjujemo).
+
+ - Niste opazili, da je razlog za bias pri interceptu v primeru asimetrične napake dejstvo, da povprečje napake ni enako 0, ampak 1, kar je ravno približno enako vašemu izračunanemu biasu.
+
+-- Manjka le še direktna primerjava med dejansko standarno napako in povrečjem ocenjenih standardnih napak. S tem bi ugotovili, ali pristopa dobro ocenita standardno napako, ki jo imajo njune ocene. V poročilu ste primerjali le dejanske standardne napake med pristopoma. Ekstremni primer: če imam metodo z majhno standardno napako ocene, vendar ob tem ponudim cenilko standardne napake, ki to napako močno preceni, potem je moj pristop celostno slab oz. bi morala za oceno standradne napake raje uporabiti boostrap (še huje je, če dejansko standardno napako podcenim, saj s tem "goljufam").
+
+2. naloga:
+
+ - Ko interpretirate koeficiente v multipli regresiji, napišite raje "pri enakih vrendostih ostalih spremenljivk" ali pa "kontrolirano glede na ostale spremenljivke iz modela" namesto "ob upoštevanju ostalih spremenljivk v modelu" (ker je pojem upoštevanje medel). Poleg tega je verjetno v interpretaciji lapsus: se v povprečju poveča za 189 dolarjev namesto za 193.
+
+Lep pozdrav,
+
+Nina

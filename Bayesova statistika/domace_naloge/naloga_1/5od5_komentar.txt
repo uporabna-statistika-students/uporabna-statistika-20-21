@@ -1,0 +1,7 @@
+Živjo,
+
+Odlično rešena naloga in zelo pregledno poročilo. Pri komentarjih ste narobe zapisali le tole "Vecji kot je beta bolj se nagibamo proti 1, vecji kot je alpha bolj se nagibamo proti 0.", saj velja ravno obratno. Če je beta velik in veliko večji od alpha, potem gre pričakovana vrednost beta porazdelitve proti 0.
+
+Lep pozdrav,
+
+Nina

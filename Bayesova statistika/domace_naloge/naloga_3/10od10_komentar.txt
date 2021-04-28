@@ -1,0 +1,21 @@
+Živjo,
+
+
+Zopet zelo dobro rešena naloga in premišljeni komentarji. Spodaj je ena manjša pripomba in pa dodatna pojasnila.
+
+
+Tole ni napačno, ni pa smiselno postavljeno v kodi: sigma20 in nu0 sta sedaj prava parametra, za katera ocenjujemo aposteriorno porazdelitev, zato ni primerno, da sta definirana na zacetku med fiksnimi parametri (hiper)apriornih porazdelitev. Če bi želeli najti bolj naravno začetno vrednost za sigma20 (sedaj 100), bi bila lahko to mean(sigma2Groups).
+
+
+k.max bi lahko bil mnogo manjši, kakor se izkaže glede na dobljeno porazdleitev nu_0, ni pa nič narobe z vašim.
+
+
+Dobra interpretacija parametrov pri robnih porazdelitvah. Dodajam nekaj pojasnila k interpretaciji nu_0. V modelu predpostavimo, da 1/sigma^2_i izhajajo iz Gamma(nu_0/2,sigma^2_0*nu_0/2), povprečje te porazdelitve je (uporabite formule za gamo) 1/sigma^2_0, varianca pa 1/(sigma^4_0*nu_0/2). Torej: če je nu_0 ogromen, potem je varianca te porazdelitve enaka 0 in zato 1/sigma^2_i izhajajo iz "degenerirane točkovne" porazdelitve, torej so so vse variance šol enake. Večji kot je nu_0, bolj podobne so si variance šol.
+
+
+Pravite: "Če nas pa zanimajo samo povprečja, in če je tudi podatkov precej več, in je potrebnih več iteracij, je pa smiselno razmisliti o temu da uporabimo prvotno različico modela, saj ne bi storili velike napake pri izračunavanju parametrov za povprečja." Če imamo več podatkov, potem si lahko privoščimo več parametrov in je potem takrat model z različnimi variancami bolj smiseln. Z računsko zahtevnostjo pri tako preprostih modelih še ni težav, še posebej če uporabimo naprednejše knjižnice (zadnje vaje). Se strinjam, da model z različnimi variancami v našem primeru ni potreben, če nas zanimajo le povprečja, saj so rezultati obeh modelov zelo podobni. Če pa gledamo bolj široko, je predpostavka enakih varianc v modelu iz vaj kršena, saj ste z modelom iz domače naloge videli, da so si variance nekaterih šol pravzaprav zelo različne. To lahko sklepate tudi iz dejstva, da je 95% CI za nu_0 med 10 in 21.
+
+
+Lep pozdrav,
+
+Nina

@@ -2,7 +2,7 @@
 title: "Seminarska naloga 2"
 subtitle: "Napredni pristopi v programskem okolju R"
 author: "Alen Kahteran"
-date: "14. 4. 2020"
+date: "17. 4. 2020"
 output:
     html_document:
     fig_caption: no
@@ -20,8 +20,14 @@ editor_options:
 knitr::opts_chunk$set(echo=params$printcode, results=params$printresults, warning=FALSE, message=FALSE)
 
 library(microbenchmark)
+library(Rfast)
+library(profvis)
 
 ```
+
+# 1. $t$ test
+
+Koda ki smo jo prejeli v navodilih je bila sledeča
 
 ```{r, echo=TRUE, eval=TRUE, results="markup"}
 
@@ -34,3 +40,126 @@ skupina <- rep(1:2, each = n / 2)
 system.time(for(i in 1:m) t.test(X[ , i] ~ skupina)$stat)
 
 ```
+
+S $t$ testom smo šli po stolpcih matrike, kjer smo primerjali prvih 50 in drugih 50 normalno porazdeljenih vzorcev ($N(0, 1)$). Sam sem to nekoliko priredil tako, da sem zavil vse skupaj v funkcijo `f.t.test1()` zato da lahko kasneje primerjamo rezulate s pospešeno funkcijo. Poglejmo si še relativno časovno razliko v izvajanju s to prirejeno funkcijo.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+# prirejena funkcija
+f.t.test1 <- function() {
+    storage <- numeric(m)
+    for(i in 1:m) {
+        storage[i] <- t.test(X[ , i] ~ skupina)$stat
+    }
+    storage
+}
+
+# primerjava
+microbenchmark(
+    for(i in 1:m) t.test(X[ , i] ~ skupina)$stat,
+    f.t.test1(),
+    unit="relative"
+)
+
+```
+
+Vidimo da večjih razlik v izvajanju ni, zato bomo nadaljevali z novo funkcijo za nadaljnje potrebe. Funkcija, ki sem jo sestavil za pohitritev je sledeča
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+f.t.test2 <- function() {
+    
+    matr_upr <- X[1:50,]
+    matr_low<- X[51:100,]
+
+    mean_low <- colMeans(matr_low)
+    mean_upr <- colMeans(matr_upr)
+    
+    var_low <- colVars(matr_low, suma=mean_low)
+    var_upr <- colVars(matr_upr, suma=mean_upr)
+    
+    stderr_low <- sqrt(var_low/50)
+    stderr_upr <- sqrt(var_upr/50)
+    stderr <- sqrt(stderr_low^2 + stderr_upr^2)
+    # df <- stderr^4/(stderr_low^4/49 + stderr_upr^4/49)
+    tstat <- (mean_upr - mean_low)/stderr
+    tstat
+}
+
+```
+
+Edina funkcija ki je iz zunanjega paketa je `colVars()`, ki zračuna nepristrano varianco po stolpcih podobno na način kot `colMeans()` (pravzaprav je ideja enaka). Ideja za pohitritev je bila da bi bilo najlažje vse računati vektorsko (tj. povprečja, variance, itd.). Težko rečem kaj je prineslo največ časa, saj sem vse naredil v enem koraku. Postopek ki sem ga ubral, je pa bil ta da sem najprej pogledal kako je funkcija `t.test()` spisana. Nato sem izločil le kodo ki računa $T$ statistiko za naš primer ($t$ test za neodvisna vzorca). Funkcija `f.t.test2()` namenoma računa le $T$ statistiko, saj to je rezultat tudi primarne funkcije, kljub temu da izračuna še mnogo drugih vrednosti.
+
+Najprej razdelim prvotno matriko `X` na dve matriki tako kot ju načeloma določa `skupina`, kjer sem namenoma uporabil številke, saj je _look-up_ spremenljivke počasnejši, poleg tega bi se vse skupaj dodatno upočasnilo ker bi moral uporabljati `n/2`, kar je dodaten izračun. Nato najprej izračunamo povprečja po stolpcih, nato variance s tem da funkciji posredujemo že izračunana povprečja saj tako pridobimo nekaj malega na času. Sledi standardna napaka ter nato še $T$ statistika, kjer je vse izračunano vektorsko.
+
+Izvedimo obe funkciji tako da shranimo rezultate, zato da vidimo da so rezultati enaki.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+storage <- f.t.test1()
+tstat <- f.t.test2()
+
+all.equal(storage,tstat)
+
+```
+
+Poglejmo si še relativno razliko v času.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+microbenchmark(
+    f.t.test1(),
+    f.t.test2(),
+    unit="relative"
+)
+
+```
+
+Vidimo da je `f.t.test2` približno $1600$-krat hitrejša od `f.t.test1`. Poglejmo še primerjavo, ko je dodan izračuna stopinj prostosti, ki je v prej bil zakomentiran.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+f.t.test2 <- function() {
+    
+    matr_upr <- X[1:50,]
+    matr_low<- X[51:100,]
+
+    mean_low <- colMeans(matr_low)
+    mean_upr <- colMeans(matr_upr)
+    
+    var_low <- colVars(matr_low, suma=mean_low)
+    var_upr <- colVars(matr_upr, suma=mean_upr)
+    
+    stderr_low <- sqrt(var_low/50)
+    stderr_upr <- sqrt(var_upr/50)
+    stderr <- sqrt(stderr_low^2 + stderr_upr^2)
+    df <- stderr^4/(stderr_low^4/49 + stderr_upr^4/49)
+    tstat <- (mean_upr - mean_low)/stderr
+    tstat
+}
+
+microbenchmark(
+    f.t.test1(),
+    f.t.test2(),
+    unit="relative"
+)
+
+```
+
+
+TUKEJ DODAJ ŠE OCENO NAPAKE PRVE VRSTE.
+
+# 2. $\chi^2$ test
+
+Podobno kot prej najprej generiramo podatke, le da tokrat uporabimo $\chi^2$ test in podatke iz Bernoullijeve porazdelitve.
+
+```{r, echo=TRUE, eval=TRUE, results="markup"}
+
+set.seed(1234)
+X2 <- matrix(rbinom(m * n, size=1, prob=0.5), nrow = n)
+
+chisq.test(table(rbinom(50, size=1, prob=0.5), rbinom(50, size=1, prob=0.5)))
+
+system.time(for(i in 1:m) t.test(X[ , i] ~ skupina)$stat)
+
+```
+

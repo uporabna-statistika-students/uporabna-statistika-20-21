@@ -1,0 +1,13 @@
+Živjo,
+
+Zelo dobro rešeno z nekoliko napačnim izražanjem pri zadnji nalogi. Moti me predvsem tole: "Pri ostalih pa vidimo da je “gostota” okrog “tocke konvergence” razlicna. Pri ostalih dveh manjših variancah (0.00052 in 0.0012), je videti da zaporedje še precej oscilira okrog te tocke (ki je v našem primeru \theta, ki ga išcemo).", pa čeprav ste dali "tocke konvergence" v oklepaj :) Cilj konvergence je porazdelitev in zato ne moremo reči, da oscilira okoli nečesa - dejansko se giblje po območju aposteriorne. Problem pa je, da ga raziskuje počasi, členi so med seboj zelo korelirani, zaradi česar dobljeni vzorec predstavlja bistveno manjši vzorec n.e.p. kakor 40000. Več o tem v rešitvah in na današnji vaji.
+
+Pri zadnji nalogi bi bilo tudi potrebno, da bi narisali primerjavo med dobljenimi aposteriornimi porazdelitvami in pravo. To je namreč končni cilj in zato uspešnost konvergence pravzaprav sodimo na podlagi tega, ko imamo seveda na razpolago teoretično in preko tega validiramo algoritem.
+
+Pravilno ste razmišljali o adaptivnem algoritmu, super, natančneje o tem v rešitvah.
+
+Algoritem ste implementirali brez gostote predlagalne porazdelitve, kar je pravilno, manjka pa komentar z utemeljitvijo, zakaj lahko to izpustimo.
+
+Lep pozdrav,
+
+Nina
