@@ -1,0 +1,814 @@
+---
+title: "Strukturni modeli"
+subtitle: "Domača naloga 4 - Multivariatna analiza"
+author: "Urh Peček in Alen Kahteran"
+date: "20. 4. 2021"
+output:
+  pdf_document:
+    fig_caption: yes
+
+header-includes:
+  - \usepackage[slovene]{babel}
+  - \usepackage{float}
+  - \usepackage[T1]{fontenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, results = FALSE, fig.width=6, fig.height=4, fig.pos = 'H')
+```
+
+```{r, message=FALSE}
+# Prenesemo potrebne knjižnice
+library("lavaan")
+library("semTools")
+library("semPlot")
+library("foreign") 
+library("car")
+library("psych")
+library("blockmodeling")
+library("multiUS")
+library("knitr")
+```
+
+\newpage
+\tableofcontents
+\listoffigures
+<!-- \listoftables -->
+\newpage
+
+# Cilji naloge in opis vzorca 
+
+V nalogi bomo analizirali podatke, ki so bili zbrani v sklopu Evropske družboslovne raziskave (European Social Survey – ESS) in sicer v 9. valu leta 2018. Podrobneje bomo analizirali podatke zbrane na Danskem, na koncu naloge pa jih bomo primerjali s tistimi, ki so bili zbrani v Španiji. Na Danskem je v raziskavi sodelovalo 1572 prebivalcev, v Španiji pa 1668. 
+
+Analizirali bomo različne vrednote, merjenje s tako imenovanimi Schwartzovimi spremenljivkami opisanimi v prvi nalogi (Pregled in priprava podatkov), ki smo jih v prejšnjih nalogah že povezovali s spremenljivkama odprtosti in konservativnosti. Dodatno bomo analizirali spremenljivke, ki merijo odnos do priseljencev, torej mnenje glede njihovega vpliva na gospodarstvo, vpliva na kulturno življenje ter vpliva na kakovost bivanja, in spremenljivko, ki opisuje število let šolanja.
+
+Cilj naloge je dobiti vpogled v odnose med spremenljivkami in oceniti linearne odnose med njimi, pri čemer je odvisnih spremenljivk lahko več. Natančneje, ob upoštevanju spola in let šolanja želimo preveriti vpliv spremenljivk odprtosti in konservativnosti na odnos do priseljencev. Poskusili bomo tudi konstruirati in oceniti model, za katerega menimo, da med obravnavanimi spremenljivkami drži na populaciji. Nazadnje pa bomo primerjali modela in vrednosti spremenljivk med korespondenti izbranih držav Danske in Španije. V ta namen se bomo poslužili teorije strukturnih modelov.
+
+```{r}
+# Uvozim podatke iz SPSS.
+podatkiVseDrzave <- read.spss("ESS9e03.sav",
+                              use.value.labels = TRUE,
+                              to.data.frame = TRUE,
+                              use.missings = TRUE,
+                              reencode = TRUE)
+```
+
+```{r}
+# Izberemo svojo državo in državo s katero jo bomo na koncu naloge primerjali.
+dve.drzavi <- podatkiVseDrzave[podatkiVseDrzave$cntry %in% c("Denmark", "Spain"),]
+
+# Stevilo korespondentov v izbranih državah
+stevilo <- table(dve.drzavi$cntry)
+# Odstranimo vse države, obdržimo samo izbrani dve.
+rm(podatkiVseDrzave)
+
+# Izberemo spremenljivke, ki jih bomo analizirali.
+dve.drzavi <- renameVar(dve.drzavi, renames = list(
+  "gndr" = "spol",
+  "cntry" = "drzava",
+  "eduyrs" = "solanje",
+  "impdiff" = "drugacnost", 
+  "impsafe"= "varnost", 
+  "impfun" = "uzitek", 
+  "ipadvnt" = "vznemerljivost", 
+  "impfree" = "svoboda", 
+  "ipgdtim" = "zabava", 
+  "ipmodst" = "poniznost", 
+  "ipstrgv" = "obramba", 
+  "imptrad" = "tradicija", 
+  "ipcrtiv" = "kreativnost", 
+  "ipfrule" = "ubogljivost", 
+  "ipbhprp" = "sprejemljivost",
+  "imbgeco" = "gospodarstvo", 
+  "imueclt" = "kultura", 
+  "imwbcnt" = "bivanje"
+))
+
+# Shranimo se Schwartzove spremenljivke in spremenljivke, ki se nanašajo na priseljence.
+Sch <- c("drugacnost", "varnost", "uzitek", "vznemerljivost", "svoboda", "zabava", "poniznost", "obramba", "tradicija", "kreativnost", "ubogljivost", "sprejemljivost")
+priseljenci <- c("gospodarstvo", "kultura", "bivanje")
+
+# Izberemo podatke, ki vsebujejo samo potrebne spremenljivke.
+# Pravilno bi bilo, da bi shranili kot dataDENSPA, vendar bomo zaradi kopiranja kode shranili v dataSLOEST. 
+dataSLOEST <- dve.drzavi[, c(Sch, priseljenci, "spol", "solanje", "drzava")]
+```
+
+```{r}
+# Spremenljivke je potrebno tudi nekoliko rekodirati
+# Lavan sprejme samo numerične spremenljivke.
+# Vrednosti spremenljivk morajo biti od 0 do 10 (in ne od 1 do 10).
+
+# Priseljenci.
+dataSLOEST$gospodarstvo <- Recode(dataSLOEST$gospodarstvo, "'Good for the economy' = 10; 'Bad for the economy' = 0;")
+dataSLOEST$gospodarstvo <- as.numeric(as.character(dataSLOEST$gospodarstvo))
+
+dataSLOEST$kultura <- Recode(dataSLOEST$kultura, "'Cultural life enriched' = 10;'Cultural life undermined' = 0;")
+dataSLOEST$kultura <- as.numeric(as.character(dataSLOEST$kultura))
+
+dataSLOEST$bivanje <- Recode(dataSLOEST$bivanje, "'Better place to live' = 10; 'Worse place to live' = 0;")
+dataSLOEST$bivanje <- as.numeric(as.character(dataSLOEST$bivanje))
+
+# Vrednote - Likartove spremenljivke pretvorimo v numerične z vrednostmi od 1 do 6.
+for (i in 1:length(Sch)) {
+  dataSLOEST[, Sch[i]] <- Recode(dataSLOEST[, Sch[i]], "
+                                                  'Very much like me' = 6;
+                                                  'Like me' = 5;
+                                                  'Somewhat like me' = 4;
+                                                  'A little like me' = 3;
+                                                  'Not like me' = 2;
+                                                  'Not like me at all' = 1
+                                                  ")
+  # Pretvorba iz ordinalne v numerčcno spremenljivko.
+  dataSLOEST[, Sch[i]] <- as.numeric(as.character(dataSLOEST[, Sch[i]]))
+}
+
+# Spol
+# Moški = 1, Ženski = 0
+dataSLOEST$spol <- car::recode(dataSLOEST$spol, "'Male' = 1; 'Female' = 0")
+dataSLOEST$spol <- as.numeric(as.character(dataSLOEST$spol))
+TabelaSpol <- table(dataSLOEST$spol)
+
+# Šolanje
+dataSLOEST$solanje <- as.numeric(as.character(dataSLOEST$solanje))
+
+# Izberemo podatke samo za Dansko
+# Pustimo, kot dataSLO zaradi kopiranja kode. 
+dataSLO <- dataSLOEST[dataSLOEST$drzava == "Denmark",]
+```
+
+\newpage
+
+# Predstavitev spremenljivk
+
+Schwartzove spremenljivke odprtosti in konservativnosti smo podrobneje opisali že v prejšnjih nalogah. Sedaj pa opišimo dodatne spremenljivke, ki merijo odnos do priseljencev in spremenljivko leta šolanja.
+
+## Odnos do priseljencev
+
+Najprej si grafično oglejmo porazdelitev spremenljivk povezanih z odnosom do priseljencev. Poimenovali smo jih gospodarstvo, kultura in bivanje.
+
+```{r, fig.width=12, fig.height=6, fig.cap="Porazdelitev spremenljivk odnosa do priseljencev"}
+# Grafična predstavitev porazdelitve spremenljivk povezanih z odnosom do priseljencev.
+par(mfrow = c(1, 3))
+for (i in 1:length(priseljenci)){
+  histNorm(dataSLO[, priseljenci[i]], 
+           breaks = -1:10+0.5, 
+           main = priseljenci[i], 
+           xlab = "strinjanje", 
+           ylab = "frekvenca")
+}
+
+# Vrednosti statistik zgornjih spremenljivk.
+OpisStatistik <- round(data.frame(describe(dataSLO[, priseljenci]))[, c(2, 3, 4, 5, 8, 9, 10, 11, 12)], 2)
+```
+
+Vidimo, da je veliko vrednosti sredinskih tj. med 4 in 6 kar pomeni, da je mnenje ljudi o priseljevanju, da ima le to lahko tako dobre kot slabe vplive na kakovost gospodarstva, kulture in bivanja. Nekoliko višje vrednosti so sicer pri spremenljvki kultura, njeno povprečje je enako 6, kar pomeni, da ima po mnenju prebivalcev Danske priseljevanje najboljši vpliv na kulturo. Sicer pa je povprečna vrednost gospodarstva 5.5 in bivanja 5.8. Standardni odklon vseh spremenljivk je okrog 2.3. Iz koeficientov asimetrije in sploščenosti, ki zavzamejo vrednosti od 0 do -0.5 vidimo, da ne prihaja do večjega odstopanja od normalne porazdelitve.
+
+
+```{r, fig.cap="Korelacije spremenljivk odnosa do priseljencev", fig.height=4}
+# Korelacije med spremenljivkami.
+plotMat(cor(dataSLO[, priseljenci], use = "com"), main = "")
+```
+
+Iz prikaza korelacij vidimo, da so spremenljivke močno povezane. To nakazuje, da z njimi merimo en koncept oziroma latentno spremenljivko, v našem primeru je to odnos do priseljencev.
+
+\newpage
+
+## Število let šolanja
+
+Iz grafičnega prikaza porazdelitve števila let šolanja vidimo, da se je večinski del korespondentov šolal nekje od 7 pa do 22 let. Največji del ljudi se je izobraževal od 13 pa do 15 let. Standardni odklon izobraževanja znaša 5.78, glede na koeficiente asimetrije in sploščenosti (0.2 in 2.35) pa razberemo, da je porazdelitev nekoliko sploščena v primerjavi z normalno. Korespondenti z vrednostmi blizu 40 so najverjetneje vprašanje razumeli drugače in zato njihove vrednosti po tehtnem premisleku spremenimo v manjkajoče. To opravičuje tudi dejstvo, da nimajo vpliva na kasnejše rezultate.
+
+```{r, fig.cap="Porazdelitev števila let šolanja"}
+# Porazdelitev števila let šolanja.
+hist(dataSLO$solanje, main="", breaks=25,
+     xlab="Število let šolanja", ylab="Frekvenca")
+
+# Statistike izobraževanja.
+IzobStat <- round(data.frame(describe(dataSLO[, "solanje"]))[, c(2, 3, 4, 5, 8, 9, 10, 11, 12)], 2)
+
+# View(t(dve.drzavi[as.numeric(as.character(dve.drzavi$solanje)) %in% c(35, 46,38,40) ]))
+# Odstranimo
+dataSLO$solanje[dataSLO$solanje %in% c(38,40, 36, 35)] <- NA
+```
+
+
+
+
+\newpage
+
+# Primernost podatkov za analizo v okviru strukturnih modelov
+
+V prejšnjih nalogah smo že argumentirali, da so Likartove spremenljivke odprtosti in konservativnosti primerne za analizo. Zgoraj pa smo videli, da so primerne za analizo tudi dodane spremenljivke gospodarstvo, kultura, bivanje in število let šolanja. Predpostavimo torej, da so (nekatere) spremenljivke med seboj korelirane, med njimi ni močne multikolinearnosti, imamo med spremenljivkami linearne odnose (tudi med indikatorji in konstrukti), je pričakovana vrednost merskih napak enaka 0, da je njihova variabilnost neodvisna od same vrednosti spremenljivke, ter da so med seboj nekorelirane. Predpostavimo tudi večrazsežno normalno porazdelitev spremenljivk, primernost merskih lestvic in ustrezno velikost vzorca. 
+
+\newpage
+
+# Potrjevalna faktorska analiza
+
+Najprej naredimo model in pogledajmo kako dobro se prilega podatkom. Kot latentne spremenljivke smo kot rečeno izbrali odprtost, konservativnost in odnos do priseljencev. Predpostavili smo, da se odprtost izraža skozi vznemerljivost, drugačnost, užitek, zabavo, kreativnost in svobododo, da se konservativnost izraža skozi varnost, ponižnost, tradicijo, ubogljivost, sprejemljivost in obrambo, ter da se odnos do priseljencev izraža skozi gospodarstvo, kulturo in bivanje.
+
+## Ocena modela
+
+```{r}
+# Za definiranje faktorjev uporabljamo oznako =~ ki pomeni "se izraža skozi".
+# Na levo stran napišemo ime faktorja, na desno pa imena manifestnih spremenljivk.
+
+modelCfa <- "
+# latentne spremenljivke
+odprtost =~ vznemerljivost + drugacnost + uzitek + zabava + kreativnost + svoboda
+konservativnost  =~ varnost + poniznost + tradicija + ubogljivost + sprejemljivost + obramba
+priseljenci =~ gospodarstvo + kultura + bivanje
+"
+
+# da bi zagotovili identifikabilnost modela, moramo
+#---a) nastaviti eno fiksno utez za vsak faktor (privzeto)
+#---b) standardizirati variance odklonov latentnih spremenljivk (std.lv = FALSE)
+# dodatni parametri so:
+#---a) mimic = "Mplus"; za zeljeno obliko izpisa
+#---b) orthogonal; FALSE za nepravokotne faktorje, TRUE za pravokotne
+#---c) estimator; pogosto DWLS, ko imamo ordinalne spremenljivke
+#---d) ordered; imena ordinalnih spremenljivk
+
+# Ustvarimo model
+fitCfa <- cfa(modelCfa, 
+              data = dataSLO, 
+              orthogonal = FALSE, 
+              estimator = "DWLS", 
+              ordered = c(Sch, priseljenci)) 
+
+# Pogledamo kako dobro je prileganje našega ocenjenega modela.
+IndeksiPrileganja <- fitMeasures(fitCfa, fit.measures = c("rmsea", "srmr", "cfi", "tli"))
+```
+
+Vse mere prileganja nam sporočajo, da je model sprejemljiv in se dobro prilega podatkom. RMSEA, ki nam pove v kolikšni meri se model dobro prilega vrednostim na populaciji, vrne vrednost 0.065, kar je blizu 0.06 in je model (mejno) sprejemljiv. SRMR, ki meri koren povprečne kvadrirane razlike med ocenjenimi in modelskimi korelacijemi, vrne vrednost 0.057, kar je manj od 0.08, ki je meja sprejemljivosti. CFI, kateri primerja ocenjen model z modelom brez korelacij zavzame vrednost 0.969, kar je prek mejne vrednosti 0.95. Sprejemljivost modela pa nam potrdi tudi TLI, ki je podoben CFI, le da še kontrolira za kompleksnost modela, ki zavzame vrednost 0.963, kar je ponovno več od 0.95.
+
+## Dopolnitev modela
+
+Poglejmo ali modelu lahko dodamo lokalne sprostitve, ki bi dodatno pripomogle h primernosti modela ter njegovem prileganju analiziranim podatkom. Ogledamo si indekse spremembe (mi), ki nam povedo kakšno je pričakovano zmanjšanje $\chi^2$ statistike, če sprostimo izbran parameter. 
+
+```{r}
+# Če se model slabo prilega podatkom, potem lahko razmislimo o dodajanju nekaterih sprostitev.
+# Razmislimo o tistih sprostitvah, pri katerih je vrednost mi (modification index) največja.
+
+# EPC (expected parameter change) je pričakovana sprememba parametra
+# zadnji trije stolpci so različne standardizirane vrednosti EPC
+# (sepc.nox = standardizirane vrednosti vseh, razen eksogenih spremenljivk)
+modInd <- modificationindices(fitCfa)
+Upgrade1 <- subset(modInd[order(modInd$mi, decreasing = TRUE),], mi > 10)
+```
+
+Vrednost mi odstopa pri parametru, ki nam pove, kako se užitek izraža skozi zabavo, kjer je njegova vrednost enaka 112. To pomeni, da je del korelacije med užitkom in zabavo nepojasnjen s faktorjem odprtosti. Podobno visoka vrednost indeksa prileganja je sicer tudi pri parametru, ki nam pove kako se odprtost izraža skozi obrambo, vendar se bomo izboljšanja modela lotili postopoma, z dodajanjem vsakega parametra posebej, če bo le ta statistično značilno izboljšal prileganje modela. Modelu torej dodajmo sprostitev parametra prek katerega z zabavo merimo užitek, kar je tudi vsebinsko smiselno. Model ponovno ocenimo, pogledamo njegove indekse in preverimo, ali se statistično značilno boljše prilega od prejšnjega modela.
+
+```{r}
+# Naredimo nov model.
+modelCfa2 <- "
+# latentne spremenljivke
+odprtost =~ vznemerljivost + drugacnost + uzitek + zabava + kreativnost + svoboda 
+konservativnost  =~ varnost + poniznost + tradicija + ubogljivost + sprejemljivost + obramba
+priseljenci =~ gospodarstvo + kultura + bivanje
+uzitek ~~ zabava
+"
+fitCfa2 <- cfa(modelCfa2, data = dataSLO, orthogonal = FALSE, estimator = "DWLS", ordered = c(Sch, priseljenci))
+
+# Pogledamo indekse prileganja
+IndeksiPrileganja2 <- fitmeasures(fitCfa2, fit.measures = c("srmr","rmsea","tli","cfi"))
+
+# Indeksi spremembe.
+modInd <- modificationindices(fitCfa2)
+Upgrade2 <- subset(modInd[order(modInd$mi, decreasing = TRUE),], mi > 10)
+```
+
+V modelu s sproščenim zgoraj opisanim parametrom, se vsi indeksi prileganja nekoliko izboljšajo, kar pomeni, da se model nekoliko bolje prilega dejanskim podatkom. Njihove vrednosti so sedaj sledeče: RMSEA = 0.058, SRMR = 0.053, CFI = 0.976 in TLI =  0.971.
+
+Če pogledamo indekse prileganja na novem modelu, vidimo, da odstopa indeks prileganja pri izražavi odprtosti prek obrambe, kar pa se nam ne zdi vsebinsko smiselno in pripadajočega parametra ne sprostimo ter zgoraj posodobljen model sprejmemo kot končni.
+
+S funkcijo anova lahko pogledamo ali se posodobljen model statistično značilno bolje prilega podatkom kot prvotno ocenjen. Na podlagi vrednosti p (p < 0.001) lahko pri stopnji značilnosti 0.05 zavrnemo ničelno domnevo, da sta modela enakovredna in izberemo model v katerem je sproščen parameter med zabavo in užitkom.
+
+```{r}
+# Preverimo, ali se bolj kompleksen model bolje prilega podatkom.
+# Ho: modela se enako dobro prilegata podatkom.
+Anova1 <- anova(fitCfa2, fitCfa)
+```
+
+## Povzetek in interpretacija modela
+
+```{r}
+# Pogledamo rezultate modelov.
+#---a) fit.measures; kako dobro se model prilega
+#---b) standardized; vrne standardizirane vrednosti koeficientov.
+Povzetek <- summary(fitCfa2, fit.measures = TRUE, standardized = TRUE)
+
+# Model Test User Model: Ho: kovariancna matrika, ocenjena na podlagi modela je enaka populacijski.
+# Model Test Baseline Model: Ho: kovariancna matrika nultega modela je enaka populacijski kovariancni matriki.
+
+# KOMENTAR: standardizirane vrednosti
+# Std.lv = standardizirane vrednosti latentnih spremenljivk
+# Std.all = standardizirane vrednosti vseh spremenljivk
+# standardizirane vrednosti kovarianc so korelacije
+```
+
+Domnevo, da je variančno-kovariančna matrika ocenjena na podlagi modela enaka populacijski (ocenjeni z vzorčno), na podlagi vrednosti p (p < 0.001) ustreznega kriterija (Model Test User Model) katerega vrednost testnega statistike je pri 86 stopinjah prostosti enaka 507, pri stopnji značilnosti 0.05 zavrnemo in sprejmemo domnevo, da se modelska in populacijska variančno-kovariančna matrika statistično značilno razlikujeta.
+
+Podobno kot zgoraj pri stopnji statistične značilnosti 0.05, na podlagi vrednosti p (p < 0.001) zavrnemo tudi ničelno domnevo, da je variančno-kovariančna matrika ocenjenega modela enaka variančno-kovariančni matriki nultega modela, v katerem manifestne spremenljivke med seboj niso korelirane (Model Test Baseline Model). Vrednost testne statistike je sicer pri 105 stopinjah prostosti enaka 17610.
+
+Z zgornjima rezultatoma se sicer pretirano ne obremenjujemo, saj sta testa izredno občutljiva in se le redko zgodi, da ničelnih domnev ne zavrnemo.
+
+Da zagotovimo identifikabilnost modela, smo pri vsakem faktorju enem izmed idintikatorjev vrednost faktorske uteži nastavili na 1 (marker indikator). Pri faktorju odprtost je to indikator vznemerljivost, pri konservativnosti je to varnost in pri odnosu do priseljencev je marker indikator gospodarstvo. Lahko bi sicer tudi variance latentnih spremenljivk odprtosti, konservativnosti in odnosa do priseljencev standarizirali, torej nastavili na 1, kar nam pomaga tudi pri interpretaciji.
+
+Vrednosti p so pri vseh manifestnih spremenljivkah manjše od 0.001, kar pomeni, da so vrednosti vseh ocenjenih koeficientov statistično značilno različne od 0. Iz ocen standariziranih koeficientov lahko razberemo tudi vpliv manifestnih spremenljivk na latentne. Največji vpliv na odprtost imata drugačnost in vznemerljivost, največji vpliv na konservativnost ima sprejemljivost, najmanjšega pa tradicija. Na odnos do priseljencev ima kultura in bivanje podobno velik vpliv, nekoliko manjši pa je vpliv gospodarstva. Vrednosti vseh ocenjenih koeficientov so pozitivne, kar pomeni, da se s povečanjem vrednosti manifestne spremenljivke, poveča tudi vrednost latentne.
+
+Poglejmo si še korelacije med latentnimi spremenljivkami. Vse korelacije so pri stopnji statistične značilnosti 0.05 strogo statistično značilne (p < 0.001 oz. p < 0.005). Edina negativna korelacija je med konservativnostjo in priseljenci, kar pomeni, da bolj kot je človek naklonjen priseljencem manj je konservativen, kar je tudi vsebinsko smiselno. Velja, da je povezanost med konservativnostjo in odnosom do priseljencev šibka. Sicer pa so vrednosti vseh ostalih korelacij pozitivne, kar pomeni, da se s povečanjem vrednosti ene spremenljivke, poveča tudi vrednost druge. Torej velja, da bolj kot so ljudje konservativni in naklonjeni priseljencem bolj so tudi odprti, povezanost je sicer zanemarljiva, ter večji kot je nepojasnjen del zabave, večji je tudi nepojasnjen del užitka in med njima je srednja povezanost. 
+
+Opisan model in rezultate lahko predstavimo tudi grafično. Velja, da bolj bleda kot je barva, manjša je vrednost korelacije med spremenljivkama oziroma njena nepojasnjena variabilnost. Z zeleno so označene pozitivne vrednosti, z rdečo pa negativne.
+
+```{r, fig.cap="Model potrjevalne faktorske analize", fig.height=6, fig.width=6}
+# what; kaj narisati, glej ?semPaths
+# whatLabels; kaj napisati na povezave, obicajno "est" ali "std"
+# intercepts; ali naj izpise tudi presecisca?
+semPaths(fitCfa2, what = 'std', whatLabels = 'std', layout = "tree2", thresholds = FALSE, intercepts = FALSE)
+```
+
+```{r}
+# Pogledamo možnost za omejitev varianc latentnih spremenljvk.
+# Nisem vključil v nalogo, pomojem ni potrebno.
+fitCfa.var <- cfa(modelCfa2, data = dataSLO, estimator = "DWLS", std.lv = TRUE, ordered = c(Sch, priseljenci))
+PovzetekOmejitev <- summary(fitCfa.var, fit.measures = TRUE, standardized = TRUE)
+```
+
+```{r, results=FALSE}
+# MIMIC MODEL, KI GA NE VKLJUČIMO V NALOGO [KMET]
+
+# Sedaj pa bomo ocenili mimic model. Latentna spremenljivka konservativnost se izraža skozi varnost, ponižnost, tradicijo, ubogljivost, sprejemljivost in obrambo. V model pa je tudi vključena linearna regresija, kjer konservativnost nastopa kot odzivna spremenljivka, šolanje in spol pa sta napovedni spremenljivki.
+
+# Definiramo model
+modelMimic <- "
+# latentne spremenljivke
+konservativnost  =~ varnost + poniznost + tradicija + ubogljivost + sprejemljivost + obramba
+
+# regresija (oznaka ~ oznacuje linearno regresijo, is regressed on')
+konservativnost ~ solanje + spol
+"
+
+# Ocenimo model
+fitMimic <- sem(modelMimic, data = dataSLO, estimator = "DWLS", ordered = Sch)
+
+# Pogledamo si indekse prileganja
+IndeksPrileganja3 <- fitmeasures(fitMimic, fit.measures = c("srmr","rmsea","tli","cfi"))
+
+# Pogledamo indeske spremembe, samo tiste katerih vrednost je > 10.
+modInd <- modificationindices(fitMimic)
+Ind10 <- subset(modInd[order(modInd$mi, decreasing = TRUE),], mi > 10)
+
+# Glede na indekse prileganja se model zelo dobro prilega podatkom. SRMR zavzame vrednost 0.038 (< 0.08), RMSE vrednost 0.058 (< 0.06), TLI vrednost 0.958 (> 0.95) in CFI vrednost 0.957 (blizu 0.95). Glede na zelo dobro prileganje modela podatkom ne potrebujemo dodajati sprostitve parametrov in privzamemo, da je model končen.
+
+# Glede na indekse prileganja se model zelo dobro prilega podatkom. SRMR zavzame vrednost 0.038 (< 0.08), RMSE vrednost 0.058 (< 0.06), TLI vrednost 0.958 (> 0.95) in CFI vrednost 0.957 (blizu 0.95). Glede na zelo dobro prileganje modela podatkom ne potrebujemo dodajati sprostitve parametrov in privzamemo, da je model končen.
+
+# Povzetek modela
+PovzetekMimic <- summary(fitMimic, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE)
+
+# Izris modela
+# MimicIzris <- semPaths(fitMimic, what = 'std', whatLabels = 'std', layout = "tree2",
+#          intercepts = FALSE, thresholds = FALSE)
+
+# Na podlagi vrednosti p (p < 0.001) v povzetku modela, pri stopnji značilnosti 0.05 ponovno zavrnemo domnevi, da je  da je variančno-kovariančna matrika ocenjena na podlagi modela enaka populacijski in  domnevo, da je variančno-kovariančna matrika ocenjenega modela enaka variančno-kovariančni matriki nultega modela, v katerem manifestne spremenljivke med seboj niso korelirane. Kot pa je bilo že rečeno, se s tem ne obremenjujemo, saj se le redko zgodi, da domnevi obdržimo.
+
+# Vsi koeficienti pri spremenljivkah skozi katere se izraža konservativnost so pri stopnji statistične značilnosti 0.05 močno statistično značilni (p < 0.001). Pri standarizirani vrednosti latentne spremenljivke konservativnost so vrednosti koeficientov podobne, nekje med 0.5 in 0.6, najnižja je vrednost koeficient pri spremenljivki tradiciji, ki je enaka 0.38. Poglejmo si še pojasnene dele variabilnosti spremenljivk prek skupnega faktorja konservativnosti, ki so izražene s koeficientom determinacije R^$2$. Največ nepojasnjene variabilnosti ostane pri spremenljivki tradicija, kjer je pojasnjenega dela zgolj 14.3%. Največ pojasnjene variabilnosti pa ima spremenljivka sprejemljivost in sicer 36.3%.Ostale vrednosti pojasnjenih variabilnosti variirajo vmes. 
+
+# Če pa pogledamo še model linearne regresije kjer je konservativnost odzivna spremenljivke, pa tako šolanje kot spol, ob upoštevanje druge spremenljivke v modelu pri stopnji statistične značilnosti 0.05 statistično značilno vplivata na konservativnost (p < 0.001 in p = 0.025). Število let šolanja ima sicer nekoliko večji vpliv na konservativnost kot pa spol. Vrednosti parametrov sta negativni. Velja da se ob upoštevanju spola, z vsakim dodatnim letom šolanja stopnja konservativnosti zmanjša za 0.013 točke, ter ob upoštevanju let šolanja so moški za 0.054 točke manj konservativni kot ženske. Sicer pa je s spolom in številom let šolanja pojasnjenih 17% variabilnosti spremenljivke konservativnost.
+```
+
+# Polni strukturni model
+
+Sedaj pa si poglejmo polni strukturni model, kjer obravnavanemu merskemu delu strukturnega modela dodamo strukturne poti, torej linearne regresije, ki poleg merskega dela povezujejo odnose med spremenljivkami. Zanima nas kako odprtost in konservativnost vplivata na odnos do priseljencev, če kontroliramo za leta šolanja in spol. Zgornjem strukturnem modelu, kjer so z manifestnimi spremenljivkami merjene spremenljivke odprtost, konservativnost in svoboda, dodamo skupek linearnih regresij. Odnos do priseljencev pojasnimo z odprtostjo, konservativnostjo, številom let šolanja in spolom, tako odprtost kot konservativnost pa pojasnimo s številom let šolanja in spolom.
+
+```{r}
+# Definiramo povezanosti spremenljivk
+modelFullSem <- "
+# latentne spremenljivke
+
+odprtost =~ vznemerljivost + drugacnost + uzitek + zabava + kreativnost + svoboda
+
+konservativnost  =~ varnost + poniznost + tradicija + ubogljivost + sprejemljivost + obramba + vznemerljivost
+
+priseljenci =~ gospodarstvo + kultura + bivanje
+
+# regresija
+
+priseljenci ~ odprtost + konservativnost
+priseljenci ~ solanje + spol
+odprtost ~ solanje + spol
+konservativnost ~ solanje + spol
+"
+
+# Ocenimo model
+fitFullSem <- sem(modelFullSem, data = dataSLO, estimator = "DWLS", ordered = c(Sch, priseljenci)) 
+
+# Pogledamo si mere prileganja
+MerePrileganjaFull <- fitmeasures(fitFullSem,fit.measures = c("srmr","rmsea","tli","cfi"))
+
+# Pogledamo si indekse prileganja z vrednostmi več kot 10.
+modInd <- modificationindices(fitFullSem)
+SubsetModInd3 <- subset(modInd[order(modInd$mi, decreasing = TRUE),], mi > 10)
+```
+
+## Ocena modela
+
+Prileganje modela podatkom je sprejemljivo, glede na meri prileganja TLI in CFI pa celo dobro (SRMR = 0.056, RMSEA = 0.062, TLI = 0.965, CFI = 0.961).
+Vrednosti indeksov prileganja so sicer ponekod visoke, zdi se, da denimo obramba vpliva na odprtost ter zabava vpliva na užitek, vendar pa zaradi dobrega prileganja modela podatkom ni potrebno sproščati dodatnih parametrov in zastavljen model privzamemo kot končen.
+
+## Povzetek in interpretacija modela
+
+```{r}
+# Povzetek modela
+PovzetekFull <- summary(fitFullSem, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE)
+
+# KOMENTAR
+# covariances med latentnimi spremenljivkami so sedaj korelacije napak (parcialne korelacije)
+# torej del korelacij, ki ni pojasnjen z ostalimi spremenljivkami
+# variances napak latentnih spremenljivk je del variance, ki ni pojasnjen z modelom
+# torej  1 - (std. variances napak) = R2
+```
+
+Velja, da ob upoštevanju ostalih spremenljivk v modelu, kjer je odzivna spremenljivk odnos do priseljencev, ob stopnji statistične značilnosti 0.05, vse spremenljivke, ob upoštevanju ostalih spremenljivk v modelu, statistično značilno vplivajo na odnos do priseljencev. Spremenljivki odprtosti in šolanja imata pozitivno vrednost parametra, kar pomeni, da se s povečevanjem let šolanja oziroma odprtosti v povprečju izboljšuje odnos do priseljencev. Na drugi strani pa imata spremenljivki konservativnost in spol negativno vrednost parametra, kar pomeni, da se s povečevanjem stopnje konservativnosti v povprečju slabša odnos do priseljencev in da imajo moški v povprečju slabši odnos do priseljencev kot ženske. Najmočnejši vpliv na odnos do priseljencev ima konservativnost, najšibkejši vpliv pa odprtost.
+
+Nadalje, ob upoštevanju druge spremenljivke, niti število let šolanja, niti spol pri stopnji statistične značilnosti 0.05 nimata statistično značilnega vpliva na odprtost. Posledično njunega vpliva in vrednosti parametrov ne bomo interpretirali. 
+
+Na konservativnost imata pri stopnji statistične značilnosti 0.05, tako število let šolanja kot spol, pri upoštevanju druge spremenljivke, statistično značilen vpliv. Vrednosti obeh parametrov sta negativni kar pomeni, da se s povečevanjem števila let šolanja v povprečju zmanjšuje stopnja konservativnosti in da so moški v povprečju bolj konservativni kot ženske. Večji vpliv na konservativnost ima sicer spol.
+
+\newpage
+
+# Posredni vpliv števila let šolanja na odnos do priseljencev
+
+Vprašamo se lahko, ali ima število let šolanja poleg neposrednega tudi posredni učinek na odnos do priseljencev preko konservativnosti. Posredni učinek števila let šolanja na odnos do priseljencev je nekakšna vsota neposrednega učinka šolanja na konservativnost in konservativnosti na odnos do priseljencev. Skupni učinek števila let šolanja na odnos do priseljencev pa je vsota neposrednega in posrednega učinka.
+
+```{r}
+modelFullSemPosr <- "
+# latentne spremenljivke
+
+odprtost =~ vznemerljivost + drugacnost + uzitek + zabava + kreativnost + svoboda 
+konservativnost  =~ varnost + poniznost + tradicija + ubogljivost + sprejemljivost + obramba + vznemerljivost
+priseljenci =~ gospodarstvo + kultura + bivanje
+
+# regresija
+
+priseljenci ~ odprtost + b*konservativnost
+priseljenci ~ neposredni*solanje + spol
+odprtost ~ solanje + spol
+konservativnost ~ a*solanje + spol
+
+# posredni in skupni ucinki (:= lahko beremo kot 'definira' ali 'je enako')
+
+posredni := a*b
+skupni := neposredni + posredni
+"
+
+# Izvedemo oceno modela
+fitFullSemPosr <- sem(modelFullSemPosr, data = dataSLO, estimator = "DWLS", ordered = c(Sch, priseljenci)) 
+
+# MerePrileganja
+MerePos <- fitmeasures(fitFullSemPosr, fit.measures = c("srmr","rmsea","tli","cfi"))
+# Indeksi prileganja
+modInd <- modificationindices(fitFullSemPosr)
+IndeksiPod <- subset(modInd[order(modInd$mi, decreasing = TRUE),], mi > 10)
+```
+
+## Ocena modela
+
+Ponovno izvedemo model, tokrat z dodanim posrednim učinkom in si ogledamo mere prileganja. Meri TLI in CFI sta 0.965 oziroma 0.963, kar pomeni, da se model dobro prilega podatkom. Prav tako pa meri SRMR in RMSEA, ki sta enaki 0.056 oziroma 0.062 nakazujeta, da je model sprejemljiv.
+
+## Dopolnitev modela
+
+Kljub dobrim vrednostim mer prileganja pa velja, da če pogledamo indekse prileganja, ta z visoko vrednostjo izstopa indeks pri parametru, ki nam pove kako se odprtost izraža skozi obrambo. Zaradi vsebinske smiselnosti lahko sprostimo ustrezen parameter in model ponovno ocenimo.
+
+```{r}
+modelFullSemPosrDop <- "
+# latentne spremenljivke
+
+odprtost =~ vznemerljivost + drugacnost + uzitek + zabava + kreativnost + svoboda 
+konservativnost  =~ varnost + poniznost + tradicija + ubogljivost + sprejemljivost + obramba + vznemerljivost
+priseljenci =~ gospodarstvo + kultura + bivanje
+
+# regresija
+
+priseljenci ~ odprtost + b*konservativnost
+priseljenci ~ neposredni*solanje + spol
+odprtost ~ solanje + spol
+konservativnost ~ a*solanje + spol
+
+# posredni in skupni ucinki (:= lahko beremo kot 'definira' ali 'je enako')
+
+posredni := a*b
+skupni := neposredni + posredni
+
+# dodamo
+odprtost =~         obramba
+"
+
+# Izvedemo oceno modela
+fitFullSemPosrDop <- sem(modelFullSemPosrDop, data = dataSLO, estimator = "DWLS", ordered = c(Sch, priseljenci)) 
+
+# MerePrileganja
+MerePosDop <- fitmeasures(fitFullSemPosrDop, fit.measures = c("srmr","rmsea","tli","cfi"))
+# Indeksi prileganja
+modIndDop <- modificationindices(fitFullSemPosrDop)
+IndeksiPodDop <- subset(modIndDop[order(modInd$mi, decreasing = TRUE),], mi > 10)
+```
+
+Mere prileganja se s sprostvijo parametra občutno izboljšajo. Meri SRMR, ki je enaka 0.048 in RMSEA z vrednostjo 0.054 nakazujeta, da se model dobro prilega podatkom. Prav tako pa izboljšanje prileganja modela razberemo iz povečanja vrendosti mer TLI in CFI ki sta enaki 0.974 oziroma 0.973. Iz indeksov prileganja visoko izstopajočo vrednost ponovno razberemo pri delu korelacije med užitkom in zabavo, ki je nepojasnen s faktorjem odprtosti, vendar pa zaradi dobrega prileganja, modela ne bomo dopolnjevali in ga izberemo kot končnega.
+
+## Povzetek in interpretacija modela
+
+```{r}
+# Povzetek modela
+PovzetekPosDop <- summary(fitFullSemPosr, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE)
+```
+
+Iz povzetka modela vidimo, da je neposredni učinek števila let šolanja na odnos do priseljencev močno statistično značilen (p < 0.001), prav tako je vpliv števila let šolanja na konservativnost močno statistično značilen ob upoštevanju spola (p < 0.001). Nadalje je tako posredni kot skupni učinek števila let šolanja na odnos do priseljecev statistično značilen (p < 0.001), kar pomeni, da pri stopnji statistične značilnosti 0.05 lahko zavrnemo ničelni domnevi, da vplivov, predvsem posrednega, števila let šolanja na odnos do priseljencev ni. Sklenemo, da število let šolanja vpliva tako neposredno kot posredno prek konservativnosti na odnos do priseljencev. Dlje kot se ljudje šolajo, manj so konservativni in manj kot so konservativni, pozitivnejši je njihov odnos do priseljencev.
+
+\newpage
+
+#  Merska enakovrednost Danske in Španije
+
+Preden lahko primerjamo vrednosti modela med različnimi skupinami, v našem primeru državami, se moramo prepričati, da so meritve primerljive. Vprašamo se, ali pri različnih pogojih opazovanja in raziskovanja, kar izhaja iz različnih skupin, meritve še vedno merijo isto lastnost in do kakšne mere so naši rezultati primerljivi med skupinami. V našem primeru skupine določajo države in obravnavani državi sta Danska in Španija. Poznamo več vrst merske enakovredosti. Konfiguralna enakovrednost nastopi, ko so v vseh skupinah merjeni enaki koncepti in so med skupinami identične faktorske strukture. Tako imamo v vseh skupinah iste manifestne spremenljivke za merjenje izbranih latentnih spremenljivk. Pri metrični enakovrednosti ima povečanje latentne spremenljivke za eno enoto enak pomen v vseh skupinah, torej so faktorske uteži med skupinami enake, kar nam omogoča testiranje razlik v moči vplivov med različnimi skupinami. Skalarno enakovrednost pa imamo v primeru polne primerljivosti vseh vrednosti, torej ko so tako regresijski koeficienti in konstante kot faktorske uteži med skupinami enake. Skalarna enakovrednost nam omogoča primerljivost povprečij.
+
+## Individualna ocena modelov
+
+Zanima nas kaj lahko rečemo o merski enakovrednosti na naših podatkih, kjer skupini določata državi Danska in Španija. Ocenili smo model za vsako državo posebej in posledično se vrednosti parametrov razlikujejo. Grafični prikaz ocen modelov je prikazan spodaj.
+
+```{r, fig.cap="Individualna ocena modela za Dansko in Španijo", fig.height=6, fig.width=6}
+# V dataSLOEST sta Danska in Španija :)
+dve_skupini <- cfa(modelCfa2, 
+                          data = dataSLOEST, 
+                          orthogonal = FALSE, 
+                          estimator = "DWLS", 
+                          std.lv = TRUE, 
+                          group = "drzava") 
+
+par(mfrow = c(1, 2)); 
+semPaths(dve_skupini, 
+                               what = 'path', 
+                               whatLabels = 'est', 
+                               intercepts = FALSE, 
+                               thresholds = FALSE,
+                               layout = "tree2")
+```
+
+## Prileganje modelov
+
+Da testiramo mersko enakovrednost uporabimo funkcijo measurementInvariance. Prileganje obeh modelov, če dodamo določene sprostitve oziroma omejitve, ponovno razberemo iz indeksov prileganja ter dodatnih testov.
+
+```{r}
+# funkcija measurmentInvariance preverja prileganje modelov
+# z razlicnimi omejitvami vrednosti parametrov 
+# (tj. razlicnimi vrstami enakovrednosti)
+# dolociti moramo spremenljivko, ki doloca skupine
+Primerjava <- measurementInvariance(model=modelCfa2, 
+                      data = dataSLOEST, 
+                      group = "drzava",
+                      estimator = "DWLS",
+                      orthogonal = FALSE, 
+                      fit.measures = c("srmr","rmsea","tli","cfi"), 
+                      ordered = c(Sch, priseljenci))
+
+# CONFIGURAL / konfiguralna = enake manifestne spremenljivke
+# LOADINGS / metricna = lahko primerjamo regresijske koeficiente, korelacije, kovariance
+# MEANS / skalarna = lahko primerjamo povprecja
+```
+
+Najboljše prileganje kot je bilo omenjeno pričakujemo na podlagi konfiguralnega modela, kjer so vrednosti mer prileganja resnično najboljše in je prileganje ustrezno (SRMR = 0.055, RMSEA = 0.061, TLI = 0.970, CFI = 0.976). Ker pri merski enakovrednosti fiksiramo faktorske uteži, pričakujemo poslabšanje prileganja modela. Zanima nas, ali je prileganje, kljub temu, da je slabše, še vedno sprejemljivo. Mere prileganja se ne poslabšajo občutno (SRMR = 0.057, RMSEA = 0.065, TLI = 0.966, CFI = 0.971) in zato lahko predpostavimo, da je prileganje modela sprejemljivo in so uteži med državama enake ter tako omogočimo primerjavo regresijskih koeficientov. Če fiksiramo še povprečja pa prileganje modela postane nesprejemljivo. Predpostavimo torej, da imamo med Dansko in Španijo metrično enakovrednost in tako lahko testiramo razlike v moči vplivov med državama.
+
+```{r}
+# NISEM DODAL V NALOGO, SAJ IMAMO DOSEŽENO METRIČNO ENAKOVREDNOST IN PO TEM NI POTREBE.
+
+# Delno metricno enakovrednost lahko dosezemo tako, da fiksiramo
+# vrednosti parametrov za vsaj dve manifestni spremenljivki
+# pri vsaki latentni spremenljivki.
+
+# V nasem primeru imamo kar nekaj utezi, ki bi lahko bile
+# enake pri obeh faktorskih modelih, zato namesto, da bi napisali
+# katere naj bodo enake, bomo napisali, katere naj bodo razlicne, vse 
+# ostale pa bomo fiksirali v funkciji cfa s parametrom group.equal.
+
+# delnaMetricnaEnakovrednost <- "
+# odprtost =~ vznemerljivost + drugacnost + uzitek + zabava + kreativnost + svoboda 
+# konservativnost  =~ varnost + c(a, b)*poniznost + c(c, d)*tradicija + c(e, f)*ubogljivost + sprejemljivost + c(g, h)*obramba + vznemerljivost
+# priseljenci =~ gospodarstvo + kultura + c(i, j)*bivanje
+# "
+# 
+# delniMetricniModel <- cfa(delnaMetricnaEnakovrednost, 
+#                           group.equal = "loadings",
+#                           data = dataSLOEST, 
+#                           orthogonal = FALSE, 
+#                           estimator = "DWLS", 
+#                           std.lv = TRUE, 
+#                           group = "drzava",
+#                           ordered = c(Sch, priseljenci)) 
+# par(mfrow = c(1, 2)); semPaths(delniMetricniModel, 
+#                                what = 'path', 
+#                                whatLabels = 'est', 
+#                                intercepts = FALSE, 
+#                                thresholds = FALSE,
+#                                layout = "circle")
+```
+
+## Polni strukturni model za Dansko in Španijo
+
+Kot smo ugotovili med Dansko in Španijo lahko predpostavimo metrično enakovrednost. Ocenimo torej model in si oglejmo njegovo prileganje. 
+
+```{r}
+# Predpostavljamo metrično enakovrednost.
+modelFullSemPosrVecSkupin <- "
+# latentne spremenljivke
+odprtost =~ vznemerljivost + drugacnost + uzitek + zabava + kreativnost + svoboda 
+konservativnost  =~ varnost + poniznost + tradicija + ubogljivost + sprejemljivost + obramba + vznemerljivost
+priseljenci =~ gospodarstvo + kultura + bivanje
+
+# regresija
+priseljenci ~ odprtost + b*konservativnost
+priseljenci ~ solanje + neposredni*spol
+odprtost ~ solanje + spol
+konservativnost ~ solanje + a*spol
+
+# dodatne sprostitve
+odprtost ~~ konservativnost
+
+# posredni in skupni ucinki
+posredni := a*b
+skupni := neposredni + posredni
+"
+
+# Ocenimo model
+modelFullSemVecSkupin <- sem(modelFullSemPosrVecSkupin, 
+                             data = dataSLOEST, 
+                             estimator = "DWLS", 
+                             group = "drzava", 
+                             group.equal = "loadings",
+                             ordered = c(Sch, priseljenci)) 
+
+# Mere prileganja
+MereFullSkupine <- fitmeasures(modelFullSemVecSkupin, fit.measures = c("srmr","rmsea","tli","cfi"))
+
+# Povzetek polnega modela
+PovzetekFullSkupine <- summary(modelFullSemVecSkupin, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE)
+```
+
+Kot smo pričakovali je prileganje modela nekoliko slabše vendar pa vseeno sprejemljivo (SRMR = 0.050, RMSEA = 0.056, TLI = 0.973, CFI = 0.969). Med obema državama sedaj lahko primerjamo rezultate. Predvsem nas zanimata vpliva spola in starosti na odnos do priseljencev. 
+
+Če pogledamo Dansko, imajo leta šolanja pri stopnji statistične značilnosti 0.05 močno statistično značilen vpliv na odnos do priseljencev (p < 0.001). Standarizirana vrednost vpliva je enaka 0.182, medtem ko je v Španiji standarizirana vrednost enaka 0.234 in prav tako močno statistično značilna (p < 0.001). Spol v nobeni od držav ob upoštevanju ostalih spremenljivk v modelu ne vpliva statistično značilno na odnos do priseljencev.
+
+```{r, fig.height=6, fig.width=6, fig.cap="Polni strukturni model za Dansko in Španijo"}
+# Grafični prikaz
+par(mfrow = c(1, 2))
+semPaths(modelFullSemVecSkupin, 
+                               what = 'path',
+                               whatLabels = 'est', 
+                               intercepts = FALSE, 
+                               thresholds = FALSE,
+                               layout = "tree2") 
+```
+
+\newpage
+
+# Vsebinski povzetek
+
+V nalogi smo se ukvarjali z različnimi strukturnimi modeli. Državi ko smo ju uporabili sta bili Danska, kot smo si jo izbrali na začetku, ter Španija.
+
+Na začetku smo predstavili nove spremenljivke Gospodarstvo, Kultura in Bivanje s katerimi ki smo jih uporabili za oceno odnosa do priseljencev. Pogledali smo si tudi kako izgleda število let šolanja, kjer se je večina korespondentov šolala med 7 in 22 let.
+
+Primarno smo pripravili model potrjevalne faktorske analize, ki se je dobro prilegal podatkom in da je sprejemljiv (RMSEA = 0.065, SRMR = 0.057, CFI = 0.969, TLI = 0.963). Model smo dopolnili tako da smo sprostili parameter prek katerega se z zabavo meri užitek. Model se je pokazal kot še nekoliko boljši (RMSEA = 0.058, SRMR = 0.053, CFI = 0.976, TLI = 0.971). Z ANOVO smo tudi potrdili da modela nista enakovredna (p < 0.001). Z nadaljno analizo smo opazili katere manifestne spremenljivke imajo največji vpliv na latentne in sicer na odprtost imata največji vpliv drugačnost in vznemerljivost, na konzervativnost najbolj vpliva sprejemljivost najmanj pa tradicija, medtem ko na odnos do priseljencev sta približno enako vplivna kultura in bivanje, nekoliko manj pa gospodarstvo. Z analizo korelacij vidimo tudi da edina negativna korelacija se pojavi med konzervativnostjo in odnosom do priseljencev kar pomeni da bolj kot je nekdo konzervativen manj je naklonjen priseljencem.
+
+Nato smo pripravili polni strukturni model, kjer smo dodali strukturne poti, ki merijo odnose med spremenljivkami. Zanimalo nas je kako odprtost in konzervativnost vplivata na odnos do priseljencev če vse skupaj kontroliramo za leta šolanja in spol. Model se je podatkom prilegal sprejemljivo oz. dobro (RMSEA = 0.062, SRMR = 0.056, CFI = 0.961, TLI = 0.965). Opazili smo da so vse spremenljivke, ob upoštevanju ostalih spremenljivk v modelu, statistično značilno vplivajo na odnos do priseljencev. Spremenljivki Odprtost in Leta šolanja sta pozitivno povezani, kar pomeni da z višjo odprtostjo in več leti šolanja se v povprečju izboljšuje odnos do priseljencev. Na drugi strani pa imata konzervativnost in spol negativno vrednost parametra, kar pomeni ravno obratno, se pravi višja stopnja konzervativnosti predstavlja slabši odnost do priseljencev, ter da imajo v povprečju moški slabši odnos do priseljencev kot ženske. Najmočnejši vpliv na odnos do prisljencev je imela konzervativnost, najšibkejšega pa odprtost. Pri stopnji značilnosti 0.05 nismo mogli trditi da imata vpliv bodisi število let šolanja bodisi spol. Medtem ko se je to pokazalo statistično značilo pri konzervativnosti tako za število let šolanja kot spol. Torej z višjim številom let šolanja se v povprečju zmanjšuje konzervativnost ter da so moški v povprečju bolj konzervativni kot ženske. Večji vpliv se je pokazal pri spolu.
+
+Ogledali smo si še model kjer smo upoštevali posredni vpliv števila let šolanja na odnos do priseljencev in ugotovili da je model sprejemljiv ter da se dobro prilega podatkom (RMSEA = 0.062, SRMR = 0.056, CFI = 0.963, TLI = 0.965). Tega smo dopolnili in izboljšali (RMSEA = 0.054, SRMR = 0.048, CFI = 0.973, TLI = 0.974). Pokaže se da je neposredni učinek števila let šolanja na odnos do priseljencev močno statistično značilen (p < 0.001). Ravno tako vidimo da je vpliv števila let šolanja na konzervativnost močno statistično značilen ob upoštevanju spola (p < 0.001). In enako vidimo zopet pri posrednem in skupnem učinku števila let ošlanja na odnos do priseljencev (p < 0.001). Iz tega lahko sklepamo da dlje kot se ljudje šolajo manj so konzervativni in posledično manj kot so konzervativni, boljši je njihov odnos do priseljencev.
+
+Za tem smo pripravili še dva modela, enega na podatkih Danske, drugega na podatkih Španije, saj smo želeli primerjati mersko enakovrednost med državama. Ob fiksiranju faktorskih uteži smo dosegli sprejemljiv model, kar nam omogoča da lahko predpostavimo metrično enakovrednost (RMSEA = 0.065, SRMR = 0.057, CFI = 0.971, TLI = 0.966). Kar smo uspeli razbrati iz rezultatov je da tako pri Danski (p < 0.001) kot Španiji (p < 0.001) ima v obeh primerih število let šolanja statistično značilen vpliv na odnos do priseljencev. Pri danski je standardizirana vrednost vpliva enaka 0.182, medtem ko je pri Španiji bila enaka 0.234. V nobeni izmed držav spol ne vpliva na odnos do priseljencev. Seveda ob upoštevanju ostalih spremenljivk v modelu.
+
+
+\newpage
+
+# Priloga
+
+Spodaj so podani izpisi s pomočjo katerih smo si pomagali pri oceni različnih parametrov ter modelov in njihovi interpretaciji. Za lažje branje so izpisi ločeni po poglavjih v skladu z nalogo.
+
+## Predstavitev spremenljivk
+
+Opis porazdelitve spremenljivk odnosa do priseljencev.
+
+```{r, results=TRUE}
+kable(OpisStatistik)
+```
+
+Opis porazdelitve spremenljivke, ki meri število let šolanja.
+
+```{r, results=TRUE}
+kable(IzobStat, rownames = "Šolanje")
+```
+
+## Potrjevalna faktorja analiza
+
+Mere prileganja ocenjenega modela.
+
+```{r, results=TRUE}
+kable(IndeksiPrileganja, col.names = "Vrednosti mer prileganja")
+```
+
+Indeksi prileganja z vrednostmi večjimi od 10 v okviru dopolnitve osnovnega modela.
+
+```{r, results=TRUE}
+kable(Upgrade1)
+```
+
+Mere prileganja modela s sproščenim parametrov med užitkom in zabavo.
+
+```{r, results=TRUE}
+kable(IndeksiPrileganja2, col.names = "Vrednosti mer prileganja")
+```
+
+Indeksi prileganja z vrednostmi večjimi od 10 v okviru dopolnitve modela s sproščenim parametrom med užitkom in zabavo.
+
+```{r, results=TRUE}
+kable(Upgrade2)
+```
+
+Primerjava osnovnega in dopolnjenega modela s funkcijo anova.
+
+```{r, results=TRUE}
+Anova1
+```
+
+Povzetek modela s katerim si pomagamo pri interpretaciji.
+
+```{r, results=TRUE}
+Povzetek
+```
+
+## Polni strukturni model
+
+Mere prileganja ocenjenega modela.
+
+```{r, results=TRUE}
+kable(MerePrileganjaFull, col.names = "Vrednosti mer prileganja")
+```
+
+Indeksi prileganja z vrednostmi večjimi od 10 v okviru dopolnitve osnovnega modela.
+
+```{r, results=TRUE}
+kable(SubsetModInd3)
+```
+
+Povzetek modela s katerim si pomagamo pri interpretaciji.
+
+```{r, results=TRUE}
+PovzetekFull
+```
+
+## Posredni vpliv števila let šolanja na odnos do priseljencev
+
+Mere prileganja modela z dodanim posrednim učinkom števila let šolanja na odnos do priseljencev preko konservativnosti.
+
+```{r, results=TRUE}
+kable(MerePos, col.names = "Vrednosti mer prileganja")
+```
+
+Indeksi prileganja z vrednostmi večjimi od 10 v okviru dopolnitve modela z dodanim posrednim učinkom števila let šolanja na odnos do priseljencev preko konservativnosti.
+
+```{r, results=TRUE}
+kable(IndeksiPod)
+```
+
+Mere prileganja modela s sproščenim parametrov med užitkom in zabavo.
+
+```{r, results=TRUE}
+kable(MerePosDop, col.names = "Vrednosti mer prileganja")
+```
+
+Indeksi prileganja z vrednostmi večjimi od 10 v okviru dopolnitve modela s sproščenim parametrom med odprtostjo in obrambo.
+
+```{r, results=TRUE}
+kable(IndeksiPodDop)
+```
+
+Povzetek modela s katerim si pomagamo pri interpretaciji.
+
+```{r, results=TRUE}
+PovzetekPosDop
+```
+
+## Merska enakovrednost Danske in Španije
+
+Primerjava prileganja modelov.
+
+```{r, results=TRUE}
+Primerjava
+```
+
+Mere prileganja ocenjenega polnega strukturnega modela.
+
+```{r, results=TRUE}
+kable(MereFullSkupine, col.names = "Vrednosti mer prileganja")
+```
+
+Povzetek polnega strukturnega modela modela s katerim si pomagamo pri interpretaciji.
+
+```{r, results=TRUE}
+PovzetekFullSkupine
+```
+

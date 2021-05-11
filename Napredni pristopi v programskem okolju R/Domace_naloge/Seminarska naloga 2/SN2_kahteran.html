@@ -359,8 +359,8 @@ pre code {
 no
 </div>
 
-<div id="section" class="section level1">
-<h1>1.</h1>
+<div id="t-test" class="section level1">
+<h1>1. <span class="math inline">\(t\)</span> test</h1>
 <p>Koda ki smo jo prejeli v navodilih je bila sledeča</p>
 <pre class="r"><code>set.seed(1234)
 m &lt;- 1000
@@ -370,8 +370,8 @@ skupina &lt;- rep(1:2, each = n / 2)
 
 system.time(for(i in 1:m) t.test(X[ , i] ~ skupina)$stat)</code></pre>
 <pre><code>##    user  system elapsed 
-##    1.03    0.00    1.03</code></pre>
-<p>S <span class="math inline">\(t\)</span> testom smo šli po stolpcih matrike, kjer smo primerjali prvih 50 in drugih 50 normalno porazdeljenih vzorcev (<span class="math inline">\(N(0, 1)\)</span>). Sam sem to nekoliko priredil tako, da sem zavil vse skupaj v funkcijo <code>f.t.test1()</code> zato da lahko kasneje primerjamo rezulate s pospešeno funkcijo. Poglejmo si še relativno časovno razliko v izvajanju s to prirejeno funkcijo.</p>
+##    1.20    0.05    1.50</code></pre>
+<p>S <span class="math inline">\(t\)</span> testom smo šli po stolpcih matrike, kjer smo primerjali prvih <span class="math inline">\(50\)</span> in drugih <span class="math inline">\(50\)</span> normalno porazdeljenih vzorcev (<span class="math inline">\(N(0, 1)\)</span>). Sam sem to nekoliko priredil tako, da sem zavil vse skupaj v funkcijo <code>f.t.test1()</code> zato da lahko kasneje primerjamo rezulate s pospešeno funkcijo. Poglejmo si še relativno časovno razliko v izvajanju s to prirejeno funkcijo.</p>
 <pre class="r"><code># prirejena funkcija
 f.t.test1 &lt;- function() {
     storage &lt;- numeric(m)
@@ -388,13 +388,13 @@ microbenchmark(
     unit=&quot;relative&quot;
 )</code></pre>
 <pre><code>## Unit: relative
-##                                          expr       min      lq      mean
-##  for (i in 1:m) t.test(X[, i] ~ skupina)$stat 1.0000000 1.00000 1.0000000
-##                                   f.t.test1() 0.8350444 1.00095 0.9946723
-##    median      uq       max neval cld
-##  1.000000 1.00000 1.0000000   100   a
-##  1.012695 1.00558 0.7398122   100   a</code></pre>
-<p>Vidimo da večjih razlik v izvajanju ni, zato bomo nadaljevali z novo funkcijo za nadaljnje potrebe. Funkcija, ki sem jo sestavil za pohitritev je sledeča</p>
+##                                          expr     min       lq    mean   median
+##  for (i in 1:m) t.test(X[, i] ~ skupina)$stat 1.01341 1.035397 1.01373 1.000847
+##                                   f.t.test1() 1.00000 1.000000 1.00000 1.000000
+##        uq       max neval cld
+##  1.021411 0.9125959   100   a
+##  1.000000 1.0000000   100   a</code></pre>
+<p>Vidimo da večjih razlik v izvajanju ni, zato bomo nadaljevali z novo funkcijo za nadaljnje potrebe. Funkcija, ki sem jo sestavil za pohitritev je sledeča:</p>
 <pre class="r"><code>f.t.test2 &lt;- function() {
     
     matr_upr &lt;- X[1:50,]
@@ -413,7 +413,7 @@ microbenchmark(
     tstat &lt;- (mean_upr - mean_low)/stderr
     tstat
 }</code></pre>
-<p>Edina funkcija ki je iz zunanjega paketa je <code>colVars()</code>, ki zračuna nepristrano varianco po stolpcih podobno na način kot <code>colMeans()</code> (pravzaprav je ideja enaka). Ideja za pohitritev je bila da bi bilo najlažje vse računati vektorsko (tj. povprečja, variance, itd.). Težko rečem kaj je prineslo največ časa, saj sem vse naredil v enem koraku. Postopek ki sem ga ubral, je pa bil ta da sem najprej pogledal kako je funkcija <code>t.test()</code> spisana. Nato sem izločil le kodo ki računa <span class="math inline">\(T\)</span> statistiko za naš primer (<span class="math inline">\(t\)</span> test za neodvisna vzorca). Funkcija <code>f.t.test2()</code> namenoma računa le <span class="math inline">\(T\)</span> statistiko, saj to je rezultat tudi primarne funkcije, kljub temu da izračuna še mnogo drugih vrednosti.</p>
+<p>Edina funkcija ki je iz zunanjega paketa je <code>colVars()</code>, ki zračuna nepristrano varianco po stolpcih podobno na način kot <code>colMeans()</code> (pravzaprav je ideja enaka). Ideja za pohitritev je bila da bi bilo najlažje vse računati vektorsko (tj. povprečja, variance, itd.). Težko rečem kaj je prineslo največ časa, saj sem vse naredil v enem koraku. Postopek ki sem ga ubral, je pa bil ta da sem najprej pogledal kako je funkcija <code>t.test()</code> spisana. Nato sem izločil le kodo ki računa <span class="math inline">\(T\)</span> statistiko za naš primer (<span class="math inline">\(t\)</span> test za neodvisna vzorca). Funkcija <code>f.t.test2()</code> namenoma računa le <span class="math inline">\(T\)</span> statistiko, saj to je rezultat tudi primarne funkcije.</p>
 <p>Najprej razdelim prvotno matriko <code>X</code> na dve matriki tako kot ju načeloma določa <code>skupina</code>, kjer sem namenoma uporabil številke, saj je <em>look-up</em> spremenljivke počasnejši, poleg tega bi se vse skupaj dodatno upočasnilo ker bi moral uporabljati <code>n/2</code>, kar je dodaten izračun. Nato najprej izračunamo povprečja po stolpcih, nato variance s tem da funkciji posredujemo že izračunana povprečja saj tako pridobimo nekaj malega na času. Sledi standardna napaka ter nato še <span class="math inline">\(T\)</span> statistika, kjer je vse izračunano vektorsko.</p>
 <p>Izvedimo obe funkciji tako da shranimo rezultate, zato da vidimo da so rezultati enaki.</p>
 <pre class="r"><code>storage &lt;- f.t.test1()
@@ -429,10 +429,10 @@ all.equal(storage,tstat)</code></pre>
 )</code></pre>
 <pre><code>## Unit: relative
 ##         expr      min       lq     mean   median       uq      max neval cld
-##  f.t.test1() 1953.896 1886.483 1235.078 1546.889 1190.368 218.6158   100   b
+##  f.t.test1() 1626.958 1449.447 1168.774 1302.299 1034.369 840.5823   100   b
 ##  f.t.test2()    1.000    1.000    1.000    1.000    1.000   1.0000   100  a</code></pre>
-<p>Vidimo da je <code>f.t.test2</code> približno <span class="math inline">\(1600\)</span>-krat hitrejša od <code>f.t.test1</code>. Poglejmo še primerjavo, ko je dodan izračuna stopinj prostosti, ki je v prej bil zakomentiran.</p>
-<pre class="r"><code>f.t.test2 &lt;- function() {
+<p>Vidimo da je <code>f.t.test2</code> okrog <span class="math inline">\(1500\)</span>-krat hitrejša od <code>f.t.test1()</code>. Poglejmo še primerjavo, ko je dodan izračuna stopinj prostosti, ki je v prej bil zakomentiran.</p>
+<pre class="r"><code>f.t.test2df &lt;- function() {
     
     matr_upr &lt;- X[1:50,]
     matr_low&lt;- X[51:100,]
@@ -448,18 +448,87 @@ all.equal(storage,tstat)</code></pre>
     stderr &lt;- sqrt(stderr_low^2 + stderr_upr^2)
     df &lt;- stderr^4/(stderr_low^4/49 + stderr_upr^4/49)
     tstat &lt;- (mean_upr - mean_low)/stderr
-    tstat
+    list(&quot;statistike&quot; = tstat, &quot;df&quot;=df)
 }
 
 microbenchmark(
     f.t.test1(),
-    f.t.test2(),
+    f.t.test2df(),
     unit=&quot;relative&quot;
 )</code></pre>
 <pre><code>## Unit: relative
-##         expr     min       lq     mean   median       uq     max neval cld
-##  f.t.test1() 1627.03 1455.979 1035.603 1303.886 1146.638 137.716   100   b
-##  f.t.test2()    1.00    1.000    1.000    1.000    1.000   1.000   100  a</code></pre>
+##           expr      min       lq     mean   median       uq      max neval cld
+##    f.t.test1() 1482.581 1381.445 956.8179 1245.757 972.7178 126.1726   100   b
+##  f.t.test2df()    1.000    1.000   1.0000    1.000   1.0000   1.0000   100  a</code></pre>
+<p>Vidimo da je naša funkcija še vedno hitrejša vsaj za faktor <span class="math inline">\(1000\)</span>. Izračunajmo še napako prve vrste s tem da smo že izračunali prostostne stopinje, ki niso cela števila ampak se jih izračuna tako kot je napisano v prejšnji funkciji (tako jih izračuna tudi <code>t.test()</code> funkcija). Izračunamo zgornjo in spodnjo mejo, nato preverimo če naša izračunana statistika ni v območju zavrnitve. Nato le še preverimo kolikšen je delež zavrnjenih.</p>
+<pre class="r"><code>tstat_df &lt;- as.data.frame(f.t.test2df()) %&gt;%
+    mutate(lwr = qt(0.025, df),
+           upr = -lwr,
+           between = if_else(tstat &gt; lwr &amp; tstat &lt; upr, TRUE, FALSE, FALSE))
+
+mean(!tstat_df$between)</code></pre>
+<pre><code>## [1] 0.057</code></pre>
+<p>Napaka prve vrste je <span class="math inline">\(5.7\%\)</span>. Pričakoval sem vrednost okrog <span class="math inline">\(5%\)</span> ker je tolikšen bil tudi izbrani <span class="math inline">\(\alpha\)</span>, odstopanje je pa najverjetneje zaradi naključnosti.</p>
+</div>
+<div id="chi2-test" class="section level1">
+<h1>2. <span class="math inline">\(\chi^2\)</span> test</h1>
+<p>Podobno kot prej najprej generiramo podatke, le da tokrat uporabimo <span class="math inline">\(\chi^2\)</span> test in podatke iz Bernoullijeve porazdelitve.</p>
+<pre class="r"><code>set.seed(1234)
+X2 &lt;- matrix(rbinom(m * n, size=1, prob=0.5), nrow = n)
+
+system.time(for(i in 1:m) chisq.test(table(X2[ , i], skupina), correct=FALSE)$stat)</code></pre>
+<pre><code>##    user  system elapsed 
+##    0.39    0.00    0.39</code></pre>
+<pre class="r"><code># prirejena funkcija chisq
+f.chisq.test1 &lt;- function() {
+    storage &lt;- numeric(m)
+    for(i in 1:m) {
+        storage[i] &lt;- chisq.test(table(X2[, i], skupina), correct=FALSE)$stat
+    }
+    storage
+}</code></pre>
+<p>Dodal sem le argument <code>correct=FALSE</code>, ki ne upošteva Yatesovega popravka za <span class="math inline">\(2\times2\)</span> tabele. To sem storil zaradi lažjega računanja statistike (brez absolutne vrednosti in dodatnega odštevanja <span class="math inline">\(0.5\)</span>). Primarno sem iskal način podobno kot prej, da sem preveril kako so spisane interne funkcije. Odkril sem ukaz <code>tabulate()</code> ki prešteje vse pozitivne vrednosti v nekem številskem vektorju. Ideja je bila da sem vektor <code>skupina</code> nekoliko spremenil, tako da sem namestil vrednosti na <span class="math inline">\(5\)</span> in <span class="math inline">\(10\)</span> ter jih prištel stolpcem. Tako bi lahko dobil vrednosti <span class="math inline">\(5\)</span>, <span class="math inline">\(6\)</span>, <span class="math inline">\(10\)</span> in <span class="math inline">\(11\)</span>, ki sem jih nato le preštel in izračunal <span class="math inline">\(\chi^2\)</span> statistiko. Izkazalo se je kot počasnejše saj sem opravljal dodatne operacije ki prištevajo/preštevajo večkrat kot pa če bi le direktno preštel število ničel oz. enic v zgornji in spodnji polovici matrike (od <span class="math inline">\(50\)</span> odštejemo da dobimo drugo skupino). Na ta način dobim celotno tabelo. Še ena malenkost glede računanja pričakovanih vrednosti, je ta, da je potrebno izračunati le dve, saj sta paroma enaki, ker sta dve skupini vedno enake velikosti (<span class="math inline">\(50\)</span>). Funkcija ki sem jo pripravil je sledeča</p>
+<pre class="r"><code>f.chisq.test2 &lt;-function(){
+    #      0 | 1
+    # 0 c0r0 | c1r0
+    # 1 c0r1 | c1r1
+    
+    obs_c0r1 &lt;- colSums(X2[1:50,])
+    obs_c1r1 &lt;- colSums(X2[51:100,])
+    
+    obs_c0r0 &lt;- 50 - obs_c0r1
+    obs_c1r0 &lt;- 50 - obs_c1r1
+    
+    exp_r0 &lt;- 0.5 * (obs_c0r0 + obs_c1r0) # 0.5 * je približno 3-5% hitreje kot deljeno??
+    exp_r1 &lt;- 0.5 * (obs_c0r1 + obs_c1r1)
+    
+    chistat &lt;- ((obs_c0r0-exp_r0)^2 + (obs_c1r0-exp_r0)^2)/exp_r0 + ((obs_c0r1-exp_r1)^2 + (obs_c1r1-exp_r1)^2)/exp_r1
+    chistat
+}</code></pre>
+<p>Izvedimo obe funkciji tako da shranimo rezultate, zato da vidimo da so rezultati enaki.</p>
+<pre class="r"><code>storage &lt;- f.chisq.test1()
+chistat &lt;- f.chisq.test2()
+
+all.equal(storage, chistat)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<p>Poglejmo si še relativno razliko v času.</p>
+<pre class="r"><code>microbenchmark(
+    f.chisq.test1(),
+    f.chisq.test2(),
+    unit=&quot;relative&quot;
+)</code></pre>
+<pre><code>## Unit: relative
+##             expr     min       lq     mean   median       uq      max neval cld
+##  f.chisq.test1() 1359.16 1307.588 1060.531 1283.961 1152.394 276.7975   100   b
+##  f.chisq.test2()    1.00    1.000    1.000    1.000    1.000   1.0000   100  a</code></pre>
+<p>Vidimo da je naša funkcija več kot <span class="math inline">\(1000\)</span>-krat hitrejša. Poglejmo si še napako prve vrste.</p>
+<pre class="r"><code>chistat_df &lt;- as.data.frame(f.chisq.test2()) %&gt;%
+    mutate(crit = qchisq(0.95, 1),
+           over = if_else(`f.chisq.test2()` &gt; crit, TRUE, FALSE, FALSE))
+
+mean(chistat_df$over)</code></pre>
+<pre><code>## [1] 0.065</code></pre>
+<p>Podobno kot prej mislim da je napaka prve vrste nekoliko višja zaradi naključnosti in sicer je enaka <span class="math inline">\(6.5\%\)</span>.</p>
 </div>
 
 

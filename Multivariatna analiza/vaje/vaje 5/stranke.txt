@@ -1,0 +1,29 @@
+SDS	SD	DeSUS	NSi	SLS	PS	ZaAB	Verjamem	SNS	PirStr	ZL
+Ali podpirate uvedbo univerzalnega temeljnega dohodka?                   	 0	 0	 1	 0	0	 0	 1	 1	 0	 1	1
+Tiste, katerih premoženje presega npr. 3 milijone evrov bi morali bolj obdavciti?	 1	 1	 1	 1	1	 1	 1	 1	 0	 1	1
+Place ministrov, poslancev, predsednika, predsednika vlade so previsoke?	 0	 0	 0	 0	0	 0	 0	 0	 0	 0	1
+stevilo mandatov politikov bi omejili na najvec 2.	 0	 0	 0	 0	0	0 	 1	 1	 0	 0	1
+Da ne bi zapravljali davkoplacevalskega denarja, bi uvedli referendumski dan.	 1	 0	 1	 1	1	 1	 1	 1	 1	 1	1
+Uvesti bi morali obvezno volilno udeležbo, za neudeležbo pa zaracunavati globo.	 1	 0	 0	 0	1	 0	 0	 0	 0	 0	0
+Ali podpirate ženske kvote?	 1	 1	 1	 1	1	 1	 1	 1	 0	 0	1
+V državni upravi je zaposlenih prevec ljudi.	 1	 0	 1	 1	1	 1	 1	 1	 1	 1	0
+V javnem sektorju bi morali ocenjevati uspesnost, neuspesne pa lažje odpuscati.	 1	 1	 1	 1	1	 1	1	 1	 1	 1	0
+Slovenska zakonodaja je do delavcev prevec zascitniska.	 0	 0	 0	 1	0	 0	 0	 0	 0	 0	0
+Brezposelnim, ki odklonijo katero koli delo, bi morali ukiniti socialno podporo.	 0	0	 1	 1	1	 1	 0	 1	 1	 0	0
+Brezposelne osebe bi morali obvezno vkljuciti v javna in druga nujna dela.	 0	 0	 1	 1	1	 1	 0	 1	 1	 0	0
+Socialni transferji bi morali biti visji.	 0	 1	 1	 0	0	 1	 1	 0	 0	 1	1
+Minimalno placo bi morali dvigniti.	 0	 0	 1	 0	0	 1	 1	 1	 1	 1	1
+Javno pojavljanje s simboli fasizma, komunizma in nacizma je za javne uslužbence neprimerno.	 1	 1	 1	 1	1	 1	 1	 1	 0	 1	0
+Dopolnilno zdravstveno zavarovanje bi morali ukiniti.	 0	 1	 1	 0	1	 1	 1	 0	 1	 1	1
+Osebe, ki živijo rizicni življenjski slog bi morale za zdravstveno zavarovanje placevati vec.	 1	 1	 0	 1	0	 0	 0	 0	 1	 0	0
+Slovenija bi morala podpirati sejanje GSO in njihovo prisotnost v hrani.	 0	 0	 0	 0	0	 0	 0	 0	 0	 0	0
+Homoseksualno zakonsko zvezo bi morali izenaciti s heteroseksualno.	 0	 1	 1	 0	0	 1	 1	 1	 0	 1	1
+Istospolno usmerjeni partnerji bi morali imeti pravico do posvojitve otrok.	 0	 1	 0	0	0	 1	 1	 1	 0	 1	1
+Ženska bi morala pred splavom obvezno k svetovalcu, s katerim bi pretehtala odlo?itev in razmislila o drugih možnostih (posvojitev ...).	 1	 0	 0	 1	1	 0	 0	 0	 0	 1	0
+Prav je, da je amerisko veleposlanistvo odkrilo spominsko plosco žrtvam totalitarnih režimov.	 1	 0	 0	 1	1	 0	 0	 0	 0	 0	0
+Ljudi, ki uporabljajo piratske spletne vsebine, bi morali kazensko preganjati.	 0	 0	 0	 0	0	0	 0	 0	 0	 0	0
+Ali je Slovenija prevec poslusna Bruslju?	 0	 0	 1	 0	0	 1	 0	 1	 1	 1	1
+Je clanstvo v EU napaka?	 0	 0	 0	 0	0	 0	 0	 0	 0	 0	0
+Podpirate sodelovanje slovenskih vojakov na misijah v tujini?	 1	 1	 1	 1	1	 0	 0	 1	 0	 1	0
+Svobodni trg je temelj uspesnega gospodarstva.	 1	 0	 1	 1	1	 1	 0	 1	 1	 0	0
+2. januar bi moral biti spet dela prost dan. 	 0	 1	 1	 0	0	 1	 0	 1	 1	 1	1

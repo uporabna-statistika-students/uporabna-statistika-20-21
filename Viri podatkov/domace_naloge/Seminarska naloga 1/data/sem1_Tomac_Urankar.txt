@@ -1,0 +1,3 @@
+Avtorici 1. seminarske naloge: Ana Tomac in Maja Urankar
+
+Povezava do aplikacije: https://majaurankar.shinyapps.io/prometne_nesrece/

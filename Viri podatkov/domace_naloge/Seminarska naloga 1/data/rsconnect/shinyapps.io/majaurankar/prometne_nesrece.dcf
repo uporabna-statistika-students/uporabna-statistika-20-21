@@ -1,0 +1,12 @@
+name: prometne_nesrece
+title: prometne_nesrece
+username:
+account: majaurankar
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3801918
+bundleId: 4364662
+url: https://majaurankar.shinyapps.io/prometne_nesrece/
+when: 1616086168.18011
+asMultiple: FALSE
+asStatic: FALSE
