@@ -1,0 +1,9 @@
+https://www.kaggle.com/c/house-prices-advanced-regression-techniques/overview
+
+Poročilo, kodo in morebitne druge priloge oddajte na spletno učilnico v zip datoteki.
+
+Največ 4 dni zamude pri oddaji, vsak dan izgubite 15%
+
+Priznane točke = (ocenjene točke)*0.85^dni_zamude
+
+Primer: 90*0.85^4 = 46.98

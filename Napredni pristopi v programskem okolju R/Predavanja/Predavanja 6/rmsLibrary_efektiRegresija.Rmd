@@ -1,0 +1,532 @@
+---
+title: "Knjižnica rms in nekaj napotkov za modeliranje efektov v regresijskih modelih"
+author: "Nina Ružić Gorenjec"
+date: "april 2021"
+output:
+  pdf_document:
+    number_sections: true
+fontsize: 11pt
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Motivacija, podatki
+
++ Podatki iz obsežne študije o odraslih, ki živijo doma, vendar v zadnjih petih letih niso obiskali svojega osebnega zdravnika. 
++ Izid (ang. *outcome*) pri tej analizi: nesamostojnost (da/ne)
++ Članek na podlagi analize: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0245465
++ Določili smo naslednjih 9 pomembnih neodvisnih spremenljivk za nesamostojnost (0 = ne, 1 = da), za katere smo naredili model multiple logistične regresije:
+  + spol: 1 = moški, 2 = ženski
+  + starost: leta
+  + itm: indeks telesne mases 4 kategorijami (underweight, normal, overweight, obese)
+  + kronične bolezni: 0, 1, 2, 3 ali več
+  + family function: 1 = dobra, 2 = slaba
+  + povišano tveganje za padec: 0 = ne, 1 = da
+  + splošna ocena trenutnega zdravja: 1-10
+  + splošna ocena občutenja osamljenosti: 1-10
+  + splošna ocena jakosti prisotne bolečine: 1-10
++ Skupaj 1999 pacientov, od tega jih je imelo 1814 popolne podatke glede na zgornje spremenljivke.
++ Tekom vaj obravnavamo podvzorec 1500 pacientov.
+
+```{r}
+source("podatki.R")
+```
+
+Že narejeno:
+
++ Čiščenje podatkov (ste obravnavali na predavanjih)
++ Izbor neodvisnih spremenljivk:
+  + Background knowledge - uporabili tu
+  + Variable selection
+    + uporabili pri izidu tveganje za podhranjenost na podobnih podatkih: https://www.sciencedirect.com/science/article/abs/pii/S0899900719302400
+    + kontroverzna tematika, razvijajoča se, več o tem npr. v članku Heinze, Dunkler, *Five myths about variable selection*, https://onlinelibrary.wiley.com/doi/full/10.1111/tri.12895
+
+\clearpage
+
+**Cilj:** Prilagoditi model vsem 9 spremenljivkam, kjer moramo preveriti:
+
++ Ali moramo številske spremenljivke vključiti nelinearno? Katere funkcije uporabiti?
++ Ali je potrebno vključiti še interakcije med spremenljivkami?
++ Ali je model dober?
+
+Delo nam lahko olajša knjižnica rms priznanega statistika prof. dr. Franka Harella: https://hbiostat.org/R/rms/
+
+Več o modeliranju v knjigi F. Harella *Regression Modeling Strategies*, izdana pri Springerju, skripta: https://hbiostat.org/doc/rms.pdf
+
+Zanimiv njegov blog: https://www.fharrell.com/
+
+# Vrednotenje učinkov v regresijskih modelih - grafično in preko vrednosti *p*
+
+Več o tem in še nekaj podrobnosti o knjižnici rms: http://ims.mf.uni-lj.si/archive/25(1-2)e/03.pdf
+
+V motivacijskih podatkih je izid binaren/dihotomen -- logistična regresija.
+
+Vsebinsko si pogledamo nelinearne efekte in interakcije raje na primeru linearne regresije -- številski izid. Ob tem spoznamo osnove knjižnice rms.
+```{r, warning=F, message=F}
+library(rms) #ze vkljucuje ggplot2, lattice, plotly, idr.
+library(gridExtra) #za prikaz vec grafov na eni sliki z ggplot2
+```
+
+Uporabimo simulirane podatke, izide (več primerov) bomo generirali iz linearnega normalnega modela, pri tem bo vedno veljalo:
+
++ velikost vzorca: $n = 200$
++ napaka: $\epsilon \sim N(0, \sigma^2)$, $\sigma = 3$
++ $X_1, X_2 \sim N(0,1)$
++ $Z_1 \sim Bern(0.2)$, $Z_2 \sim Bern(0.2) + 1$
+
+```{r}
+# Generiramo neodvisne spremenljivke in napako normalnega modela
+set.seed(6)
+n <- 200
+x1 <- rnorm(n)
+x2 <- rnorm(n)
+z1 <- rbinom(n, size = 1, prob = 0.2)
+z2 <- rbinom(n, size = 1, prob = 0.2)+1
+epsilon <- rnorm(n, mean = 0, sd = 3)
+```
+
+Potrebno za delovanje ukazov iz rms:
+```{r}
+# Privzete vrednosti neodvisnih spremenljivk shranimo v datadist v options
+podatki <- data.frame(x1 = x1, x2 = x2, z1 = factor(z1), z2 = factor(z2))
+dd <- datadist(podatki)
+options(datadist = "dd")
+
+dd
+```
+
+*Adjust to*: na katero vrednost bodo nastavljene spremenljivke, ki bodo pri napovedi fiksne – funkcija datadist prednastavljeno uporabi modus za opisne spremenljivke (tiste, ki so shranjene kot factor) in mediano za številske.
+
+*Low:prediction*, *High:prediction*: na katerem razponu bodo izračunane napovedi za številsko spremenljivko, ki bo pri napovedi variirala – funkcija datadist avtomatsko nastavi 5. in 95. percentil pri velikost vzorca 200 ali manj, za večje vzorce pa 10. najmanjšo in največjo vrednost.
+
+## Nelinearen efekt številskih spremenljivk v regresijskih modelih
+
+Naj bo izid $Y$ je generiran iz linearnega modela
+$$
+Y = 1+X_1+X_1^2+X_2+Z_1+Z_2+3X_2 Z_1+3X_2 Z_2+\epsilon.
+$$
+
+```{r}
+# Generiramo izid prvega modela (Y)
+y <- 1 + 1*x1 + 1*x1**2 + x2 + z1 + z2 + 3*x2*z1 + 3*x2*z2 + epsilon
+```
+
+Za analizo imamo v R na voljo (vsaj) dve varianti:
+
++ Osnovna knjižnica $\verb|stats|$:
+  + linearni model: $\verb|lm|$
+  + izračun napovednih vrednosti: $\verb|predict|$
+  + vrednosti *p* celih spremenljivk: v nekaterih primerih potrebno "ročno" uporabiti $\verb|anova|$
+  
++ Knjižnica $\verb|rms|$:
+  + linearni model: $\verb|ols|$
+  + izračun napovednih vrednosti: $\verb|Predict|$, uporabi vedno raje $\verb|rms::Predict|$ zaradi istega ukaza v knjižnici $\verb|car|$
+  + vrednosti *p* celih spremenljivk: $\verb|anova|$ (za objekt $\verb|ols|$ je to natančneje $\verb|anova.rms|$)
+
+### Preko osnovnih knjižnic:
+```{r, results = 'hide', fig.show='hide'}
+fit_lm <- lm(y ~ pol(x1,2) + x2*z1 + x2*z2, data = podatki)
+summary(fit_lm)
+
+# Ali je značilna celotna spremenljivka x1?
+anova(fit_lm)
+
+# Ali je značilna celotna spremenljivka z1?
+fit_brez_z1 <- lm(y ~ pol(x1,2) + x2*z2, data = podatki)
+summary(fit_brez_z1)
+anova(fit_lm, fit_brez_z1)
+
+# Narišimo si napovedne vrednosti y glede na različne x1, 
+# kjer so preostale spremenljivke fiksirane na svojih medianah in modusih:
+x1predict = seq(min(podatki$x1), max(podatki$x1), 0.01)
+newdata <- data.frame(x1 = x1predict,
+                      x2 = rep(quantile(podatki$x2, probs = 0.5), length(x1predict)),
+                      z1 = rep("0", length(x1predict)),
+                      z2 = rep("1", length(x1predict)))
+stats_predict <- predict(fit_lm, newdata = newdata, interval = "confidence")
+
+head(stats_predict)
+
+stats_predict <- as.data.frame(cbind(x1predict, stats_predict))
+
+ggplot(stats_predict, aes(x = x1predict, y = fit)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3)
+```
+
+### Preko knjižnice rms:
+```{r, results = 'hide', fig.show='hide', warning=F, message=F}
+fit <- ols(y ~ pol(x1,2) + x2*z1 + x2*z2, data = podatki)
+fit
+
+# Ali je značilna celotna spremenljivka x1?
+# Ali je značilna celotna spremenljivka z1?
+anova(fit)
+
+# Narišimo si napovedne vrednosti y glede na različne x1, 
+# kjer so preostale spremenljivke fiksirane na svojih medianah in modusih:
+predict1 = rms::Predict(fit, x1)
+ggplot(predict1)
+
+# Možna je tudi uporaba drugih knjiznic za graficne prikaze
+plot(predict1)   # knjiznica lattice
+plotp(predict1)  # knjiznica plotly
+
+# Kaj pa, če želim preostale spremenljivke fiksirati na neko drugo vrednost?
+predict2 <- rms::Predict(fit, x1, z1 = 1, z2 = 2)
+ggplot(predict2)
+```
+
+### Nazaj k vsebini
+
+Ovrednotimo, ali je nelinearen efekt v obliki kvadratne funkcije potreben? (Ker vemo, kako smo podatke simulirali, pravilen odgovor poznamo.)
+
++ Preko vrednosti *p*: $p < 0.0001 \Longrightarrow$ kvadraten efekt je statistično značilen (zelo)
++ Grafično... 
+
+```{r, fig.height=3}
+grid.arrange(ggplot(predict1), ggplot(predict2), ncol = 2)
+```
+
+**Nauk: Pazi pri grafičnemu vrednotenju nelinearnih efektov v multipli regresiji.**
+
+## Interakcija med neodvisnimi spremenljivkami v regresijskih modelih
+
+Imamo dva modela, eden z interakcijo:
+$$
+Y_1=1+X_2+Z_1+2X_2 Z_1+\epsilon,
+$$
+drugi pa brez:
+$$
+Y_2=1+X_2+5Z_2+\epsilon.
+$$
+Obema tako generiranima izidoma prilagodimo model z interakcijo.
+
+```{r, fig.height=3}
+y1 <- 1 + x2 + z1 + 2*x2*z1 + epsilon
+y2 <- 1 + x2 + 5*z2 + epsilon
+fit1 <- ols(y1 ~ x2*z1, data=podatki)
+fit2 <- ols(y2 ~ x2*z2, data=podatki)
+fit1 #statistično značilna interakcija - pričakovano
+fit2 #NI statistično značilna interakcija - pričakovano
+
+predict1 <- rms::Predict(fit1, x2, z1)
+predict2 <- rms::Predict(fit2, x2, z2)
+grid.arrange(ggplot(predict1), ggplot(predict2), ncol = 2)
+```
+
+**Nauk: Risanje intervalov zaupanja pri grafičnih predstavitvah interakcij v splošnem NI priporočljivo.**
+
+\clearpage
+# O logistični regresiji
+
++ Dihotomen/binaren izid $Y$ z vrednostima 1 (dogodek) in 0 (ne dogodek).
++ Verjetnost dogodka: $p = P(Y=1)$
++ Obeti (ang. *odds*) za dogodek: $p/(1-p)$
++ Model logistične regresije ($\log=\ln$): $$\log\frac{p}{1-p} = \beta_0 + \beta_1 X_1 + \beta_2 X_2$$
+
+Ko ocenimo model, dobimo koeficient $b_1$. Želimo ga interpretirati!
+
+Imamo dva pacienta, drugi ima spremenljivko $X_1$ za 1 enoto večjo kakor prvi, \underline{oba imata $X_2$ enak}.
+
+$b_1$ je RAZLIKA med logaritmoma obetov za dogodek pri teh dveh pacientih: \newline
+$b_1 = \log odds_2 - \log odds_1$ \newline
+**Ni dobra vsebinska intrepretacija.**
+
+$\exp(b_1)$ je RAZMERJE (kvocient) obetov za dogodek pri teh dveh pacientih: \newline
+$\exp(b_1) = odds_2/odds_1 =: OR$ ***odds ratio*/razmerje obetov** \newline
+**Poročamo v tabelah za logistično regresijo, skupaj z intervalom zaupanja.**
+
+Napovedne vrednosti:
+
++ Ob nekih vrednostih spremenljivk torej preko linearnega prediktorja $b_0 + b_1 x_1 + b_2 x_2$ izračunam napoved ta logaritem obetov.
++ Če na tem uporabim $\exp$, dobim napoved za obete $p/(1-p)$.
++ Če pa na linearnemu prediktorju uporabim t. i. logistično funkcijo (imenovano tudi *sigmoid function*) $x \mapsto 1/(1+\exp(-x))$, dobim napoved za verjetnost dogodka $p$.
+
+\clearpage
+# Analizirajmo podatke iz motivacije
+
+```{r}
+source("podatki.R")
+```
+
+**Cilji so bili:** Prilagoditi model vsem 9 spremenljivkam, kjer moramo preveriti:
+
++ Ali moramo številske spremenljivke vključiti nelinearno? Katere funkcije uporabiti?
++ Ali je potrebno vključiti še interakcije med spremenljivkami?
++ Ali je model dober?
+
+## Vključevanje nelinearnih efektov
+
+Koliko si lahko privoščimo? Pri logistični regresiji ni odvisno od velikosti vzorca (tako kot pri linearni) temveč od števila dogodkov!
+
+```{r}
+table(podatki$nesamostojnost)
+```
+
+Število stopinj prostosti (*degrees of freedom*, df) je lahko največ 10% od števila dogodkov, torej smo omejeni s 36 - bolje je imeti precej manj.
+
+Preštejemo stopinje prostosti:
+
++ 9 spremenljivk = 9 df
++ 2 imata po 4 kategorije, vsaka torej dodatni 2 df, skupaj dodatne 4 df
++ Brez vključevanja nelinearnih efektov za številske spremenljivke imamo 13 df.
+
+Kakšne funkcije bi uporabili za modeliranje nelinearnega efekta?
+
+Priporoča se zlepke (ang. *spline*) - med vozli (ang. *knots*) imamo polinom neke predpisane stopnje, ti polinomi so "zlepljeni" skupaj tako, da so prehodi gladki.
+
+Natančneje, priporoča se *restricted cubic splines* (rcs):
+
++ med vozli je polinom 3. stopnje (*cubic*)
++ pred prvim vozlom in za zadnjim vozlom je linearna funkcija (*restricted*)
+
+Če v modelu uporabimo številsko spremenljivko z *restricted cubic splinom* s $k$ vozli, potem je njen df enak $k-1$.
+
+Prednosti rcs:
+
++ porabijo malo df,
++ zelo fleksibilni - predvsem s 4 ali 5 vozli, "kaj več je že pretiravanje".
+
+Imamo 4 številske spremenljivke. Če vse vključim preko
+
++ rcs s 3 vozli: dodatne 4 df, skupaj 17 df ali 21.3 dogodkov na ocenjeni koeficient (*events per variable*, EV).
++ rcs s 4 vozli: dodatne 8 df, skupaj 21 df ali 17.2 EV.
++ rcs s 5 vozli: dodatne 12 df, skupaj 25 df ali 14.5 EV.
+
+Zagotovo bi se odločili za rcs s 4 vozli, morda bi lahko imeli tudi 5 vozlov. Poskusimo.
+
+Uporabili bomo **logistično regresijo**:
+
++ Osnovna knjižnica $\verb|stats|$: funkcija $\verb|glm|$
++ Knjižnica $\verb|rms|$: funkcija $\verb|lrm|$
+
+Z osnovno knjižnico le prilagodimo model:
+```{r, results='hide'}
+fitGlm = glm(nesamostojnost ~ Spol +
+                  rcs(starost,4) +
+                  itm +
+                  kronicneBolezni +
+                  druzinaAPGAR +
+                  tveganjePadec +
+                  rcs(Splosna.ocena.trenutnega.zdravja,4) +
+                  rcs(Splosna.ocena.obcutenja.osamljenosti,4) +
+                  rcs(Splosna.ocena.jakosti.prisotne.bolecine,4),
+                data = podatki, family=binomial(link="logit"))
+summary(fitGlm) #koeficienti b_i
+round(exp(summary(fitGlm)$coef[,1]),2) #exp(b_i)
+
+CIs = confint(fitGlm) #IZ za koeficiente b_i
+round(CIs, 2)
+round(exp(CIs), 2) #IZ za exp(b_i)
+```
+
+Od sedaj naprej uporabljamo knjižnico rms:
+```{r, fig.height=3}
+dd <- datadist(podatki)
+options(datadist = "dd")
+
+fit4knots = lrm(nesamostojnost ~ Spol +
+                  rcs(starost,4) +
+                  itm +
+                  kronicneBolezni +
+                  druzinaAPGAR +
+                  tveganjePadec +
+                  rcs(Splosna.ocena.trenutnega.zdravja,4) +
+                  rcs(Splosna.ocena.obcutenja.osamljenosti,4) +
+                  rcs(Splosna.ocena.jakosti.prisotne.bolecine,4),
+                data = podatki)
+
+ggplot(rms::Predict(fit4knots, starost),
+       adj.subtitle=F) #odstranim zapis, na kaj so fiksirane ostale spremenljivke
+```
+
+Kaj pa obeti? Ali pa verjetnost za dogodek?
+```{r, fig.height=3}
+ggplot(rms::Predict(fit4knots, starost, fun = exp),
+       adj.subtitle=F)
+
+ggplot(rms::Predict(fit4knots, starost, fun = plogis),
+       adj.subtitle=F)
+```
+
+Na tak način lahko dodam katerokoli funkcijo, tudi npr. svojo vnaprej definirano funkcijo f.
+
+Uporabno, če naredim linearno regresijo na transformiranem številskem izidu (npr. zaradi porazdelitve residualov), potem pa želim prikazati napovedne vrednosti na originalni skali. Namesto $Y$ (številski!) torej modeliram $f(Y)$, nato pa v $\verb|Predict|$ uporabim $\verb|fun = g|$, kjer kot $g$ definiram inverz funkcije $f$. **Pozor: ob transformiranem številskem izidu ne moremo interpretirati koeficientov, interpretiramo lahko le njihov predznak in vrednost *p*.**
+
+\clearpage
+
+Primerjajmo torej slike pri različnem številu vozlov.
+
+```{r, include=F}
+fit5knots = lrm(nesamostojnost ~ Spol +
+                  rcs(starost,5) +
+                  itm +
+                  kronicneBolezni +
+                  druzinaAPGAR +
+                  tveganjePadec +
+                  rcs(Splosna.ocena.trenutnega.zdravja,5) +
+                  rcs(Splosna.ocena.obcutenja.osamljenosti,5) +
+                  rcs(Splosna.ocena.jakosti.prisotne.bolecine,5),
+                data = podatki)
+
+fit3knots = lrm(nesamostojnost ~ Spol +
+                  rcs(starost,3) +
+                  itm +
+                  kronicneBolezni +
+                  druzinaAPGAR +
+                  tveganjePadec +
+                  rcs(Splosna.ocena.trenutnega.zdravja,3) +
+                  rcs(Splosna.ocena.obcutenja.osamljenosti,3) +
+                  rcs(Splosna.ocena.jakosti.prisotne.bolecine,3),
+                data = podatki)
+fit3knots
+hist(podatki$starost)
+hist(podatki$Splosna.ocena.trenutnega.zdravja)
+hist(podatki$Splosna.ocena.obcutenja.osamljenosti)
+hist(podatki$Splosna.ocena.jakosti.prisotne.bolecine)
+```
+
+**4 vozli**
+
+```{r, echo=F, fig.height=4}
+grid.arrange(
+  ggplot(rms::Predict(fit4knots, starost), adj.subtitle=F),
+  ggplot(rms::Predict(fit4knots, Splosna.ocena.trenutnega.zdravja), adj.subtitle=F),
+  ggplot(rms::Predict(fit4knots, Splosna.ocena.obcutenja.osamljenosti), adj.subtitle=F),
+  ggplot(rms::Predict(fit4knots, Splosna.ocena.jakosti.prisotne.bolecine), adj.subtitle=F),
+  ncol = 2)
+```
+
+**5 vozlov**
+
+```{r, echo=F, fig.height=4}
+grid.arrange(
+  ggplot(rms::Predict(fit5knots, starost), adj.subtitle=F),
+  ggplot(rms::Predict(fit5knots, Splosna.ocena.trenutnega.zdravja), adj.subtitle=F),
+  ggplot(rms::Predict(fit5knots, Splosna.ocena.obcutenja.osamljenosti), adj.subtitle=F),
+  ggplot(rms::Predict(fit5knots, Splosna.ocena.jakosti.prisotne.bolecine), adj.subtitle=F),
+  ncol = 2)
+```
+
+\clearpage
+
+**4 vozli**
+
+```{r, echo=F, fig.height=4}
+grid.arrange(
+  ggplot(rms::Predict(fit4knots, starost), adj.subtitle=F),
+  ggplot(rms::Predict(fit4knots, Splosna.ocena.trenutnega.zdravja), adj.subtitle=F),
+  ggplot(rms::Predict(fit4knots, Splosna.ocena.obcutenja.osamljenosti), adj.subtitle=F),
+  ggplot(rms::Predict(fit4knots, Splosna.ocena.jakosti.prisotne.bolecine), adj.subtitle=F),
+  ncol = 2)
+```
+
+**3 vozli**
+
+```{r, echo=F, fig.height=4}
+grid.arrange(
+  ggplot(rms::Predict(fit3knots, starost), adj.subtitle=F),
+  ggplot(rms::Predict(fit3knots, Splosna.ocena.trenutnega.zdravja), adj.subtitle=F),
+  ggplot(rms::Predict(fit3knots, Splosna.ocena.obcutenja.osamljenosti), adj.subtitle=F),
+  ggplot(rms::Predict(fit3knots, Splosna.ocena.jakosti.prisotne.bolecine), adj.subtitle=F),
+  ncol = 2)
+```
+
+\clearpage
+
+Pogledamo še značilnost nelinearnih delov.
+
+```{r, results='hide'}
+anova(fit3knots) #le bolečina nima stat. znač. nelinearnega efekta, tudi cela sprem. ni stat. znač.
+anova(fit4knots) #enako
+anova(fit5knots) #enako
+```
+
+**Kaj se odločite? Kako boste vsako izmed številskih spremenljivk vključili v model?**
+
+\clearpage
+
+Kako "preslepimo samega sebe":
+
+```{r, results='hide'}
+fitLin = lrm(nesamostojnost ~ Spol +
+                  starost +
+                  itm +
+                  kronicneBolezni +
+                  druzinaAPGAR +
+                  tveganjePadec +
+                  Splosna.ocena.trenutnega.zdravja +
+                  Splosna.ocena.obcutenja.osamljenosti +
+                  Splosna.ocena.jakosti.prisotne.bolecine,
+                data = podatki)
+plot(anova(fitLin))
+```
+
+\clearpage
+
+## Vključevanje interakcij
+
+```{r, results='hide', fig.show='hide'}
+fitInter = lrm(nesamostojnost ~ Spol +
+                  rcs(starost,4) +
+                  itm +
+                  kronicneBolezni +
+                  druzinaAPGAR +
+                  tveganjePadec +
+                  rcs(Splosna.ocena.trenutnega.zdravja,4) +
+                  rcs(Splosna.ocena.obcutenja.osamljenosti,4) +
+                  rcs(Splosna.ocena.jakosti.prisotne.bolecine,4) +
+                  itm*druzinaAPGAR +
+                  itm*rcs(Splosna.ocena.jakosti.prisotne.bolecine,4),
+                data = podatki)
+anova(fitInter)
+
+#izključim IZ v Predict:
+ggplot(rms::Predict(fitInter, itm, druzinaAPGAR, Splosna.ocena.jakosti.prisotne.bolecine, 
+                    conf.int = F)) # NI OK
+ggplot(rms::Predict(fitInter, Splosna.ocena.jakosti.prisotne.bolecine, itm, druzinaAPGAR, 
+                    conf.int = F)) # OK
+ggplot(rms::Predict(fitInter, Splosna.ocena.jakosti.prisotne.bolecine, druzinaAPGAR, itm, 
+                    conf.int = F)) # NAJBOLJE
+
+ggplot(rms::Predict(fitInter, Splosna.ocena.jakosti.prisotne.bolecine, druzinaAPGAR, itm))
+table(podatki$itm)
+table(podatki$itm, podatki$druzinaAPGAR)
+
+ggplot(rms::Predict(fitInter, Splosna.ocena.jakosti.prisotne.bolecine, druzinaAPGAR, itm, 
+                    conf.int = F, fun=plogis),
+       ylim.=c(0,1)) #ggplot.Predict ima nekaj dodatnih parametrov
+```
+
+**Kaj bi se odločili?**
+
+Kako bi si interakcijo narisali z osnovno knjižnico?
+
+\clearpage
+
+## Ali je model dober?
+
+```{r}
+fit4knots = lrm(nesamostojnost ~ Spol +
+                  rcs(starost,4) +
+                  itm +
+                  kronicneBolezni +
+                  druzinaAPGAR +
+                  tveganjePadec +
+                  rcs(Splosna.ocena.trenutnega.zdravja,4) +
+                  rcs(Splosna.ocena.obcutenja.osamljenosti,4) +
+                  rcs(Splosna.ocena.jakosti.prisotne.bolecine,4),
+                data = podatki, x=TRUE, y=TRUE)
+
+val <- validate(fit4knots)
+val
+(1+val[1,])/2 #AUC (C index)
+val[2,]       #psevdo R2 (Nagelkerke)
+```
+
+In tako naprej...

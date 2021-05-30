@@ -1,0 +1,479 @@
+---
+title: "Kanonične korelacije in diskriminantna analiza"
+subtitle: "Domača naloga 5 - Multivariatna analiza"
+author: "Urh Peček in Alen Kahteran"
+date: "24. 5. 2021"
+output:
+  pdf_document:
+    fig_caption: yes
+
+header-includes:
+  - \usepackage[slovene]{babel}
+  - \usepackage{float}
+  - \usepackage[T1]{fontenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, results = FALSE, fig.width=6, fig.height=4, fig.pos = 'H')
+```
+
+```{r, message=FALSE}
+# Prenesemo potrebne knjižnice
+library("MASS")
+library("blockmodeling")
+library("CCA")
+library("multiUS")
+source("plotCCA.R")
+library("car")
+library("knitr")
+```
+
+\newpage
+\tableofcontents
+\listoffigures
+\listoftables
+\newpage
+
+# Cilji naloge
+
+Kot je bilo pojasnjeno že v prejšnjih nalogah, bomo analizirali podatke, ki so bili zbrani v sklopu Evropske družboslovne raziskave (ESS) v 9. valu leta 2018. Naši podatki se nanašajo na Dansko prebivalstvo, kjer je sodelovalo 1572 prebivalcev. Analizirali bomo različne vrednote, merjenje s tako imenovanimi Schwartzovimi spremenljivkami, ki smo jih razdelili v sklop odprtosti in sklop konservativnosti. V sklopu odprtosti imamo spremenljivke drugačnost, užitek, vznemerljivost, zabava, kreativnost in svoboda. V sklopu spremenljivk konservativnosti pa imamo spremenljivke varnost, ponižnost, obramba, tradicija, ubogljivost in sprejemljivost. Vse spremenljivke so bile podrobneje opisane že v prejšnjih nalogah.
+
+V prvem delu naloge (kanonične korelacije) želimo izračunati korelacijo med dvema sklopoma spremenljivk, to sta sklop spremenljivk odprtosti in sklop spremenljivk konservativnosti. Cilj je narediti dve (ali več) linearni kombinaciji spremenljivk odprtosti in spremenljivk konservativnosti, da bo korelacija med sklopoma spremenljivk čim večja. Ob tem mora veljati, da je linearna kombinacija spremenljivk taka, da bo korelacija med linearnima kombinacijama čim večja. Ker s prvo linearno kombinacijo ne uspemo pojasniti celotne variabilnosti v spremenljivkah, za vsak sklop spremenljivk ustvarimo več tovrstnih linearnih kombinacij, ki pa morajo biti med seboj neodvisne.
+
+V drugem delu naloge (diskriminantna analiza) pa je cilj poiskati takšno kombinacijo merjenih spremenljivk, ki bo maksimalno ločila vnaprej določene skupine in bo napaka pri uvrščanju enot v skupine čim manjša. Želimo torej poiskati takšne razsežnosti, ki najbolje prirejajo enote vnaprej danim skupinam. S spremenljivkami odprtosti in konservativnosti bomo poskušali napovedati kakšno je delovno razmerje (nedoločen čas, določen čas, brez pogodbe) posameznika. V ta namen bomo uporabili spremenljivko Razmerje, opisano v prvi nalogi.
+
+
+```{r}
+# Naložimo podatke ustvarjene pri prvi domači nalogi.
+podatki <- readRDS("ESS_DEN_rekodirane")
+
+# Definiramo spremenljivke odprtosti in konservativnosti.
+odprtost <- c("drugačnost", "užitek", "vznemerljivost", "zabava", "kreativnost", "svoboda")
+konservativnost <- c("varnost", "ponižnost", "obramba", "tradicija", "ubogljivost", "sprejemljivost")
+# Shranimo jih v skupen vektor Schwartzovih spremenljivk.
+Sch <- c(odprtost, konservativnost)
+
+# Uporabljali bomo samo enote, ki imajo vrednosti pri vseh Schwartzovih spremenljivkah.
+com <- complete.cases(podatki[, Sch])
+schData <- podatki[com, Sch]
+```
+
+\newpage
+
+# Kanonične korelacije
+
+## Korelacijska matrika vsebinskih spremenljivk
+
+Najprej si oglejmo korelacijsko matriko vseh izbranih Schwartzovih spremenljivk odprtosti in konservativnosti. Pojasniti želimo predvsem povezanost med spremenljivkami različnega sklopa, torej med diagonalnima navideznima kvadratoma.
+
+```{r, fig.cap="Korelacijska matrika vseh spremenljivk izbranih sklopov", fig.height=6, fig.width=6}
+# Korelacijska matrika izbranih spremenljivk.
+plot.mat(cor(schData), main = "")
+```
+
+\newpage
+
+## Kanonične rešitve
+
+Izračunajmo kanonične rešitve, torej linearne kombinacije spremenljivk znotraj sklopa in korelacije med sklopoma spremenljivk. Velja, da je kanoničnih rešitev enako število spremenljivk v sklopu z najmanj spremenljivkami. V našem primeru oba sklopa vsebujeta šest spremenljivk, kar pomeni, da imamo šest kanoničnih rešitev. Kanonične rešitve so izračunane na standariziranih podatkih.
+
+V spodnjem tabelaričnem prikazu so Eigenvalues lastne vrednosti, % je delež pojasnjene variabilnosti vseh spremenljivk s kanoničnimi spremenljivkami, Cum % so kumulativne vrednosti deleža pojasnjene variabilnosti, Cor so kanonične korelacije in Sq. Cor so vrednosti mer prekrivanja sklopov.
+
+```{r, results=TRUE, fig.cap="Tabelarični prikaz kanoničnih rešitev"}
+# Izračunamo kanonično rešitev (linearne kombinacije in korelacije) na standardiziranih podatkih
+# x - prvi sklop spremenljivk
+# y - drugi sklop spremenljivk
+ccRes <- cancorPlus(x = scale(schData[, odprtost]), 
+                    y = scale(schData[, konservativnost]), 
+                    useCCApackage = TRUE)
+# Tabelarični prikaz
+kable(round(ccRes$eigModel, 3), align=rep('c', 4),
+      caption = "Tabelarični prikaz kanoničnih rešitev")
+```
+
+Vidimo, da z vsemi kanoničnimi spremenljivkami pojasnimo celotno variabilnost spremenljivk. Prva kanonična korelacija je enaka 0.26, torej gre za pozitivno in šibko povezanost. Z vsako naslednjo kanonično rešitvijo korelacije padajo, posamezni kombinaciji spremenljivk obeh sklopov pa sta pozitivni in zanemarljivo povezani.
+
+### Statistična značilnost kanoničnih korelacij
+
+Poglejmo si še, katere kanonične korelacije so statistično značilno različne od nič. Ničelna domneva je, da je opazovana kanonična korelacija in vse naslednje enaka nič. Domneve preverimo z Wilksovim lambda testom.
+
+```{r, results=TRUE, fig.cap="Tabelarični prikaz statistične značilnosti kanoničnih korelacij"}
+kable(round(ccRes$sigTest, 3), align=rep('c', 6),
+      caption = "Tabelarični prikaz statistične značilnosti kanoničnih korelacij")
+```
+
+Na podlagi vrednosti p pri stopnji statistične značilnosti 0.05, zavrnemo prve tri ničelne domneve in sprejmemo sklep, da so prva, druga in tretja kanonična korelacija statistično značilno različne od 0. Za četrto (posledično tudi peto in šesto) kanonično korelacijo pa ne moremo zavrniti domneve, da je ta in vse naslednje enaka nič.
+
+Statistično značilne ($\alpha$=0.05) so torej prva, druga in tretja kanonična korelacija. Prva je kot rečeno enaka 0.26, druga je enaka 0.21 in tretja je enaka 0.12.
+
+\newpage
+
+### Interpretacija kanoničnih korelacij
+
+Za pomoč pri interpretaciji kanoničnih korelacij si oglejmo pripadajoče uteži, torej regresijske koeficiente kanoničnih spremenljivk odprtosti in konservativnosti. Trojček, ki ga sestavljajo kanonična spremenljivka prve množice, kanonična spremenljivka druge množice in kanonični korelacijski koeficient imenujemo kanonična rešitev. Teh je kot rečeno največ toliko, kolikor je spremenljivk v manjši od množic oz. sklopu, v našem primeru šest.
+
+
+```{r, fig.cap="Korelacije med vrednostmi kanoničnih spremenljivk in spremenljivk v množici odprtosti (levo) in konservativnosti (desno)", fig.width=9}
+
+par(mfrow=c(1,2))
+
+# Pogledamo korelacije med vrednostmi kanoničnih spremenljivk (prve množice spremenljivk)  in spremenljivk prve množice spremenljivk.
+plot.mat(ccRes$scores$corr.X.xscores, mar = c(2, 6, 2, 2), main = "")
+
+# Pogledamo korelacije med vrednostmi kanoničnih spremenljivk (druge množice spremenljivk)  in spremenljivk druge množice spremenljivk.
+plot.mat(ccRes$scores$corr.Y.yscores, mar = c(2, 6, 2, 2), main = "")
+```
+
+Prva kanonična korelacija je najmočnejša (največja) in kot rečeno enaka 0.26. Pri spremenljivkah konservativnosti vidimo, da imata varnost in tradicija močno pozitivno korelacijo, obramba in sprejemljivost srednje močno pozitivno korelacijo, korelacija ponižnosti in ubogljivosti pa je pozitivna in šibka. Pri spremenljivkah odprtosti imata močno pozitivno korelacijo spremenljivki užitka in zabava, korelacija vznemerljivosti je srednje močna in negativna. Šibka pozitivna korelacija je še pri kreativnosti in svobodi, korelacija drugačnosti pa je negativna in zanemarljiva.
+
+Prva kanonična rešitev torej meri korelacijo med varnostjo in tradicijo ter užitkarstvom in zabavo. Korelacija je močna in pozitivna, Torej bolj kot sta nekomu pomembna varnost in tradicija bolj mu je pomembno užitkarstvo in zabava.
+
+Druga kanonična korelacija je enaka 0.21. Pri spremenljivkah konservativnosti ima obramba močno negativno korelacijo, korelacija varnosti je pozitivna in srednje močna, korelacija ponižnosti je pozitivna in šibka, tradicija ima negativno šibko korelacijo, korelaciji ubogjivosti in sprejemljivosti pa sta pozitivni in zanemarljivi. Pri spremenljivkah odprtosti imajo vse spremenljivke negativno korelacijo. Korelacija spremenljivk drugačnosti, užitka, vznemerljivosti in kreativnosti je močna, korelacija spremenljivk zabave in svobode pa je šibka.
+
+Druga kanonična rešitev torej meri korelacijo med obrambo in vznemerljivosti in drugačnostjo. Korelacija je močna in negativna, torej bolj kot je nekomu pomembna obramba, manj mu je pomembna vznemerljivost oziroma drugačnost.
+
+Podobno interpretiramo še tretjo kanonično rešitev, katere korelacija je enaka 0.12. Velja, da tretja kanonična rešitev meri korelacijo med tradicijo in ubogljivostjo ter zabavo in svobodo. Korelacija je močna in negativna, torej bolj kot smo naklonjeni tradiciji ter smo ubogljivi, manj smo svobodnega duha in prisegamo zabavi.
+
+```{r, fig.cap = "Regresijski koeficienti kanoničnih spr. odprtosti (levo) in konservativnosti (desno)", fig.width=9, fig.show="hide"}
+
+# NE DAMO; DOVOLJ JE ZGORNJE
+par(mfrow=c(1,2))
+
+# Pogledamo regresijske koeficiente za kanonično spremenljivko prve množice spremenljivk
+plot.mat(ccRes$xcoef, mar = c(2, 6, 2, 2))
+
+# Pogledamo regresijske koeficiente za kanonično spremenljivko druge množice spremenljivk
+plot.mat(ccRes$ycoef, mar = c(2, 6, 2, 2), main = "")
+```
+
+\newpage
+
+## Delež pojasnjene variabilnosti spremenljivk
+
+Iz spodnjih tabelaričnih prikazov vidimo, kolikšen je povprečen delež pojasnjene variabilnosti vseh spremenljivk istega sklopa  s posamezno kanonično spremenljivko odprtosti oziroma konservativnosti, istega sklopa. Velja, da z vsemi kanoničnimi spremenljivkami istega sklopa pojasnimo vso variabilnost vsebinskih spremenljivk istega sklopa.
+
+```{r, results=TRUE, fig.cap="Delež pojasnjene variabilnosti s kanoničnimi spr. odprtosti"}
+# Odprtost
+Xx <- cbind(as.matrix(round(apply(ccRes$scores$corr.X.xscores^2, 2, mean), 3)), 
+      cumsum(round(apply(ccRes$scores$corr.X.xscores^2, 2, mean), 3)))
+rownames(Xx) <- paste0("Kanonična spremenljivka ", 1:nrow(Xx), ":")
+colnames(Xx) <- c("R2", "cum R2")
+
+kable(Xx, caption="Delež pojasnjene variabilnosti s kanoničnimi spr. odprtosti")
+
+```
+
+Največ variabilnosti spremenljivk odprtosti v povprečju pojasnimo z drugo kanonično spremenljivko in sicer 34%, sledita tretja in četrta z nekaj več oziroma manj kot 15%, prva, peta in šesta kanonična spremenljivka pa pojasnijo nekaj več oziroma manj kot 10% variabilnosti spremenljivk odprtosti.
+ 
+```{r, results=TRUE, fig.cap="Delež pojasnjene variabilnosti s kanoničnimi spr. konservativnosti"}
+# Konservativnost
+Yy <- cbind(as.matrix(round(apply(ccRes$scores$corr.Y.yscores^2, 2, mean), 3)), 
+            cumsum(round(apply(ccRes$scores$corr.Y.yscores^2, 2, mean), 3)))
+
+rownames(Yy) <- paste0("Kanonična spremenljivka ", 1:nrow(Yy), ":")
+colnames(Yy) <- c("R2", "cum R2")
+
+kable(Yy, caption="Delež pojasnjene variabilnosti s kanoničnimi spr. konservativnosti")
+```
+ 
+Pri spremenljivkah konservativnosti v povprečju največ variabilnosti pojasnimo s prvo kanonično spremenljivko in sicer 28%, sledi šesta kanonična spremenljivka z 21%, ostale kanonične spremenljivke pa posamično pojasnijo nekaj več kot 12% variabilnosti spremenljivk konservativnosti.
+
+Pogledamo pa lahko tudi kolikšen je povprečen delež pojasnjene variabilnosti sklopa vsebinskih spremenljivk s kanoničnimi spremenljivkami iz drugega sklopa. Velja, da vsaka nadaljna kanonična spremenljivka pojasni manj variabilnosti vsebinskih spremenljivk drugega sklopa.
+
+```{r, results=TRUE, fig.cap="Delež pojasnjene variabilnosti spr. odprtosti s kanoničnimi spr. konservativnosti"}
+# Konservativnost -> Odprtost
+Yx <- cbind(as.matrix(round(apply(ccRes$scores$corr.Y.xscores^2, 2, mean), 3)), 
+            cumsum(round(apply(ccRes$scores$corr.Y.xscores^2, 2, mean), 3)))
+rownames(Yx) <- paste0("Kanonicna spremenljivka ", 1:nrow(Yx), ":")
+colnames(Yx) <- c("R2", "cum R2")
+
+kable(Yx, caption="Delež pojasnjene variabilnosti spr. odprtosti s kanoničnimi spr. konservativnosti")
+```
+
+S prvo kanonično spremenljivko konservativnosti pojasnimo 2% variabilnosti spremenljivk odprtosti, z drugo kanonično spremenljivko 0.5% in s tretjo 0.2%. Delež pojasnjene variabilnosti spremenljivk odprtosti s četrto, peto in šesto kanonično spremenljivko konservativnosti je zanemarljiv.
+
+```{r, results=TRUE, fig.cap="Delež pojasnjene variabilnosti spr. konservativnosti s kanoničnimi spr. odprtosti"}
+# Odprtost -> Konservativnost
+Xy <- cbind(as.matrix(round(apply(ccRes$scores$corr.X.yscores^2, 2, mean), 3)), 
+            cumsum(round(apply(ccRes$scores$corr.X.yscores^2, 2, mean), 3)))
+rownames(Xy) <- paste0("Kanonicna spremenljivka ", 1:nrow(Xy), ":")
+colnames(Xy) <- c("R2", "cum R2")
+
+kable(Xy, caption="Delež pojasnjene variabilnosti spr. konservativnosti s kanoničnimi spr. odprtosti")
+```
+
+S prvo kanonično spremenljivko odprtosti pojasnimo 1% variabilnosti spremenljivk odprtosti, z drugo kanonično spremenljivko 1.5% in s tretjo 0.2%. Delež pojasnjene variabilnosti spremenljivk konservativnosti s četrto, peto in šesto kanonično spremenljivko odprtosti je zanemarljiv.
+
+\newpage
+
+# Diskriminantna analiza
+
+```{r}
+# Uvoz podatkov SPSS
+podatki <- readRDS("ESS_DEN_rekodirane")
+
+odprtost <- c("drugačnost", "užitek", "vznemerljivost", "zabava", "kreativnost", "svoboda")
+konservativnost  <- c("varnost", "ponižnost", "obramba", "tradicija", "ubogljivost", "sprejemljivost")
+
+Sch <- c(odprtost, konservativnost)
+
+# Uporabljali bomo samo enote, ki imajo vrednosti pri vseh spremenljivkah
+# Poleg Schwartzovih spremenljivk bomo za napovedovanje uporabili spremenljivko delovno razmerje.
+com <- complete.cases(podatki[, c(Sch, "Razmerje")])
+schData <- podatki[com, c(Sch, "Razmerje")]
+```
+
+## Predpostavke diskriminantne analize
+
+### 1. Število skupin je vsaj dve
+
+Število skupin v našem primeru določa število kategorij spremenljivke Razmerje. Ta ima 3 kategorije, to so Brez pogodbe, Določen čas in Nedoločen čas. Število skupin je tako 3 in prva predpostavka je izpolnjena.
+
+### 2. V vsaki skupini sta vsaj dve enoti
+
+Druga predpostavka linearne diskriminantne analize je, da sta v vsaki od skupin za katere želimo napovedati pripadnost enot (nedoločen čas, določen čas, brez pogodbe), vsaj dve enoti.
+
+Če pogledamo frekvenčno porazdelitev spremenljivke Razmerje vidimo, da je Brez pogodbe 98 respondentov, 145 respondentov ima pogodbo za določen čas in največ, 1087 respondentov ima pogodbo za nedoločen čas. Prva predpostavka je torej izpolnjena.
+
+```{r, results=TRUE, fig.cap="Frekvenčna porazdelitev spremenljivke Razmerje"}
+status_t <- table(as.character(schData$Razmerje))
+kable(t(status_t), caption="Frekvenčna porazdelitev spremenljivke Razmerje", align=rep("c",3))
+```
+
+### 3. Število spremenljivk je manjše od števila enot -1
+
+Tretja predpostavka linearne diskriminantne analize je, da je število spremenljivk manjše od števila enot -1.  
+
+Število vsebinskih oziroma Schwartzovih spremenljivk je 12 (6 za odprtost in 6 za konservativnost), število enot pa je 1330. Tudi druga predpostavka je tako izpolnjena.
+
+Za utemeljitev kasneje predpostavljenih verjetnostih v populaciji si oglejmo še deleže po kategorijah spremenljivke Razmerje.
+
+```{r, results=TRUE, fig.cap="Deleži po kategorijah spremenljivke Razmerje"}
+kable(t(prop.table(status_t)), caption="Deleži po kategorijah spremenljivke Razmerje", align=rep("c",3), digits=3)
+```
+
+Kot smo videli že prej, skupine niso enako velike in posledično pri razvrščanju v skupine na populaciji ne bomo predpostavili enako velikih skupin oziroma verjetnosti.
+
+### 4. Odsotnost multikolinearnosti
+
+Četrta predpostavka linearne diskriminantne analize je odsotnost multikolinearnosti, kar pomeni, da nobena od vsebinskih spremenljivk ni popolna linearna kombinacija ostalih. Težava z multikolinearnostjo je tako v primeru, ko je katera od korelacij med spremenljivkama blizu 1. V ta namen si oglejmo korelacijsko matriko.
+
+```{r, fig.cap="Korelacijska matrika Schwartzovih spremenljivk", fig.height=6, fig.width=6}
+plotMat(cor(schData[, Sch]), main = "")
+```
+
+\newpage
+
+Vidimo, da vrednosti korelacijskih koeficientov med nobenim parom spremenljivk niso blizu 1 in predpostavka o odsotnosti multikolinearnosti je izpolnjena.
+
+### 5. Var-cov matrika je v vsaki populacijski skupini enaka
+
+Peta predpostavka je enakost variančno-kovariančne matrike numeričnih (vsebinskih) spremenljivk v populacijskih skupinah. V primeru kršene predpostavke lahko uporabimo kvadratno diskriminantno analizo.
+
+Na spodnjih slikah vidimo, da se variančno kovariančne matrike po delovnih razmerjih nekoliko razlikujejo, v vseh skupinah pa bolj ali manj lahko prepoznamo sklopa spremenljivk, še najmanj v skupini brez pogodbe, kjer je tudi najmanjše število enot. Tudi zadnja predpostavka je tako na prvi pogled izpolnjena.
+
+```{r, fig.width=9, fig.height=9, fig.cap="Var-cov matrike populacijksih skupin"}
+par(mfrow = c(2, 2))
+matrike <- by(data = schData[, Sch], INDICES = schData$Razmerje, FUN = cov)
+for (i in names(matrike)){
+  plotMat(matrike[[i]], main = i, mar = rep(5, 4), title.line=0, print.x.axis.val = FALSE)
+} 
+```
+
+\newpage
+
+Podrobneje in objektivno predpostavko o enakosti variančno-kovariančnih matrik lahko preverimo z Box-ovim M testom. Ničelna domneva je, da so variančno-kovariančne matrike po spremenljivkah enake. Slaba lastnost testa je, da ni robusten na odstopanja od normalnosti. Če je predpostavka o normalnosti spremenljivk kršena, bo večja verjetnost, da bodo enote prej razvrščene v skupino z večjimi kovariancami.
+
+```{r}
+BoxMTest(X = schData[, Sch], 
+         cl = as.factor(schData$Razmerje), 
+         alpha = 0.05, 
+         test = FALSE)
+```
+
+Pri stopnji statistične značilnosti 0.05, na podlagi vrednosti p (p = 0.6153) predpostavke o enakosti variančno-kovariančnih matriko ne moremo zavrniti in tako je tudi z objektivnega stališča predpostavka izpolnjena. $\chi^2$ testna statistika zavzame vrednost 150 pri 156 stopinjah prostosti.
+
+### 6. Razlikovanje povprečij vsebinskih spremenljivk 
+
+Naslednja predpostavka, s katero v bistvu preverimo oziroma utemeljimo smiselnost uporabe metode diskriminantne analize je, da pogledamo kako se razlikujejo povprečja spremenljivk na podlagi katerih razvrščamo v skupine glede na delovno razmerje. Če so razlike v povprečjih majhne, lahko pričakujemo, da bomo z diskriminatnimi funkcijami slabo ločevali med skupinami.
+
+```{r, fig.height=5, fig.cap="Razlikovanje povprečij vsebinskih spremenljivk"}
+par(mar = c(10, 5, 1, 1))
+plotMeans(x = schData[, Sch], 
+          by = schData[, "Razmerje"], 
+          ylim = c(1, 6), 
+          ylab = "Povprečja", 
+          xleg = "bottomright")
+```
+
+Glede na povprečja spremenljivk odprtosti lahko pričakujemo, da bomo dobro ločevali med respondenti s pogodbo za določen čas in tistimi s pogodbo za nedoločen čas, saj se povprečja med tema dvema skupinama najbolj razlikujejo. Pri spremenljivkah konservativnosti pa pričakujemo, da bomo dobro ločevali predvsem respondente brez pogodbe in ostali dve skupini.
+
+Neke razlike v povprečjih torej so, so pa razlike zelo majhne in posledično lahko pričakujemo, da metoda ne bo delovala najbolje.
+
+S testom Manova lahko testiramo ničelno domnevo, da so povprečja intervalnih spremenljivk med skupinami enaka. Na podlagi vrednosti p (p < 0.001) lahko pri stopnji statistične značilnosti 0.05 zavrnemo ničelno domnevo, da so povprečja med skupinami glede na vsebinske spremenljivke enaka in sprejmemo sklep, da se vsaj eno povprečje pri skupinah spremenljivke Razmerje razlikuje od ostalih dveh.
+
+```{r}
+summary(manova(as.matrix(schData[, Sch]) ~ schData$Razmerje))
+```
+
+Preverimo lahko, med katerimi kategorijami spremenljivke Razmerje obstajajo razlike v povprečjih.
+
+```{r, results=TRUE, fig.cap="Dodatek k testu Manova"}
+rez <- matrix(NA, ncol = 3, nrow = length(Sch))
+for (i in 1:length(Sch)) {
+  a <- summary(aov(schData[, Sch[i]] ~ schData$Razmerje))
+  rez[i, 1] <- Sch[i]
+  rez[i, 2] <- paste0("F(", a[[1]][1,1], "; ", a[[1]][2,1], ") = ", round(a[[1]][1,4], 3))
+  rez[i, 3] <- printP(a[[1]][1,5])
+}
+kable(rez,  caption="Dodatek k testu Manova")
+```
+
+Vidimo, da pri stopnji statistične značilnosti 0.05 lahko zavrnemo domnevo o enakosti povprečij med skupinami spremenljivke nadzor pri vsebinskih spremenljivkah drugačnosti, vznemerljivosti, zabave in ponižnosti. Spremenljivka sprejemljivost je mejno statistično značilna, ostale spremenljivke pa ne razlikujejo med vsaj dvema povprečjema skupin.
+
+Zaključimo lahko, da so predpostavke linearne diskriminatorne analize izpolnjene in lahko nadaljujemo z analizo. Zaradi majhnega razlikovanja med povprečji pa lahko pričakujemo, da metoda ne bo delovala najbolje.
+
+\newpage
+
+## Diskriminantne funkcije
+
+### Pomembnost in število diskriminantnih funkcij
+
+Izvedimo sedaj linearno diskriminantno analizo na standardiziranih podatkih. Verjetnosti pripadnosti enot posamezni skupini določimo glede na zgoraj navedene deleže po kategorijah spremenljivke Razmerje iz podatkov. Za oceno vrednosti kanoničnih korelacij uporabimo Jack-knife metodo, kjer model ocenimo na vseh enotah razen ene, na kateri pa model evalviramo. Tako dobimo nepristransko oceno modela.
+
+V spodnjem izpisu prvo množico spremenljivk predstavljajo vse Schwartzove spremenljivke, druga množica spremenljivk pa določa skupine. V izpisu sta dve kanonični korelaciji, ki sta narejeni na podlagi dummy spremenljivk iz spremenljivke Razmerje, ki sta dve.
+
+```{r, results=TRUE, fig.cap="Vrednosti kanoničnih korelacij"}
+# kako mocno sta povezana sklopa spremenljivk
+# (ce gledamo linearni kobinaciji spremenljivk sklopov s takimi
+# vrednostmi regresijskih utezi, da je korelacija maksimalna)
+# % - ita DF pojasni X% razlik med povprecji
+# Cor - korelacija med ito DF in dummy spremenljvko je X
+# Sq. Cor. - ita DF pojasni X% variabilnosti v spremenljivkah, ki predstavljajo skupine
+
+LDARes <- ldaPlus(x = schData[, Sch],
+                  grouping = schData$Razmerje,
+                  pred = TRUE,
+                  CV = TRUE)
+kable(round(LDARes$eigModel, 3), caption="Vrednosti kanoničnih korelacij")
+```
+
+S prvo diskriminantno funkcijo pojasnimo 64% razlik med povprečji spremenljivk, z drugo kanonično korelacijo pa 36% razlik med povprečji spremenljivk. Korelacija med dummy spremenljivko, ki določa funkcijo in prvo diskriminantno funkcijo je enaka 0.028 in z drugo diskriminantno funkcijo je enaka 0.016. Pomen diskriminantnih funkcij torej pada.
+
+Poglejmo še ali sta diskriminantni funkciji statistično značilni. Preverjamo ničelno domnevo, da so povprečja diskriminantnih funkcij po skupinah enaka.
+
+```{r, results=TRUE, fig.cap="Statistična značilnost diskriminantnih funckij"}
+options(scipen = 999)
+kable(round(LDARes$sigTest, 3), caption="Statistična značilnost diskriminantnih funckij")
+```
+
+Pri stopnji značilnosti 0.05 lahko na podlagi vrednosti p za obe diskriminantni funkciji zavrnemo domnevo o enakosti povprečij diskriminantnih funkcij po skupinah in sprejmemo sklep, da so povprečja pri obeh diskriminantih funkcijah po skupinah različna. Tako bomo v nadaljevanju interpretirali in napovedovali za obe diskriminantni funkciji.
+
+### Pomen diskriminantnih funkcij
+
+Nadalje nas zanima, med katerimi skupinami ločuje posamezna diskriminantna funkcija. Eden izmed načinov, da to pogledamo so centroidi torej povprečja po skupinah.
+
+```{r, results=TRUE, fig.cap="Centro"}
+kable(round(LDARes$centroids, 3), caption="Centro")
+```
+
+Prva linearna diskriminantna funkcija najbolj ločuje med osebami s pogodbo za nedoločen čas in s pogodbo za določen čas. Ločuje tudi med ostalima kombinacijama zaposlitvenega razmerja. Druga linearna diskriminantna funkcija pa najbolj ločuje med osebami brez pogodbe in osebami s pogodbo za določen čas. Ločuje pa tudi med osebami s pogodbo za nedoločen čas in brez pogodbe.
+
+Poglejmo še katere spremenljivke imajo največji vpliv na vrednosti diskriminantne funkcije. Torej spremenljivke, ki najbolj ločujejo med skupinami. V spodnjem grafičnem prikazu so podane standarizirane vrednosti diskriminantne funkcije.
+
+```{r, results=TRUE, fig.height=5, fig.cap="Standarizirane vrednosti diskriminantne funkcije"}
+korelacije <- LDARes$corr
+plotMat(korelacije, mar = c(1, 5, 5, 1), main = "")
+```
+
+Visoke pozitivne uteži pri prvi diskriminantni funkciji imata predvsem drugačnost in vznemerljivost, ki sta močno korelirani s prvo diskriminantno funkcijo. Šibko ali srednje pozitivno korelirane s prvo diskriminantno funkcijo so še zabava, ponižnost, obramba, ubogljivost in užitek. Šibko negativno korelirana je tradicija. Ostale spremenljivke so zanemarljivo korelirane s prvo diskriminantno funkcijo.
+
+Sklepamo lahko, da sta ljudem s pogodbo za določen čas pomembna predvsem drugačnost in vznemerljivost, ljudem s pogodbo za nedoločen čas pa tradicija.
+
+Z drugo diskriminantno funkcijo je izrazito najmočneje negativno korelirana spremenljivka zabava, korelacija je močna. Pozitivno korelirane so spremenljivke sprejemljivost, varnost, in ponižnost, ki so srednje močno korelirane z drugo diskriminantno funkcijo. Ostale korelacije so manjše.
+
+Sklepamo lahko, da so ljudem brez pogodbe najbolj pomembne varnost, sprejemljivost in ponižnost, ljudem s pogodbo za določen čas pa predvsem zabava.
+
+\newpage
+
+## Kvaliteta ocenjenega modela 
+
+Na podlagi Scwhartzovih spremenljivk lahko napovemo delovno razmerje posameznika, kako uspešna pa ta napoved bo, si bomo ogledali sedaj. Preverili bomo torej kako kvaliteten je ocenjen diskriminantni model. Posamezno enoto uvrstimo v skupino na podlagi ocenjenih diskriminantnih funkcij in sicer v tisto skupino katere centroid v prostoru diskriminantnih funkcij ji je najbližje. 
+
+Kot rečeno smo za oceno modela vzeli vse enote razen ene in na tej eni enoti model evalvirali, torej po principu Jack-knife moetode. Model je tudi upošteval, da skupine niso enako velike.
+
+V spodnji tabeli je prva spremenljivka originalna spremenljivka Nadzor, druga spremenljivka pa je napovedana pripadnost Nadzoru na podlagi linearnih diskriminantnih funkcij. 
+
+Iz klasifikacijske tabele razberemo, da smo pravilno razvrstili 82% enot. 
+Opomba: Vse enote so bile razvrščene v skupino z največjim deležem oziroma frekvenco, torej skupino z delovnim razmerjem za nedoločen čas. To je tudi vzrok, da je delež pravilno razvrščenih enot zelo visok. Enote z delovnim razmerjem za določen čas so torej 100% pravilno razvrščene, enote iz drugih dveh skupin pa 100% napačno razvrščene.
+
+Za predstavo so velja ogledati še delež pravilno razvrščenih enot, če bi enote v skupine razvrščali povsem slučajno. Ta delež je enak 67%, kar ni tako zelo manjše od deleža naše ocene, ki je obenem delež pravilno razvrščenih enot, ko smo vse enote razvrstili v največjo skupino. Pod črto, naš model bi lahko bil boljši, ni pa popolnoma slab.
+
+```{r, results=TRUE, fig.cap="Klasifikacijska tabela"}
+# Klasifikacijska tabela
+# Frekvence in deleži pravilno razvrščenih enot z Jack-knife metodo.
+KlasCV <- LDARes$classCV
+
+kable(KlasCV$orgTab, caption="Klasifikacijska tabela")
+
+# Delež enot, ki bi jih razvrstili pravilno, če bi enote razvrščali povsem slučajno.
+Sluc <- sum(LDARes$prior^2)*100 
+```
+
+Kaj pa bi se zgodilo, če bi predpostavili, da so skupine v populaciji enako velike? Torej je verjetnost pripadnosti enote posamezni skupini $\frac{1}{3}$. 
+
+```{r, results=TRUE, fig.cap="Klasifikacijska tabela z enako velikimi skupinami"}
+LDAResEqPrior <- update(LDARes,  prior = rep(1/3, times = 3))
+RezCV <- LDAResEqPrior$classCV
+
+kable(RezCV$orgTab, caption="Klasifikacijska tabela z enako velikimi skupinami")
+```
+
+Če pogledamo rezultate, ponovno po Jack-knife metodi, je delež pravilno razvrščenih enot 39%, kar je bistveno manj od prejšnjega, ki pa ga zaradi že navedenega razloga vseeno velja jemati z rezervo. Slabše smo torej napovedali enote z zaposlitvenim razmerjem za nedoločen čas, z razmerjem za določen čas in brez pogodbe pa smo enote napovedali bolje.
+
+\newpage
+
+## Enote v prostoru ocenjenih diskriminantnih funkcij
+
+Spodnji graf prikazuje enote v prostoru ocenjenih dveh diskriminantnih funkcij, ki sta tudi statistično značilni. Vidimo, da status zaposlitvenega razmerja ni jasno ločen v prostoru glavnih komponent, kar je posledica tega, da diskriminantni funkciji ne ločujeta najbolje, oziroma tega, da je v eni skupini večina enot.
+
+```{r, fig.cap="Enote v prostoru ocenjenih diskriminantnih funkcij", fig.height=5}
+# Narišemo navaden razsevni grafikon - točke so pobarvane glede na pripadnost k skupini
+
+### TOLE ODKOMENTIRAJ
+par(mfrow=c(1,1))
+plot(LDARes$pred$x[,1],
+     LDARes$pred$x[,2],
+     col=as.numeric(as.factor(schData$Razmerje)),
+     cex=0.5,
+     pch = 16,
+     xlab="LD1",
+     ylAB="LD2")
+
+# Dodamo legendo
+legend(x="bottomright", col=1:5, pch=19, legend = levels(as.factor(schData$Razmerje)))
+# Izračunamo vrednosti centroidov
+centroidi <- aggregate(LDARes$pred$x, by = list(schData$Razmerje), FUN = mean)
+# Narišemo centroide
+points(centroidi[, 2:3], col = 1:5, cex = 2, pch = 19)
+# Narišemo osi
+abline(h = 0, v = 0)
+```
+
+\newpage
+
+# Vsebinski povzetek
+
+V nalogi smo se ukvarjali s kanonično korelacijo ter diskriminantno analizo.
+
+Pri kanonični korelaciji smo najprej izračunali koliko kanoničnih korelacij uporabiti. Ugotovili smo da 3 saj so prve tri imele p vrednost 0.004 ali manj ($\alpha = 0.05$), medtem ko je imela četrta 0.159, peta 0.272 ter šesta 0.963. Prve tri korelacije so bile enake 0.26, 0.21 in 0.12. Prva kanonična korelacija se je bila zelo korelirana v sklopu spremenljivk ki so izražale konservativnost in sicer zelo močno pozitivno korelacijo pri varnosti ter najmanj pri ponižnost, kjer je bila šibka. Pri sklopu spremenljivk ki so odražale odprtost sta bili spremenljivki užitek in zabava močno pozitivno korelirani, vznemerljivost je bila srednje močno negativno korelirana, medtem ko so ostale spremenljivke bile bodisi šibko bodisi zanemarljivo korelirane. Pri drugi kanonični korelaciji se je v sklopu konservativnosti najbolj izražala obramba in sicer z močno negativno korelacijo, varnost je bila srednje pozitivno močna, ponižnost pozitivno šibka, tradicija negativno šibka, ubogljivost in sprejemljivost pa zanemarljivi. Pri sklopu odprtostu je opaziti da so vse spremenljivke negativno korelirane in sicer močno korelirane so bile spremenljivke drugačnost, užitek ter vznemerljivost. Zelo blizu jim sledi kreativnost, medtem ko sta zabava in svoboda šibko korelirani. Tretja kanonična korelacija v sklopu konservativnih spremenljivk meri predvsem tradicijo in ubogljivost ki sta bili srednje močno do močno korelirani, medtem ko so v sklopu spremenljivk odprtosti najbolj izražene zabava in svoboda ki sta bili močno negativno korelirani, ter kreativnost ki je bila srednje močno negativno korelirana.
+
+Največ variabilnosti spremenljivk odprtosti smo pojasnili z drugo kanonično spremenljivko in sicer 34%, sledi tretja in četrta z 16.9% in 14.7%. Prva je imela 14.1%, peta in šesta pa 12.5% oz. 8.3%. Pri spremenljivkah konservativnosti največ variabilnosti pojasnimo s prvo kanonično spremenljivko in sicer 28%, sledi šesta z 21%, tretja kanonična spremenljivka pojasni 14.2%, medtem ko druga, peta in četrta pojasnijo 12.6%, 12.5% in 12.1% variabilnosti. Pri preverjanju kolikšen delež variabilnosti odprtosti pojasnimo s kanoničnimi spremenljivkami konservativnosti in obratno, ugotovimo da je pri vseh kanoničnih spremenljivkah bilo to manj od 2%.
+
+Pri diskriminantni analizi smo najprej preverjali predpostavke le-te. Za spremenljivko Razmerje iz prve naloge smo ugotovili da izpolni vse predpostavke in sicer da je bilo število skupin vsaj dve, da so v vsaki skupini bile vsaj dve enoti, da je bilo število spremenljivk manjše od števila enot -1, da nismo imeli opravka z multikolinearnostjo, da je Var-cov matrika v vsaki skupini enaka (Smo potrdili z Box-ovim M testom; p=0.6153) ter da so se povprečja vsebinskih spremenljivk razlikovala. S testom MANOVA, smo zavrnili ničelno domnevo (p<0.001), da so povprečja enaka. Po podrobnejšem pregledu smo ugotovili da smo lahko zavrnili domnevo o enakosti povprečij med skupinami spremenljivke nadzor pri vsebinskih spremenljivkah drugačnosti, vznemerljivosti, zabave in ponižnosti.
+
+Nato smo ugotovili da s prvo diskriminantno funkcijo pojasnimo 64% razlik med povprečji spremenljivk, z drugo pa 36%. Obe diskriminantni funkciji sta bili statistično značilni (1 - p<0.001, 2 - p=0.034) in smo tako lahko sprejeli sklep da so povprečja pri obeh diskriminantnih funkcijah po skupinah različna.
+
+Pri oceni modela, smo ugotovili da smo pravilno razvrstili 82% enot, kar je bila posledica tega da smo imeli eno skupino zelo veliko in je posledično model vse razvrstil v največjo skupino. Ko smo preverjali kolikšen delež enot bi bil pravilno razvrščen če bi enote naključno razvrščali v skupine bi bil ta enak 67%. Ko smo predpostavili da so skupine enako velike, je bil delež pravilno razvrščenih enot enak 39%.
+
+

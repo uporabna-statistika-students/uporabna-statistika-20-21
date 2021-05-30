@@ -1,0 +1,3 @@
+Primanjkljaj feature engineeringa.
+Diskretizacija starosti in Fare je preveč podrobna, ni potrebe po tako veliko vrednostih
+Pri odločitvenem drevesu bi lahko dal da je več sampleov v listih
