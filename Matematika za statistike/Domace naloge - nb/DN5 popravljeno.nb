@@ -1,0 +1,1190 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     47759,       1182]
+NotebookOptionsPosition[     43565,       1112]
+NotebookOutlinePosition[     43981,       1129]
+CellTagsIndexPosition[     43938,       1126]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{"1.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "Dane", " ", "imamo", " ", "\[SHacek]tevke", " ", "od", " ", "1", " ", 
+     "do", " ", "6.", "\[IndentingNewLine]", "Izra\[CHacek]unajte", " ", 
+     "koliko", " ", "razli\[CHacek]nih", " ", "\[SHacek]tevil", " ", "lahko", 
+     " ", "sestavimo"}], ",", " ", 
+    RowBox[{
+     RowBox[{
+     "\[CHacek]e", " ", "uporabimo", " ", "vse", " ", "\[SHacek]tevke", " ", 
+      "natanko", " ", 
+      RowBox[{"enkrat", ".", "\[IndentingNewLine]", "Izra\[CHacek]unajte"}], 
+      " ", "\[SHacek]e", " ", "koliko", " ", "4"}], "-", 
+     RowBox[{
+     "mestnih", " ", "\[SHacek]tevil", " ", "lahko", " ", "sestavimo", " ", 
+      "iz", " ", "danih", " ", "\[SHacek]tevk"}]}], ",", 
+    RowBox[{
+     RowBox[{"\[CHacek]e", " ", "se", " ", "le"}], "-", 
+     RowBox[{"te", " ", "ne", " ", "ponavljajo"}]}]}], " ", "*)"}], 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Nstevk", "=", "6"}], ";", " ", 
+    RowBox[{"NsestStev", "=", "4"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{"(*", "a", "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"Nstevk", "!"}], "\[IndentingNewLine]", 
+   RowBox[{"(*", "b", "*)"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Binomial", "[", 
+     RowBox[{"Nstevk", ",", "NsestStev"}], "]"}], "*", 
+    RowBox[{"NsestStev", "!"}]}]}]}]], "Input",
+ CellChangeTimes->{{3.8150620003684273`*^9, 3.8150621767611494`*^9}},
+ CellLabel->"In[24]:=",ExpressionUUID->"6ce55b94-bfb6-4a0c-9a07-01710be734c6"],
+
+Cell[BoxData["720"], "Output",
+ CellChangeTimes->{3.815062178421404*^9},
+ CellLabel->"Out[26]=",ExpressionUUID->"c3c549bc-a3db-484d-8be3-6320ff978fa0"],
+
+Cell[BoxData["360"], "Output",
+ CellChangeTimes->{3.815062178435459*^9},
+ CellLabel->"Out[27]=",ExpressionUUID->"45f9e5c5-c22a-446a-b5fe-8e92d0a7999c"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{"2.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{
+    "V", " ", "posodi", " ", "imamo", " ", "8", " ", "rde\[CHacek]ih"}], ",", 
+    " ", 
+    RowBox[{"5", " ", "belih", " ", "in", " ", "7", " ", "modrih", " ", 
+     RowBox[{"kroglic", ".", " ", "Izberemo"}], " ", "3", " ", "kroglice", 
+     " ", 
+     RowBox[{"hkrati", "."}]}]}], "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"rd", " ", "=", " ", "8"}], ";", " ", 
+    RowBox[{"be", " ", "=", " ", "5"}], ";", " ", 
+    RowBox[{"mo", "=", "7"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"vsekr", "=", 
+     RowBox[{"rd", "+", "be", "+", "mo"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+     RowBox[{
+     "Kolik\[SHacek]na", " ", "je", " ", "verjetnost", " ", "dogodka"}], ",", 
+     RowBox[{"da", " ", "so", " ", "kroglice", " ", "razli\[CHacek]nih", " ", 
+      RowBox[{"barv", "?"}]}]}], " ", "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"P1", " ", "=", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"rd", "/", "vsekr"}], ")"}], "*", 
+      RowBox[{"(", 
+       RowBox[{"be", "/", 
+        RowBox[{"(", 
+         RowBox[{"vsekr", "-", "1"}], ")"}]}], ")"}], "*", 
+      RowBox[{"(", 
+       RowBox[{"mo", "/", 
+        RowBox[{"(", 
+         RowBox[{"vsekr", "-", "2"}], ")"}]}], ")"}], "*", "6"}], " ", "//", 
+     " ", "N"}]}], "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{
+     RowBox[{
+     "Kolik\[SHacek]na", " ", "je", " ", "verjetnost", " ", "dogodka"}], ",", 
+     RowBox[{"da", " ", "je", " ", "vsaj", " ", "ena", " ", "kroglica", " ", 
+      RowBox[{"modra", "?"}]}]}], " ", "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"P2", " ", "=", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"mo", "/", "vsekr"}], ")"}], "*", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"be", "+", "rd"}], ")"}], "/", "vsekr"}], ")"}], "*", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"be", "+", "rd"}], ")"}], "/", "vsekr"}], ")"}]}], " ", "//",
+      " ", "N"}]}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Binomial", "[", 
+      RowBox[{"rd", ",", "1"}], "]"}], "*", 
+     RowBox[{"Binomial", "[", 
+      RowBox[{"be", ",", "1"}], "]"}], "*", 
+     RowBox[{
+      RowBox[{"Binomial", "[", 
+       RowBox[{"mo", ",", "1"}], "]"}], "/", 
+      RowBox[{"Binomial", "[", 
+       RowBox[{"vsekr", ",", "3"}], "]"}]}]}], "//", "N"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"1", "-", 
+     RowBox[{
+      RowBox[{"Binomial", "[", 
+       RowBox[{"mo", ",", "0"}], "]"}], "*", 
+      RowBox[{
+       RowBox[{"Binomial", "[", 
+        RowBox[{
+         RowBox[{"rd", "+", "be"}], ",", "3"}], "]"}], "/", 
+       RowBox[{"Binomial", "[", 
+        RowBox[{"vsekr", ",", "3"}], "]"}]}]}]}], "//", "N"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"Binomial", "[", 
+       RowBox[{"mo", ",", "1"}], "]"}], "*", 
+      RowBox[{
+       RowBox[{"Binomial", "[", 
+        RowBox[{
+         RowBox[{"rd", "+", "be"}], ",", "2"}], "]"}], "/", 
+       RowBox[{"Binomial", "[", 
+        RowBox[{"vsekr", ",", "3"}], "]"}]}]}], "+", 
+     RowBox[{
+      RowBox[{"Binomial", "[", 
+       RowBox[{"mo", ",", "2"}], "]"}], "*", 
+      RowBox[{
+       RowBox[{"Binomial", "[", 
+        RowBox[{
+         RowBox[{"rd", "+", "be"}], ",", "1"}], "]"}], "/", 
+       RowBox[{"Binomial", "[", 
+        RowBox[{"vsekr", ",", "3"}], "]"}]}]}], "+", 
+     RowBox[{
+      RowBox[{"Binomial", "[", 
+       RowBox[{"mo", ",", "3"}], "]"}], "*", 
+      RowBox[{
+       RowBox[{"Binomial", "[", 
+        RowBox[{
+         RowBox[{"rd", "+", "be"}], ",", "0"}], "]"}], "/", 
+       RowBox[{"Binomial", "[", 
+        RowBox[{"vsekr", ",", "3"}], "]"}]}]}]}], "//", "N"}], 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.8150623227278185`*^9, 3.8150624637398777`*^9}, {
+  3.8150625664839735`*^9, 3.8150626037222676`*^9}, {3.815062638746341*^9, 
+  3.8150626543353953`*^9}, {3.815286829226821*^9, 3.815286908112982*^9}, {
+  3.8152870985721703`*^9, 3.8152871087594147`*^9}, {3.8152872456154084`*^9, 
+  3.8152873505256276`*^9}},
+ CellLabel->
+  "In[484]:=",ExpressionUUID->"0244b19d-c504-40b9-8ffc-e354e0957924"],
+
+Cell[BoxData["0.24561403508771928`"], "Output",
+ CellChangeTimes->{
+  3.815062766960867*^9, {3.8152869044522004`*^9, 3.815286908514433*^9}, 
+   3.8152871099582396`*^9, 3.815287289831132*^9, {3.81528734686033*^9, 
+   3.815287350883665*^9}},
+ CellLabel->
+  "Out[487]=",ExpressionUUID->"571cdaa0-15bb-4048-a3af-b5da8963d26f"],
+
+Cell[BoxData["0.147875`"], "Output",
+ CellChangeTimes->{
+  3.815062766960867*^9, {3.8152869044522004`*^9, 3.815286908514433*^9}, 
+   3.8152871099582396`*^9, 3.815287289831132*^9, {3.81528734686033*^9, 
+   3.8152873508846626`*^9}},
+ CellLabel->
+  "Out[488]=",ExpressionUUID->"78f5e20f-981d-454e-8253-3a8dd3002638"],
+
+Cell[BoxData["0.24561403508771928`"], "Output",
+ CellChangeTimes->{
+  3.815062766960867*^9, {3.8152869044522004`*^9, 3.815286908514433*^9}, 
+   3.8152871099582396`*^9, 3.815287289831132*^9, {3.81528734686033*^9, 
+   3.8152873508866568`*^9}},
+ CellLabel->
+  "Out[489]=",ExpressionUUID->"e6ccc90f-01ab-4d5b-9625-3e7deec5f605"],
+
+Cell[BoxData["0.7491228070175439`"], "Output",
+ CellChangeTimes->{
+  3.815062766960867*^9, {3.8152869044522004`*^9, 3.815286908514433*^9}, 
+   3.8152871099582396`*^9, 3.815287289831132*^9, {3.81528734686033*^9, 
+   3.815287350888652*^9}},
+ CellLabel->
+  "Out[490]=",ExpressionUUID->"49962ead-a608-49aa-864e-186edaa3473b"],
+
+Cell[BoxData["0.7491228070175439`"], "Output",
+ CellChangeTimes->{
+  3.815062766960867*^9, {3.8152869044522004`*^9, 3.815286908514433*^9}, 
+   3.8152871099582396`*^9, 3.815287289831132*^9, {3.81528734686033*^9, 
+   3.815287350889649*^9}},
+ CellLabel->
+  "Out[491]=",ExpressionUUID->"f5b260ba-8933-4f86-a876-e8138ff5f8e1"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"3.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"V", " ", "razredu", " ", "je", " ", "32", " ", "dijakov"}], ",", 
+    RowBox[{
+     RowBox[{
+     "od", " ", "tega", " ", "11", " ", "fantov", " ", "in", " ", "21", " ", 
+      RowBox[{"deklet", ".", "\[IndentingNewLine]", "Na"}], " ", "koliko", 
+      " ", "na\[CHacek]inov", " ", "lahko", " ", "sestavijo", " ", "5"}], "-", 
+     RowBox[{"\[CHacek]lansko", " ", "predsedstvo"}]}], ",", 
+    RowBox[{
+    "\[CHacek]e", " ", "morata", " ", "biti", " ", "v", " ", "njem", " ", 
+     "dva", " ", "fanta"}], ",", 
+    RowBox[{"preostale", " ", "tri", " ", "pa", " ", 
+     RowBox[{"dekleta", "?"}]}]}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Nraz", "=", "32"}], ";", " ", 
+    RowBox[{"stf", "=", "11"}], ";", " ", 
+    RowBox[{"std", "=", "21"}], ";", 
+    RowBox[{"clpreds", "=", "5"}], ";", 
+    RowBox[{"predsf", "=", "2"}], ";", 
+    RowBox[{"predsd", "=", "3"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Binomial", "[", 
+      RowBox[{"stf", ",", "predsf"}], "]"}], "*", 
+     RowBox[{"predsf", "!"}]}], "+", 
+    RowBox[{
+     RowBox[{"Binomial", "[", 
+      RowBox[{"std", ",", "predsd"}], "]"}], "*", 
+     RowBox[{"predsd", "!"}]}]}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Binomial", "[", 
+     RowBox[{"stf", ",", "predsf"}], "]"}], "*", 
+    RowBox[{"Binomial", "[", 
+     RowBox[{"std", ",", "predsd"}], "]"}]}]}]}]], "Input",
+ CellChangeTimes->{{3.815062831944874*^9, 3.8150628963697166`*^9}, {
+   3.8150629392036953`*^9, 3.815062971166752*^9}, {3.815063035974886*^9, 
+   3.8150631457470255`*^9}, {3.8150631924551353`*^9, 3.8150632552185936`*^9}, 
+   3.8150633628918033`*^9, {3.8150634256512547`*^9, 3.815063473738212*^9}, {
+   3.8150636703058214`*^9, 3.815063727534747*^9}, 3.8150638643960605`*^9, {
+   3.815066796781519*^9, 3.815066827270753*^9}, {3.8150668631507883`*^9, 
+   3.815066915269018*^9}, {3.815066961428706*^9, 3.815066979375008*^9}, {
+   3.8150670441886935`*^9, 3.8150670976629405`*^9}, {3.815287529298384*^9, 
+   3.8152875368745*^9}, 3.8152875680820045`*^9},
+ CellLabel->
+  "In[492]:=",ExpressionUUID->"8028437e-2693-4f78-8d0d-0809c14abdc7"],
+
+Cell[BoxData["8090"], "Output",
+ CellChangeTimes->{
+  3.8150669171263876`*^9, {3.8150670859407225`*^9, 3.8150671038182583`*^9}, 
+   3.8152875691891766`*^9},
+ CellLabel->
+  "Out[494]=",ExpressionUUID->"f0b9b086-7c9a-4d78-a839-214610b568b7"],
+
+Cell[BoxData["73150"], "Output",
+ CellChangeTimes->{
+  3.8150669171263876`*^9, {3.8150670859407225`*^9, 3.8150671038182583`*^9}, 
+   3.8152875691921687`*^9},
+ CellLabel->
+  "Out[495]=",ExpressionUUID->"446998c0-1e79-4fa3-836d-796ce007fcec"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{"4.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "V", " ", "prvi", " ", "posodi", " ", "je", " ", "7", " ", 
+     "rde\[CHacek]ih", " ", "in", " ", "4", " ", "modre", " ", "kroglice"}], 
+    ",", 
+    RowBox[{
+    "v", " ", "drugi", " ", "posodi", " ", "pa", " ", "je", " ", "6", " ", 
+     "rde\[CHacek]ih", " ", "in", " ", "5", " ", "modrih", " ", 
+     RowBox[{"kroglic", ".", "\[IndentingNewLine]", "Iz"}], " ", "prve", " ", 
+     "posode", " ", "na", " ", "slepo", " ", "prenesemo", " ", "dve", " ", 
+     "kroglici", " ", "v", " ", "drugo"}], ",", 
+    RowBox[{
+    "nato", " ", "pa", " ", "iz", " ", "druge", " ", "posode", " ", 
+     "izvle\[CHacek]emo", " ", "rde\[CHacek]o", " ", 
+     RowBox[{"kroglico", ".", "\[IndentingNewLine]", "Kolik\[SHacek]na"}], 
+     " ", "je", " ", "verjetnost", " ", "dogodka"}], ",", " ", 
+    RowBox[{
+    "da", " ", "smo", " ", "prenesli", " ", "kroglici", " ", 
+     "razli\[CHacek]nih", " ", 
+     RowBox[{"barv", "?", " ", "Rezultat"}], " ", "za", " ", "verjetnost", 
+     " ", "dogodka", " ", "vnesite", " ", "na", " ", "decimalk", " ", 
+     RowBox[{"natan\[CHacek]no", "."}]}]}], "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+   RowBox[{"(*", " ", 
+    RowBox[{"PA", " ", "=", " ", 
+     RowBox[{
+      RowBox[{
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{
+            RowBox[{
+             RowBox[{
+              RowBox[{
+               RowBox[{
+                RowBox[{"P", 
+                 RowBox[{"(", "H1", ")"}], "P", 
+                 RowBox[{"(", 
+                  RowBox[{"A", "|", "H1"}], ")"}]}], "+", 
+                RowBox[{"P", 
+                 RowBox[{"(", "H2", ")"}], "P", 
+                 RowBox[{"(", 
+                  RowBox[{"A", "|", "H2"}], ")"}]}], "+", 
+                RowBox[{"P", 
+                 RowBox[{"(", "H3", ")"}], "P", 
+                 RowBox[{"(", 
+                  RowBox[{"A", "|", "H3"}], ")"}]}], "+", 
+                RowBox[{"P", 
+                 RowBox[{"(", "H4", ")"}], "P", 
+                 RowBox[{"(", 
+                  RowBox[{"A", "|", "H4"}], ")"}], "\[IndentingNewLine]", 
+                 "H1"}]}], " ", "..."}], " ", "izberemo", " ", "dve", " ", 
+              "rde\[CHacek]i", " ", "kroglici", "\[IndentingNewLine]", "H2"}],
+              " ", "..."}], " ", "izberemo", " ", "dve", " ", "modri", " ", 
+            "kroglici", "\[IndentingNewLine]", "H3"}], " ", "..."}], " ", 
+          "izberemo", " ", "eno", " ", "rde\[CHacek]o", " ", "in", " ", "eno",
+           " ", "modro", " ", "kroglico", "\[IndentingNewLine]", "H4"}], " ", 
+         "..."}], " ", "izberemo", " ", "eno", " ", "modro", " ", "in", " ", 
+        "eno", " ", "rde\[CHacek]o", " ", "kroglico", "\[IndentingNewLine]", 
+        "A"}], " ", "..."}], " ", "izberemo", " ", "rde\[CHacek]o", " ", 
+      "kroglico"}]}], "\[IndentingNewLine]", " ", "*)"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PH1", "=", 
+     RowBox[{
+      RowBox[{"7", "/", "11"}], "*", 
+      RowBox[{"6", "/", "10"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PH2", "=", 
+     RowBox[{
+      RowBox[{"4", "/", "11"}], "*", 
+      RowBox[{"3", "/", "10"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PH3", "=", 
+     RowBox[{
+      RowBox[{"7", "/", "11"}], "*", 
+      RowBox[{"4", "/", "10"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PH4", "=", 
+     RowBox[{
+      RowBox[{"4", "/", "11"}], "*", 
+      RowBox[{"7", "/", "10"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PAH1", "=", 
+     RowBox[{"8", "/", "13"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PAH2", "=", 
+     RowBox[{"6", "/", "13"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PAH3", "=", 
+     RowBox[{"7", "/", "13"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PAH4", "=", 
+     RowBox[{"7", "/", "13"}]}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PA", " ", "=", " ", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"PH1", "*", "PAH1"}], "+", 
+       RowBox[{"PH2", "*", "PAH2"}], "+", 
+       RowBox[{"PH3", "*", "PAH3"}], "+", 
+       RowBox[{"PH4", "*", "PAH4"}]}], " ", "//", "N"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"PH3A", " ", "=", " ", 
+    RowBox[{
+     RowBox[{"PH3", "*", 
+      RowBox[{"PAH3", "/", "PA"}]}], " ", "//", "N"}]}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"PH3A", " ", "=", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{"PH3", "*", "PAH3"}], "+", 
+        RowBox[{"PH4", "*", "PAH4"}]}], ")"}], "/", "PA"}], " ", "//", 
+     "N"}]}]}]}]], "Input",
+ CellChangeTimes->{{3.8150638955612116`*^9, 3.8150639672118692`*^9}, {
+   3.8150640239644547`*^9, 3.815064587256162*^9}, {3.8150646216082306`*^9, 
+   3.8150646384114585`*^9}, 3.8150646703701878`*^9, {3.815287643535492*^9, 
+   3.815287654420883*^9}},
+ CellLabel->
+  "In[496]:=",ExpressionUUID->"005bc80a-78d2-4744-aa21-9d3d05024fca"],
+
+Cell[BoxData["0.24499999999999994`"], "Output",
+ CellChangeTimes->{{3.815064627920725*^9, 3.815064639817872*^9}, 
+   3.815064672578513*^9, 3.815287656298792*^9},
+ CellLabel->
+  "Out[506]=",ExpressionUUID->"726797c4-68b7-4141-96b0-692882393358"],
+
+Cell[BoxData["0.49`"], "Output",
+ CellChangeTimes->{{3.815064627920725*^9, 3.815064639817872*^9}, 
+   3.815064672578513*^9, 3.815287656300787*^9},
+ CellLabel->
+  "Out[507]=",ExpressionUUID->"b3d84838-4fce-4fa8-becb-e2cb69b8dd9f"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{"5.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"V", " ", "razredu", " ", "je", " ", "30", " ", "dijakov"}], ",", 
+    RowBox[{
+    "od", " ", "tega", " ", "15", " ", "fantov", " ", "in", " ", "15", " ", 
+     RowBox[{"deklet", ".", "\[IndentingNewLine]", "Izberemo"}], " ", "tri", 
+     " ", 
+     RowBox[{"dijake", ".", " ", "\[IndentingNewLine]", "Kolik\[SHacek]na"}], 
+     " ", "je", " ", "verjetnost", " ", "dogodka"}], ",", 
+    RowBox[{"da", " ", "izberemo", " ", "tri", " ", 
+     RowBox[{"dekleta", "?"}]}]}], "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\n", 
+   RowBox[{
+    RowBox[{"n", "=", "30"}], ";", " ", 
+    RowBox[{"f", "=", "15"}], ";", 
+    RowBox[{"d", "=", "15"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{"(*", " ", 
+    RowBox[{"P", 
+     RowBox[{"(", 
+      RowBox[{"dekle", ",", " ", "dekle", ",", " ", "dekle"}], ")"}]}], " ", 
+    "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"P3D", "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"d", "/", "n"}], "*", 
+      RowBox[{"d", "/", "n"}], "*", 
+      RowBox[{"d", "/", "n"}]}], " ", "//", "N"}]}], "\[IndentingNewLine]", 
+   RowBox[{"P3D", "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"d", "/", "n"}], "*", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"d", "-", "1"}], ")"}], "/", 
+       RowBox[{"(", 
+        RowBox[{"n", "-", "1"}], ")"}]}], "*", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"d", "-", "2"}], ")"}], "/", 
+       RowBox[{"(", 
+        RowBox[{"n", "-", "2"}], ")"}]}]}], "//", "N"}]}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Binomial", "[", 
+      RowBox[{"15", ",", "3"}], "]"}], "/", 
+     RowBox[{"Binomial", "[", 
+      RowBox[{"30", ",", "3"}], "]"}]}], "//", "N"}], "\n", 
+   RowBox[{"(*", 
+    RowBox[{
+     RowBox[{
+     "Kolik\[SHacek]na", " ", "je", " ", "verjetnost", " ", "dogodka"}], ",", 
+     RowBox[{"da", " ", "izberemo", " ", "kve\[CHacek]jemu", " ", "eno", " ", 
+      RowBox[{"dekle", "?"}]}]}], "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"P1D", "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"d", "/", "n"}], "*", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"n", "-", "d"}], ")"}], "/", "n"}], "*", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"n", "-", "d"}], ")"}], "/", "n"}]}], " ", "//", "N"}]}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"Binomial", "[", 
+       RowBox[{"15", ",", "0"}], "]"}], "*", 
+      RowBox[{
+       RowBox[{"Binomial", "[", 
+        RowBox[{"15", ",", "3"}], "]"}], "/", 
+       RowBox[{"Binomial", "[", 
+        RowBox[{"30", ",", "3"}], "]"}]}]}], "+", 
+     RowBox[{
+      RowBox[{"Binomial", "[", 
+       RowBox[{"15", ",", "1"}], "]"}], "*", 
+      RowBox[{
+       RowBox[{"Binomial", "[", 
+        RowBox[{"15", ",", "2"}], "]"}], "/", 
+       RowBox[{"Binomial", "[", 
+        RowBox[{"30", ",", "3"}], "]"}]}]}]}], "//", "N"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{
+     RowBox[{
+     "Kolik\[SHacek]na", " ", "je", " ", "verjetnost", " ", "dogodka"}], ",", 
+     RowBox[{
+     "da", " ", "izberemo", " ", "dve", " ", "dekleti", " ", "in", " ", 
+      "enega", " ", 
+      RowBox[{"fanta", "?"}]}]}], "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"P2D1F", "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"d", "/", "n"}], "*", 
+      RowBox[{"f", "/", 
+       RowBox[{"(", 
+        RowBox[{"n", "-", "1"}], ")"}]}], "*", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"f", "-", "1"}], ")"}], "/", 
+       RowBox[{"(", 
+        RowBox[{"n", "-", "2"}], ")"}]}], " ", "*", "3"}], "//", "N"}]}], 
+   "\n", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Binomial", "[", 
+      RowBox[{"15", ",", "1"}], "]"}], "*", 
+     RowBox[{
+      RowBox[{"Binomial", "[", 
+       RowBox[{"15", ",", "2"}], "]"}], "/", 
+      RowBox[{"Binomial", "[", 
+       RowBox[{"30", ",", "3"}], "]"}]}]}], "//", "N"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"(*", 
+    RowBox[{
+    "Rezultate", " ", "za", " ", "verjetnosti", " ", "dogodkov", " ", 
+     "vnesite", " ", "na", " ", "decimalk", " ", 
+     RowBox[{"natan\[CHacek]no", "."}]}], "*)"}]}]}]], "Input",
+ CellChangeTimes->{{3.815064893867976*^9, 3.815065135515477*^9}, {
+  3.8150652319553585`*^9, 3.8150652651804504`*^9}, {3.815065295489752*^9, 
+  3.8150653213233013`*^9}, {3.8150653645722446`*^9, 3.8150653725728273`*^9}, {
+  3.8150654984809446`*^9, 3.815065523401639*^9}, {3.815287721026927*^9, 
+  3.815287763487199*^9}, {3.815287809240967*^9, 3.815287810235305*^9}, {
+  3.815288226538802*^9, 3.8152882994605026`*^9}, {3.81528835646241*^9, 
+  3.8152884142329445`*^9}},
+ CellLabel->
+  "In[566]:=",ExpressionUUID->"e7d2dfcc-50c7-49f5-afbf-64357634287e"],
+
+Cell[BoxData["0.125`"], "Output",
+ CellChangeTimes->{
+  3.8150653316217175`*^9, 3.8150653737138443`*^9, 3.815065524432639*^9, {
+   3.8152877431493235`*^9, 3.815287764903412*^9}, 3.815287811280543*^9, 
+   3.815288248704721*^9, 3.8152883011313596`*^9, {3.8152883709110756`*^9, 
+   3.815288414669777*^9}},
+ CellLabel->
+  "Out[568]=",ExpressionUUID->"7d90310e-c07b-43ae-ab05-254f3bc39ef3"],
+
+Cell[BoxData["0.11206896551724138`"], "Output",
+ CellChangeTimes->{
+  3.8150653316217175`*^9, 3.8150653737138443`*^9, 3.815065524432639*^9, {
+   3.8152877431493235`*^9, 3.815287764903412*^9}, 3.815287811280543*^9, 
+   3.815288248704721*^9, 3.8152883011313596`*^9, {3.8152883709110756`*^9, 
+   3.815288414673767*^9}},
+ CellLabel->
+  "Out[569]=",ExpressionUUID->"ade7f6e8-aaf6-4eca-b8a3-eb0f2881046b"],
+
+Cell[BoxData["0.11206896551724138`"], "Output",
+ CellChangeTimes->{
+  3.8150653316217175`*^9, 3.8150653737138443`*^9, 3.815065524432639*^9, {
+   3.8152877431493235`*^9, 3.815287764903412*^9}, 3.815287811280543*^9, 
+   3.815288248704721*^9, 3.8152883011313596`*^9, {3.8152883709110756`*^9, 
+   3.8152884146757607`*^9}},
+ CellLabel->
+  "Out[570]=",ExpressionUUID->"d1b3e91b-6568-426c-a191-c94233c42181"],
+
+Cell[BoxData["0.125`"], "Output",
+ CellChangeTimes->{
+  3.8150653316217175`*^9, 3.8150653737138443`*^9, 3.815065524432639*^9, {
+   3.8152877431493235`*^9, 3.815287764903412*^9}, 3.815287811280543*^9, 
+   3.815288248704721*^9, 3.8152883011313596`*^9, {3.8152883709110756`*^9, 
+   3.8152884146777554`*^9}},
+ CellLabel->
+  "Out[571]=",ExpressionUUID->"f359fcd0-b4c8-47cf-99ca-1c0185560536"],
+
+Cell[BoxData["0.5`"], "Output",
+ CellChangeTimes->{
+  3.8150653316217175`*^9, 3.8150653737138443`*^9, 3.815065524432639*^9, {
+   3.8152877431493235`*^9, 3.815287764903412*^9}, 3.815287811280543*^9, 
+   3.815288248704721*^9, 3.8152883011313596`*^9, {3.8152883709110756`*^9, 
+   3.815288414678753*^9}},
+ CellLabel->
+  "Out[572]=",ExpressionUUID->"c86aa2a8-7d82-4d4f-9367-ba49f1e2aea3"],
+
+Cell[BoxData["0.3879310344827586`"], "Output",
+ CellChangeTimes->{
+  3.8150653316217175`*^9, 3.8150653737138443`*^9, 3.815065524432639*^9, {
+   3.8152877431493235`*^9, 3.815287764903412*^9}, 3.815287811280543*^9, 
+   3.815288248704721*^9, 3.8152883011313596`*^9, {3.8152883709110756`*^9, 
+   3.815288414680747*^9}},
+ CellLabel->
+  "Out[573]=",ExpressionUUID->"0d2df4bf-6400-40f0-805e-8e4e3d838850"],
+
+Cell[BoxData["0.3879310344827586`"], "Output",
+ CellChangeTimes->{
+  3.8150653316217175`*^9, 3.8150653737138443`*^9, 3.815065524432639*^9, {
+   3.8152877431493235`*^9, 3.815287764903412*^9}, 3.815287811280543*^9, 
+   3.815288248704721*^9, 3.8152883011313596`*^9, {3.8152883709110756`*^9, 
+   3.8152884146817446`*^9}},
+ CellLabel->
+  "Out[574]=",ExpressionUUID->"64d3fe6b-0cf4-4c90-b40f-252c6b9e2060"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"6.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "Filter", " ", "neza\[ZHacek]elene", " ", "elektronske", " ", 
+     "po\[SHacek]te", " ", "pravilno", " ", "razvrsti", " ", 
+     "neza\[ZHacek]elena", " ", "sporo\[CHacek]ila", " ", "kot", " ", 
+     "neza\[ZHacek]elena", " ", "z", " ", "verjetnostjo", " ", 
+     RowBox[{"10", "/", "11."}], " ", "Za\[ZHacek]elena", " ", "pa", " ", 
+     "narobe", " ", "razvrsti", " ", "kot", " ", "neza\[ZHacek]elena", " ", 
+     "z", " ", "verjetnostjo", " ", 
+     RowBox[{"1", "/", "25."}], "Ocenjujemo"}], ",", 
+    RowBox[{"da", " ", "je", " ", 
+     RowBox[{"3", "/", "20"}], "sporo\[CHacek]il"}], ",", 
+    RowBox[{
+    "ki", " ", "pridejo", " ", "na", " ", "na\[SHacek]", " ", "elektronski", 
+     " ", "naslov", " ", 
+     RowBox[{"neza\[ZHacek]elenih", "."}]}]}], "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{"Kolik\[SHacek]na", " ", "je", " ", "verjetnost"}], ",", 
+    RowBox[{
+    "da", " ", "je", " ", "slu\[CHacek]ajno", " ", "izbrano", " ", 
+     "elektronsko", " ", "sporo\[CHacek]ilo", " ", 
+     "razvr\[SHacek]\[CHacek]eno", " ", "kot", " ", 
+     RowBox[{"neza\[ZHacek]eleno", "?"}]}]}], "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"10", "/", "11"}], "*", 
+      RowBox[{"3", "/", "20"}]}], " ", "+", 
+     RowBox[{
+      RowBox[{"1", "/", "25"}], "*", 
+      RowBox[{"17", "/", "20"}]}]}], "//", "N"}], "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+     RowBox[{"Kolik\[SHacek]na", " ", "je", " ", "verjetnost"}], ",", 
+     RowBox[{
+     "da", " ", "je", " ", "slu\[CHacek]ajno", " ", "izbrano", " ", 
+      "sporo\[CHacek]ilo", " ", "res", " ", "neza\[ZHacek]eleno"}], ",", 
+     RowBox[{
+     "\[CHacek]e", " ", "je", " ", "razvr\[SHacek]\[CHacek]eno", " ", "kot", 
+      " ", 
+      RowBox[{"neza\[ZHacek]eleno", "?"}]}]}], "*)"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"1", "-", 
+     RowBox[{
+      RowBox[{"3", "/", "20"}], "*", 
+      RowBox[{"1", "/", "25"}]}]}], " ", "//", "N"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"10", "/", "11"}], "*", 
+     RowBox[{
+      RowBox[{"3", "/", "20"}], "/", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"10", "/", "11"}], "*", 
+         RowBox[{"3", "/", "20"}]}], " ", "+", 
+        RowBox[{
+         RowBox[{"1", "/", "25"}], "*", 
+         RowBox[{"17", "/", "20"}]}]}], ")"}]}]}], "//", "N"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "Rezultate", " ", "za", " ", "verjetnosti", " ", "dogodkov", " ", 
+     "vnesite", " ", "na", " ", "5", " ", "decimalk", " ", 
+     RowBox[{"natan\[CHacek]no", "."}]}], "*)"}]}]}]], "Input",
+ CellChangeTimes->{{3.81506836937599*^9, 3.8150683814591117`*^9}, {
+   3.8150687292899837`*^9, 3.8150688616307497`*^9}, {3.8150700544513655`*^9, 
+   3.8150700723308973`*^9}, 3.8150701080564346`*^9, {3.815070666393987*^9, 
+   3.8150706890818768`*^9}, {3.815070761649828*^9, 3.815070784830758*^9}, {
+   3.815070913509451*^9, 3.81507093031201*^9}, {3.8152885036395597`*^9, 
+   3.815288519471136*^9}, {3.815288600890012*^9, 3.8152886135921507`*^9}},
+ CellLabel->
+  "In[582]:=",ExpressionUUID->"545047f1-d5ac-45d4-9a5d-5b0e75307779"],
+
+Cell[BoxData["0.17036363636363636`"], "Output",
+ CellChangeTimes->{
+  3.8150707867960653`*^9, 3.8150709702679095`*^9, 3.8152885374875717`*^9, {
+   3.815288610258931*^9, 3.8152886139341*^9}},
+ CellLabel->
+  "Out[583]=",ExpressionUUID->"8254f2ca-7e45-456c-9b17-7ac5938e57e0"],
+
+Cell[BoxData["0.994`"], "Output",
+ CellChangeTimes->{
+  3.8150707867960653`*^9, 3.8150709702679095`*^9, 3.8152885374875717`*^9, {
+   3.815288610258931*^9, 3.815288613936063*^9}},
+ CellLabel->
+  "Out[584]=",ExpressionUUID->"699e8c8d-9809-4272-b130-cb959818757d"],
+
+Cell[BoxData["0.80042689434365`"], "Output",
+ CellChangeTimes->{
+  3.8150707867960653`*^9, 3.8150709702679095`*^9, 3.8152885374875717`*^9, {
+   3.815288610258931*^9, 3.815288613938088*^9}},
+ CellLabel->
+  "Out[585]=",ExpressionUUID->"919647f9-34db-403f-8300-6c9170061a80"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"7.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Danih", " ", "je", " ", "N"}], "=", 
+     RowBox[{"15", " ", "kroglic"}]}], ",", 
+    RowBox[{
+    "o\[SHacek]tevil\[CHacek]enih", " ", "s", " ", "\[SHacek]tevili", " ", 
+     "od", " ", "1", " ", "do", " ", "15.", "Zaporedoma", " ", 
+     "slu\[CHacek]ajno", " ", "izberemo", " ", "dve", " ", 
+     RowBox[{"kroglici", ".", "Po"}], " ", "izbiranju", " ", "vrnemo", " ", 
+     "prvo", " ", "kroglico", " ", "nazaj", " ", "v", " ", 
+     RowBox[{"posodo", ".", " ", "Izra\[CHacek]unajte"}], " ", "naslednje", 
+     " ", 
+     RowBox[{"verjetnosti", ":"}]}]}], "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+   "Obe", " ", "izbrani", " ", "\[SHacek]tevili", " ", "sta", " ", 
+    "manj\[SHacek]i", " ", "ali", " ", "enaki", " ", "8."}], "*)"}], "\n", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+   RowBox[{"Pm8", " ", "=", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"8", "/", "15"}], "*", 
+      RowBox[{"8", "/", "15"}]}], " ", "//", "N"}]}], "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "Vsaj", " ", "eno", " ", "od", " ", "izbranih", " ", "\[SHacek]tevil", 
+     " ", "je", " ", "ve\[CHacek]je", " ", "kot", " ", "8."}], "*)"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"Pv8", " ", "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{
+       RowBox[{"7", "/", "15"}], "*", 
+       RowBox[{"8", "/", "15"}], " ", "*", "2"}], "+", 
+      RowBox[{
+       RowBox[{"7", "/", "15"}], "*", 
+       RowBox[{"7", "/", "15"}]}]}], "//", "N"}]}], "\[IndentingNewLine]", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "Vsota", " ", "izbranih", " ", "\[SHacek]tevil", " ", "je", " ", 
+     "ve\[CHacek]ja", " ", "kot", " ", "16."}], "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"Pvs16", "=", 
+    RowBox[{
+     RowBox[{"14", "*", 
+      RowBox[{
+       RowBox[{"15", "/", "2"}], "/", 
+       RowBox[{"15", "^", "2"}]}]}], " ", "//", "N"}]}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+     RowBox[{
+     "Vsota", " ", "izbranih", " ", "\[SHacek]tevil", " ", "je", " ", 
+      "ve\[CHacek]ja", " ", "kot", " ", "16"}], ",", 
+     RowBox[{"\[CHacek]e", " ", "vemo"}], ",", 
+     RowBox[{
+     "da", " ", "je", " ", "prvo", " ", "izbrano", " ", "\[SHacek]tevilo", 
+      " ", "enako", " ", "8."}]}], "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"Pvsnad16", "=", 
+    RowBox[{
+     RowBox[{"7", "/", "15"}], " ", "//", "N"}]}], "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+     RowBox[{
+     "Vsota", " ", "izbranih", " ", "\[SHacek]tevil", " ", "je", " ", 
+      "ve\[CHacek]ja", " ", "kot", " ", "16"}], ",", 
+     RowBox[{"\[CHacek]e", " ", "vemo"}], ",", 
+     RowBox[{
+     "da", " ", "je", " ", "prvo", " ", "izbrano", " ", "\[SHacek]tevilo", 
+      " ", "ve\[CHacek]je", " ", "od", " ", "8."}]}], "*)"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"Pvsnad16", "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{
+       "14", "+", "13", "+", "12", "+", "11", "+", "10", "+", "9", "+", "8"}],
+        ")"}], "/", 
+      RowBox[{"(", 
+       RowBox[{"14", "*", 
+        RowBox[{"15", "/", "2"}]}], ")"}]}], " ", "//", "N"}]}], "\n", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "Rezultate", " ", "za", " ", "verjetnosti", " ", "dogodkov", " ", 
+     "vnesite", " ", "na", " ", "decimalk", " ", 
+     RowBox[{"natan\[CHacek]no", "."}]}], "*)"}], "\n"}]}]], "Input",
+ CellChangeTimes->{{3.8150673183286915`*^9, 3.815067566526615*^9}, {
+  3.8150676022863097`*^9, 3.815067639178796*^9}, {3.815067673220886*^9, 
+  3.8150677334368763`*^9}, {3.8150678741101656`*^9, 3.81506790855169*^9}, {
+  3.8150679504525185`*^9, 3.815068049273003*^9}, {3.8150683580468235`*^9, 
+  3.8150683588479257`*^9}, {3.8152887043855653`*^9, 3.815288725737875*^9}, {
+  3.8152891078882146`*^9, 3.8152891343060093`*^9}, {3.8152892168364525`*^9, 
+  3.8152892280290413`*^9}, {3.81528929838385*^9, 3.815289298788768*^9}, {
+  3.8152894201125765`*^9, 3.8152894245892944`*^9}, {3.8152895027142167`*^9, 
+  3.815289516608654*^9}},
+ CellLabel->
+  "In[622]:=",ExpressionUUID->"8e0b04b8-363b-48a5-892e-673733c1cc45"],
+
+Cell[BoxData["0.28444444444444444`"], "Output",
+ CellChangeTimes->{
+  3.815068053236865*^9, 3.8150683609360046`*^9, 3.8152887283914013`*^9, {
+   3.81528911603094*^9, 3.815289134670991*^9}, 3.81528922879465*^9, 
+   3.815289299400051*^9, {3.8152895096004834`*^9, 3.8152895170255404`*^9}},
+ CellLabel->
+  "Out[623]=",ExpressionUUID->"8699aa95-d454-428a-96ad-adad5199fe8a"],
+
+Cell[BoxData["0.7155555555555555`"], "Output",
+ CellChangeTimes->{
+  3.815068053236865*^9, 3.8150683609360046`*^9, 3.8152887283914013`*^9, {
+   3.81528911603094*^9, 3.815289134670991*^9}, 3.81528922879465*^9, 
+   3.815289299400051*^9, {3.8152895096004834`*^9, 3.815289517027534*^9}},
+ CellLabel->
+  "Out[624]=",ExpressionUUID->"0137908e-773b-44e3-9d22-5562f973a062"],
+
+Cell[BoxData["0.4666666666666667`"], "Output",
+ CellChangeTimes->{
+  3.815068053236865*^9, 3.8150683609360046`*^9, 3.8152887283914013`*^9, {
+   3.81528911603094*^9, 3.815289134670991*^9}, 3.81528922879465*^9, 
+   3.815289299400051*^9, {3.8152895096004834`*^9, 3.8152895170295296`*^9}},
+ CellLabel->
+  "Out[625]=",ExpressionUUID->"06181653-a2d1-4b96-820c-5f7be3c83550"],
+
+Cell[BoxData["0.4666666666666667`"], "Output",
+ CellChangeTimes->{
+  3.815068053236865*^9, 3.8150683609360046`*^9, 3.8152887283914013`*^9, {
+   3.81528911603094*^9, 3.815289134670991*^9}, 3.81528922879465*^9, 
+   3.815289299400051*^9, {3.8152895096004834`*^9, 3.8152895170315237`*^9}},
+ CellLabel->
+  "Out[626]=",ExpressionUUID->"487737d2-88ba-4f04-b724-bec977b1738b"],
+
+Cell[BoxData["0.7333333333333333`"], "Output",
+ CellChangeTimes->{
+  3.815068053236865*^9, 3.8150683609360046`*^9, 3.8152887283914013`*^9, {
+   3.81528911603094*^9, 3.815289134670991*^9}, 3.81528922879465*^9, 
+   3.815289299400051*^9, {3.8152895096004834`*^9, 3.815289517033518*^9}},
+ CellLabel->
+  "Out[627]=",ExpressionUUID->"8b00ceb9-8fa6-4d21-97ba-41e255311103"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"8.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "V", " ", "prvi", " ", "posodi", " ", "je", " ", "6", " ", 
+     "rde\[CHacek]ih", " ", "in", " ", "6", " ", "modrih", " ", "kroglic"}], 
+    ",", 
+    RowBox[{
+    "v", " ", "drugi", " ", "posodi", " ", "pa", " ", "je", " ", "9", " ", 
+     "rde\[CHacek]ih", " ", "in", " ", "8", " ", "modrih", " ", 
+     RowBox[{"kroglic", ".", "Iz"}], " ", "prve", " ", "posode", " ", "na", 
+     " ", "slepo", " ", "prenesemo", " ", "dve", " ", "kroglici", " ", "v", 
+     " ", "drugo"}], ",", 
+    RowBox[{
+    "nato", " ", "pa", " ", "iz", " ", "druge", " ", "posode", " ", 
+     "izvle\[CHacek]emo", " ", "eno", " ", 
+     RowBox[{"kroglico", ".", " ", "Kolik\[SHacek]na"}], " ", "je", " ", 
+     "verjetnost", " ", "dogodka"}], ",", 
+    RowBox[{"da", " ", "je", " ", "izvle\[CHacek]ena", " ", "kroglica", " ", 
+     RowBox[{"rde\[CHacek]a", "?", " ", "Rezultat"}], " ", "za", " ", 
+     "verjetnost", " ", "dogodka", " ", "vnesite", " ", "na", " ", "5", " ", 
+     "decimalk", " ", 
+     RowBox[{"natan\[CHacek]no", "."}]}]}], " ", "*)"}], 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{"PA", " ", "=", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{
+            RowBox[{
+             RowBox[{
+              RowBox[{
+               RowBox[{"P", 
+                RowBox[{"(", "H1", ")"}], "P", 
+                RowBox[{"(", 
+                 RowBox[{"A", "|", "H1"}], ")"}]}], "+", 
+               RowBox[{"P", 
+                RowBox[{"(", "H2", ")"}], "P", 
+                RowBox[{"(", 
+                 RowBox[{"A", "|", "H2"}], ")"}]}], "+", 
+               RowBox[{"P", 
+                RowBox[{"(", "H3", ")"}], "P", 
+                RowBox[{"(", 
+                 RowBox[{"A", "|", "H3"}], ")"}]}], "+", 
+               RowBox[{"P", 
+                RowBox[{"(", "H4", ")"}], "P", 
+                RowBox[{"(", 
+                 RowBox[{"A", "|", "H4"}], ")"}], "\[IndentingNewLine]", 
+                "H1"}]}], " ", "..."}], " ", "izberemo", " ", "dve", " ", 
+             "rde\[CHacek]i", " ", "kroglici", "\[IndentingNewLine]", "H2"}], 
+            " ", "..."}], " ", "izberemo", " ", "dve", " ", "modri", " ", 
+           "kroglici", "\[IndentingNewLine]", "H3"}], " ", "..."}], " ", 
+         "izberemo", " ", "eno", " ", "rde\[CHacek]o", " ", "in", " ", "eno", 
+         " ", "modro", " ", "kroglico", "\[IndentingNewLine]", "H4"}], " ", 
+        "..."}], " ", "izberemo", " ", "eno", " ", "modro", " ", "in", " ", 
+       "eno", " ", "rde\[CHacek]o", " ", "kroglico", "\[IndentingNewLine]", 
+       "A"}], " ", "..."}], " ", "izberemo", " ", "rde\[CHacek]o", " ", 
+     "kroglico"}]}], "\[IndentingNewLine]", " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PH1", "=", 
+     RowBox[{
+      RowBox[{"6", "/", "12"}], "*", 
+      RowBox[{"5", "/", "11"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PH2", "=", 
+     RowBox[{
+      RowBox[{"6", "/", "12"}], "*", 
+      RowBox[{"5", "/", "11"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PH3", "=", 
+     RowBox[{
+      RowBox[{"6", "/", "12"}], "*", 
+      RowBox[{"6", "/", "11"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PH4", "=", 
+     RowBox[{
+      RowBox[{"6", "/", "12"}], "*", 
+      RowBox[{"6", "/", "11"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PAH1", "=", 
+     RowBox[{"11", "/", "19"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PAH2", "=", 
+     RowBox[{"9", "/", "19"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PAH3", "=", 
+     RowBox[{"10", "/", "19"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"PAH4", "=", 
+     RowBox[{"10", "/", "19"}]}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{"PA", " ", "=", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"PH1", "*", "PAH1"}], "+", 
+      RowBox[{"PH2", "*", "PAH2"}], "+", 
+      RowBox[{"PH3", "*", "PAH3"}], "+", 
+      RowBox[{"PH4", "*", "PAH4"}]}], " ", "//", "N"}]}]}]}]], "Input",
+ CellChangeTimes->{{3.8150655503082323`*^9, 3.815065672717729*^9}, {
+  3.8150657309302883`*^9, 3.8150658813287473`*^9}, {3.8152896444948473`*^9, 
+  3.815289645422242*^9}},
+ CellLabel->
+  "In[628]:=",ExpressionUUID->"d66872d7-2f88-4fac-a65d-2655caa48536"],
+
+Cell[BoxData["0.5263157894736842`"], "Output",
+ CellChangeTimes->{3.815065895620945*^9, 3.815066344730523*^9, 
+  3.81528964639863*^9},
+ CellLabel->
+  "Out[637]=",ExpressionUUID->"5b53241d-2e1b-4522-b707-46f98049dee2"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{"9.", " ", "naloga"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "Kolik\[SHacek]na", " ", "je", " ", "verjetnost", " ", "dogodka"}], ",", 
+    RowBox[{
+    "da", " ", "je", " ", "pri", " ", "so\[CHacek]asnem", " ", "metu", " ", 
+     "dveh", " ", "po\[SHacek]tenih", " ", "igralnih", " ", "kock", " ", 
+     "padla", " ", "vsaj", " ", "ena", " ", "trojka"}], ",", 
+    RowBox[{
+    "\[CHacek]e", " ", "je", " ", "bila", " ", "vsota", " ", "pik", " ", "na",
+      " ", "obeh", " ", "kockah", " ", "5.", "Rezultat", " ", "za", " ", 
+     "verjetnost", " ", "dogodka", " ", "vnesite", " ", "na", " ", "decimalk",
+      " ", 
+     RowBox[{"natan\[CHacek]no", "."}]}]}], " ", "*)"}], 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{"(*", " ", 
+   RowBox[{
+    RowBox[{
+    "Pri", " ", "metu", " ", "2", " ", "kock", " ", "je", " ", "se", " ", 
+     "vsota", " ", "5", " ", "pojavi", " ", "4", " ", 
+     RowBox[{"krat", ".", " ", "\[CapitalCHacek]e"}], " ", "mora", " ", 
+     "biti", " ", "ena", " ", "od", " ", "obeh", " ", "tri"}], ",", " ", 
+    RowBox[{
+     RowBox[{
+      RowBox[{
+      "potem", " ", "sta", " ", "taki", " ", "kombinaciji", " ", "samo", " ", 
+       "2"}], ":", " ", "Kocka1"}], " ", "=", " ", 
+     RowBox[{
+      RowBox[{"3", " ", "in", " ", "Kocka2"}], " ", "=", " ", 
+      RowBox[{
+       RowBox[{"2", " ", "ali", " ", "Kocka1"}], " ", "=", " ", 
+       RowBox[{
+        RowBox[{"2", " ", "in", " ", "Kocka", " ", "2"}], " ", "=", " ", 
+        RowBox[{
+        "3.", " ", "Ker", " ", "se", " ", "ta", " ", "dva", " ", "dogodka", 
+         " ", "ne", " ", "moreta", " ", "zgoditi", " ", "hkrati"}]}]}]}]}], 
+    ",", " ", 
+    RowBox[{"ju", " ", 
+     RowBox[{"se\[SHacek]tejem", ":"}]}]}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"Clear", "[", "\"\<Global`*\>\"", "]"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"P3", "=", 
+     RowBox[{"1", "/", "6"}]}], ";", "  ", 
+    RowBox[{"P2", "=", 
+     RowBox[{"1", "/", "6"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{"P32", "=", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"P3", "*", "P2"}], "+", 
+      RowBox[{"P2", "*", "P3"}]}], " ", "//", "N"}]}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"2", "/", "4"}], "//", "N"}]}]}]], "Input",
+ CellChangeTimes->{{3.8150659600166025`*^9, 3.815065968235897*^9}, {
+  3.8150660625348043`*^9, 3.815066425487092*^9}, {3.815066467274582*^9, 
+  3.8150665085042105`*^9}, {3.8152897398954997`*^9, 3.815289747204637*^9}},
+ CellLabel->
+  "In[642]:=",ExpressionUUID->"4dc83d16-3307-464c-9a9e-e49f48431421"],
+
+Cell[BoxData["0.05555555555555555`"], "Output",
+ CellChangeTimes->{
+  3.815066427030415*^9, 3.81506647656789*^9, 3.8150665094773073`*^9, {
+   3.8152897434281955`*^9, 3.8152897475409966`*^9}},
+ CellLabel->
+  "Out[644]=",ExpressionUUID->"d82686bf-8bd8-441f-b273-d319b28afa19"],
+
+Cell[BoxData["0.5`"], "Output",
+ CellChangeTimes->{
+  3.815066427030415*^9, 3.81506647656789*^9, 3.8150665094773073`*^9, {
+   3.8152897434281955`*^9, 3.815289747543023*^9}},
+ CellLabel->
+  "Out[645]=",ExpressionUUID->"725e2e84-c459-46e8-9345-a4fb8c403bb5"]
+}, Open  ]]
+},
+WindowSize->{950, 528},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+Magnification->1.5,
+FrontEndVersion->"12.1 for Microsoft Windows (64-bit) (June 19, 2020)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"42652ec5-81ee-4ecd-94e2-140ed55e8290"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 1719, 37, 450, "Input",ExpressionUUID->"6ce55b94-bfb6-4a0c-9a07-01710be734c6"],
+Cell[2302, 61, 151, 2, 49, "Output",ExpressionUUID->"c3c549bc-a3db-484d-8be3-6320ff978fa0"],
+Cell[2456, 65, 151, 2, 49, "Output",ExpressionUUID->"45f9e5c5-c22a-446a-b5fe-8e92d0a7999c"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2644, 72, 4479, 122, 537, "Input",ExpressionUUID->"0244b19d-c504-40b9-8ffc-e354e0957924"],
+Cell[7126, 196, 322, 6, 49, "Output",ExpressionUUID->"571cdaa0-15bb-4048-a3af-b5da8963d26f"],
+Cell[7451, 204, 313, 6, 49, "Output",ExpressionUUID->"78f5e20f-981d-454e-8253-3a8dd3002638"],
+Cell[7767, 212, 324, 6, 49, "Output",ExpressionUUID->"e6ccc90f-01ab-4d5b-9625-3e7deec5f605"],
+Cell[8094, 220, 321, 6, 49, "Output",ExpressionUUID->"49962ead-a608-49aa-864e-186edaa3473b"],
+Cell[8418, 228, 321, 6, 49, "Output",ExpressionUUID->"f5b260ba-8933-4f86-a876-e8138ff5f8e1"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[8776, 239, 2408, 52, 363, "Input",ExpressionUUID->"8028437e-2693-4f78-8d0d-0809c14abdc7"],
+Cell[11187, 293, 239, 5, 49, "Output",ExpressionUUID->"f0b9b086-7c9a-4d78-a839-214610b568b7"],
+Cell[11429, 300, 240, 5, 49, "Output",ExpressionUUID->"446998c0-1e79-4fa3-836d-796ce007fcec"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[11706, 310, 5219, 129, 857, "Input",ExpressionUUID->"005bc80a-78d2-4744-aa21-9d3d05024fca"],
+Cell[16928, 441, 244, 4, 49, "Output",ExpressionUUID->"726797c4-68b7-4141-96b0-692882393358"],
+Cell[17175, 447, 229, 4, 49, "Output",ExpressionUUID->"b3d84838-4fce-4fa8-becb-e2cb69b8dd9f"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[17441, 456, 4841, 133, 624, "Input",ExpressionUUID->"e7d2dfcc-50c7-49f5-afbf-64357634287e"],
+Cell[22285, 591, 385, 7, 49, "Output",ExpressionUUID->"7d90310e-c07b-43ae-ab05-254f3bc39ef3"],
+Cell[22673, 600, 399, 7, 49, "Output",ExpressionUUID->"ade7f6e8-aaf6-4eca-b8a3-eb0f2881046b"],
+Cell[23075, 609, 401, 7, 49, "Output",ExpressionUUID->"d1b3e91b-6568-426c-a191-c94233c42181"],
+Cell[23479, 618, 387, 7, 49, "Output",ExpressionUUID->"f359fcd0-b4c8-47cf-99ca-1c0185560536"],
+Cell[23869, 627, 383, 7, 49, "Output",ExpressionUUID->"c86aa2a8-7d82-4d4f-9367-ba49f1e2aea3"],
+Cell[24255, 636, 398, 7, 49, "Output",ExpressionUUID->"0d2df4bf-6400-40f0-805e-8e4e3d838850"],
+Cell[24656, 645, 400, 7, 49, "Output",ExpressionUUID->"64d3fe6b-0cf4-4c90-b40f-252c6b9e2060"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[25093, 657, 3410, 80, 537, "Input",ExpressionUUID->"545047f1-d5ac-45d4-9a5d-5b0e75307779"],
+Cell[28506, 739, 273, 5, 49, "Output",ExpressionUUID->"8254f2ca-7e45-456c-9b17-7ac5938e57e0"],
+Cell[28782, 746, 261, 5, 49, "Output",ExpressionUUID->"699e8c8d-9809-4272-b130-cb959818757d"],
+Cell[29046, 753, 272, 5, 49, "Output",ExpressionUUID->"919647f9-34db-403f-8300-6c9170061a80"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[29355, 763, 4217, 101, 595, "Input",ExpressionUUID->"8e0b04b8-363b-48a5-892e-673733c1cc45"],
+Cell[33575, 866, 369, 6, 49, "Output",ExpressionUUID->"8699aa95-d454-428a-96ad-adad5199fe8a"],
+Cell[33947, 874, 366, 6, 49, "Output",ExpressionUUID->"0137908e-773b-44e3-9d22-5562f973a062"],
+Cell[34316, 882, 368, 6, 49, "Output",ExpressionUUID->"06181653-a2d1-4b96-820c-5f7be3c83550"],
+Cell[34687, 890, 368, 6, 49, "Output",ExpressionUUID->"487737d2-88ba-4f04-b724-bec977b1738b"],
+Cell[35058, 898, 366, 6, 49, "Output",ExpressionUUID->"8b00ceb9-8fa6-4d21-97ba-41e255311103"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[35461, 909, 4611, 113, 770, "Input",ExpressionUUID->"d66872d7-2f88-4fac-a65d-2655caa48536"],
+Cell[40075, 1024, 217, 4, 49, "Output",ExpressionUUID->"5b53241d-2e1b-4522-b707-46f98049dee2"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[40329, 1033, 2684, 62, 508, "Input",ExpressionUUID->"4dc83d16-3307-464c-9a9e-e49f48431421"],
+Cell[43016, 1097, 274, 5, 49, "Output",ExpressionUUID->"d82686bf-8bd8-441f-b273-d319b28afa19"],
+Cell[43293, 1104, 256, 5, 64, "Output",ExpressionUUID->"725e2e84-c459-46e8-9345-a4fb8c403bb5"]
+}, Open  ]]
+}
+]
+*)
+
